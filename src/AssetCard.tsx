@@ -128,7 +128,17 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
           />
         )}
         {isGif && hover && <img src={origUrl} className="media media-over show" alt="" />}
-        {isAudio && hover && <audio src={origUrl} autoPlay className="hidden-audio" />}
+        {isAudio && hover && (
+          <audio
+            src={origUrl}
+            autoPlay
+            className="hidden-audio"
+            ref={(el) => {
+              if (el) el.play().catch(() => {});
+            }}
+          />
+        )}
+        {isAudio && hover && <span className="audio-hover-ind"><Icon name="audio" size={20} /></span>}
 
         {dur && <span className="badge badge-dur">{dur}</span>}
         {asset.rating > 0 && (

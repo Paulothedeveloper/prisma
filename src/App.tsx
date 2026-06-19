@@ -209,6 +209,7 @@ export default function App() {
   const [batchRename, setBatchRename] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; asset: Asset } | null>(null);
   const [markup, setMarkup] = useState<Asset | null>(null);
+  const [animTick, setAnimTick] = useState(0); // re-dispara a animação da grade em ações em massa
   const [subCards, setSubCards] = useState<SubCard[]>([]);
   const [booted, setBooted] = useState(false);
   const [thumbSize, setThumbSize] = useState(190);
@@ -595,6 +596,7 @@ export default function App() {
   const batchTrash = useCallback(async () => {
     for (const id of selectedIds) await trashAsset(id, true);
     clearSelection();
+    setAnimTick((t) => t + 1);
     onMutate();
   }, [selectedIds, clearSelection, onMutate]);
 
@@ -655,7 +657,7 @@ export default function App() {
 
   const isView = (v: View) => JSON.stringify(v) === JSON.stringify(view);
   // chave de animação: muda na troca de pasta/categoria/aba pra re-disparar a transição
-  const viewKey = `${view.t}-${"v" in view ? (view as { v: unknown }).v : ""}-${layout}`;
+  const viewKey = `${view.t}-${"v" in view ? (view as { v: unknown }).v : ""}-${layout}-${animTick}`;
   const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
   const folderSel = view.t === "folder" ? view.v : null;
   const anyFilter = minRating || fExt || fRes || fDur || fBright || fWarm || fSat || fOrient;
@@ -1116,6 +1118,7 @@ export default function App() {
                 onClick={() =>
                   dedupeKeepOne().then(() => {
                     clearSelection();
+                    setAnimTick((t) => t + 1);
                     onMutate();
                   })
                 }
@@ -1132,6 +1135,7 @@ export default function App() {
                 onClick={() =>
                   emptyTrash().then(() => {
                     setSelected(null);
+                    setAnimTick((t) => t + 1);
                     onMutate();
                   })
                 }

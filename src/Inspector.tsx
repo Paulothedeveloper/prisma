@@ -322,7 +322,10 @@ export function Inspector({
           ) : (
             <div className="insp-unsupported">
               {previewUrl && <img src={previewUrl} alt="" />}
-              <button className="insp-openext" onClick={() => openPath(asset.path)}>
+              <button
+                className="insp-openext"
+                onClick={() => openPath(asset.path).catch(() => revealInExplorer(asset.path))}
+              >
                 <Icon name="play" size={14} /> Abrir no player
               </button>
               <span className="insp-codec">
