@@ -687,8 +687,25 @@ body {
 .view-fade.anim-in .lrow {
   animation: cardIn 0.44s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
+
+/* Remoção em massa (esvaziar lixeira / apagar duplicados): a grade SAI (some) antes
+   de recarregar — aí os itens restantes voltam em cascata. */
+@keyframes gridOut {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}
+.view-fade.clearing {
+  animation: gridOut 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
 @media (prefers-reduced-motion: reduce) {
   .view-fade,
+  .view-fade.clearing,
   .view-fade.anim-in .card,
   .view-fade.anim-in .lrow {
     animation: none;

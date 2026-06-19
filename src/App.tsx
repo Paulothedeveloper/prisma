@@ -210,9 +210,8 @@ export default function App() {
   const [batchRename, setBatchRename] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; asset: Asset } | null>(null);
   const [markup, setMarkup] = useState<Asset | null>(null);
-  const [animTick, setAnimTick] = useState(0); // re-dispara a animação da grade em ações em massa
-  const [cascadeTick, setCascadeTick] = useState(0); // bump SÓ quando os dados novos da view chegam
-  const pendingCascade = useRef(false); // navegação pediu cascata; dispara quando os dados chegarem
+  const [cascadeTick, setCascadeTick] = useState(0); // remonta+cascateia a grade (nav + pós-remoção)
+  const [clearing, setClearing] = useState(false); // animação de SAÍDA (esvaziar lixeira / apagar dups)
   const [switching, setSwitching] = useState(true); // janela em que os cards entram em cascata
   const [subCards, setSubCards] = useState<SubCard[]>([]);
   const [booted, setBooted] = useState(false);
@@ -275,20 +274,11 @@ export default function App() {
 
   const runSearch = useCallback(
     async (reset = true) => {
-      // Se a navegação pediu cascata, dispara-a SÓ agora (dados já chegaram) — evita
-      // animar com os dados antigos e "piscar" quando os novos entram.
-      const fireCascade = () => {
-        if (reset && pendingCascade.current) {
-          pendingCascade.current = false;
-          setCascadeTick((c) => c + 1);
-        }
-      };
       // "Buscar por imagem": resultado por similaridade, sem paginação.
       if (view.t === "similar") {
         const rows = await similarAssets(view.v);
         offsetRef.current = rows.length;
         setAssets(rows);
-        fireCascade();
         return;
       }
       // Pasta inteligente: roda a regra.
@@ -296,14 +286,12 @@ export default function App() {
         const rows = await smartSearch(view.v, sort);
         offsetRef.current = rows.length;
         setAssets(rows);
-        fireCascade();
         return;
       }
       const offset = reset ? 0 : offsetRef.current;
       const rows = await searchAssets(buildFilter(offset));
       offsetRef.current = offset + rows.length;
       setAssets((prev) => (reset ? rows : [...prev, ...rows]));
-      fireCascade();
     },
     [buildFilter, view]
   );
@@ -316,26 +304,36 @@ export default function App() {
     setSmartFolders(await listSmart());
   }, []);
 
+  // Filtro/busca/ordenação: recarrega EM LUGAR (sem cascata — pra não reanimar enquanto digita).
+  // A troca de VIEW é tratada no efeito abaixo (que cascateia). `view` fora dos deps de propósito.
   useEffect(() => {
     const t = window.setTimeout(() => runSearch(true), 110);
     return () => window.clearTimeout(t);
-  }, [query, view, minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort, runSearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort]);
 
   useEffect(() => {
     // splash premium até a primeira carga de metadados (com tempo mínimo pro efeito)
     Promise.all([refreshMeta(), new Promise((r) => setTimeout(r, 900))]).then(() => setBooted(true));
   }, [refreshMeta]);
 
-  // Trocar de pasta/categoria limpa a seleção (evita lote órfão de outra view) + volta o scroll ao topo.
+  // Troca de view (aba/pasta/atalho): carrega os dados novos e SÓ ENTÃO cascateia —
+  // determinístico, sem animar com dados antigos nem "piscar". Também limpa seleção e scroll.
   useEffect(() => {
-    // navegação do usuário → pede a cascata, que dispara quando os dados novos chegarem
-    pendingCascade.current = true;
     setSelectedIds(new Set());
     anchorRef.current = null;
     gridRef.current?.scrollToIndex?.(0);
     // subpastas como cards-capa (só na visão de pasta)
     if (view.t === "folder") subfolders(view.v).then(setSubCards).catch(() => setSubCards([]));
     else setSubCards([]);
+    let alive = true;
+    runSearch(true).then(() => {
+      if (alive) setCascadeTick((c) => c + 1);
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
   // Navegar pra uma pasta/categoria LIMPA os filtros do topo (resolução/tom/etc),
@@ -525,6 +523,22 @@ export default function App() {
     refreshMeta();
   }, [runSearch, refreshMeta]);
 
+  // Remoção em massa COM animação (regra do app: tudo anima). A grade faz uma animação
+  // de SAÍDA (some), aí a remoção é aplicada, recarrega e os itens restantes entram em cascata.
+  const removeWithAnim = useCallback(
+    (doRemoval: () => Promise<unknown> | void) => {
+      setClearing(true);
+      window.setTimeout(async () => {
+        await Promise.resolve(doRemoval());
+        await runSearch(true);
+        refreshMeta();
+        setClearing(false);
+        setCascadeTick((c) => c + 1); // os que sobraram entram em cascata
+      }, 260);
+    },
+    [runSearch, refreshMeta]
+  );
+
   const navPreview = useCallback(
     (dir: -1 | 1) => {
       if (!previewAsset) return;
@@ -612,18 +626,19 @@ export default function App() {
         label: many ? `Mover ${ids.length} pra Lixeira` : "Mover pra Lixeira",
         icon: "trash",
         danger: true,
-        onClick: () => Promise.all(ids.map((id) => trashAsset(id, true))).then(() => { clearSelection(); onMutate(); }),
+        onClick: () => removeWithAnim(() => Promise.all(ids.map((id) => trashAsset(id, true))).then(clearSelection)),
       },
     ];
   };
 
   // Ações em lote sobre os selecionados
-  const batchTrash = useCallback(async () => {
-    for (const id of selectedIds) await trashAsset(id, true);
-    clearSelection();
-    setAnimTick((t) => t + 1);
-    onMutate();
-  }, [selectedIds, clearSelection, onMutate]);
+  const batchTrash = useCallback(() => {
+    const ids = [...selectedIds];
+    removeWithAnim(async () => {
+      for (const id of ids) await trashAsset(id, true);
+      clearSelection();
+    });
+  }, [selectedIds, clearSelection, removeWithAnim]);
 
   const batchAddCollection = useCallback(
     async (cid: number) => {
@@ -682,10 +697,9 @@ export default function App() {
 
   const isView = (v: View) => JSON.stringify(v) === JSON.stringify(view);
   // chave de animação: muda na troca de pasta/categoria/aba pra re-disparar a transição
-  // A cascata remonta a grade SÓ quando: (a) os dados novos da view chegaram (cascadeTick),
-  // (b) ação em massa (animTick) ou (c) troca de layout. NÃO remonta no clique da aba —
-  // assim não anima com os dados antigos nem "pisca" quando os novos entram.
-  const viewKey = `${cascadeTick}-${animTick}-${layout}`;
+  // A grade remonta+cascateia SÓ via cascadeTick (nav e pós-remoção) ou troca de layout —
+  // nunca no clique cru (senão animaria com os dados antigos e "piscaria").
+  const viewKey = `${cascadeTick}-${layout}`;
 
   // Liga a janela de "cascata" quando a grade remonta. useLayoutEffect garante a classe
   // já no primeiro paint (sem flash).
@@ -1151,13 +1165,7 @@ export default function App() {
               </span>
               <button
                 className="trash-empty dups-keep"
-                onClick={() =>
-                  dedupeKeepOne().then(() => {
-                    clearSelection();
-                    setAnimTick((t) => t + 1);
-                    onMutate();
-                  })
-                }
+                onClick={() => removeWithAnim(() => dedupeKeepOne().then(clearSelection))}
               >
                 <Icon name="dup" size={13} /> Manter só 1 de cada
               </button>
@@ -1168,13 +1176,7 @@ export default function App() {
               <span>Itens na Lixeira não aparecem na biblioteca. Esvaziar remove do catálogo (não apaga do disco).</span>
               <button
                 className="trash-empty"
-                onClick={() =>
-                  emptyTrash().then(() => {
-                    setSelected(null);
-                    setAnimTick((t) => t + 1);
-                    onMutate();
-                  })
-                }
+                onClick={() => removeWithAnim(() => emptyTrash().then(() => setSelected(null)))}
               >
                 <Icon name="trash" size={13} /> Esvaziar lixeira
               </button>
@@ -1205,7 +1207,10 @@ export default function App() {
               </div>
             </div>
           )}
-          <div className={`view-fade${switching ? " anim-in" : ""}`} key={viewKey}>
+          <div
+            className={`view-fade${switching ? " anim-in" : ""}${clearing ? " clearing" : ""}`}
+            key={viewKey}
+          >
             {progress.active && assets.length === 0 ? (
               <div className="indexing-loader">
                 <div className="il-prism">
