@@ -211,6 +211,8 @@ export default function App() {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; asset: Asset } | null>(null);
   const [markup, setMarkup] = useState<Asset | null>(null);
   const [animTick, setAnimTick] = useState(0); // re-dispara a animação da grade em ações em massa
+  const [cascadeTick, setCascadeTick] = useState(0); // bump SÓ quando os dados novos da view chegam
+  const pendingCascade = useRef(false); // navegação pediu cascata; dispara quando os dados chegarem
   const [switching, setSwitching] = useState(true); // janela em que os cards entram em cascata
   const [subCards, setSubCards] = useState<SubCard[]>([]);
   const [booted, setBooted] = useState(false);
@@ -273,11 +275,20 @@ export default function App() {
 
   const runSearch = useCallback(
     async (reset = true) => {
+      // Se a navegação pediu cascata, dispara-a SÓ agora (dados já chegaram) — evita
+      // animar com os dados antigos e "piscar" quando os novos entram.
+      const fireCascade = () => {
+        if (reset && pendingCascade.current) {
+          pendingCascade.current = false;
+          setCascadeTick((c) => c + 1);
+        }
+      };
       // "Buscar por imagem": resultado por similaridade, sem paginação.
       if (view.t === "similar") {
         const rows = await similarAssets(view.v);
         offsetRef.current = rows.length;
         setAssets(rows);
+        fireCascade();
         return;
       }
       // Pasta inteligente: roda a regra.
@@ -285,12 +296,14 @@ export default function App() {
         const rows = await smartSearch(view.v, sort);
         offsetRef.current = rows.length;
         setAssets(rows);
+        fireCascade();
         return;
       }
       const offset = reset ? 0 : offsetRef.current;
       const rows = await searchAssets(buildFilter(offset));
       offsetRef.current = offset + rows.length;
       setAssets((prev) => (reset ? rows : [...prev, ...rows]));
+      fireCascade();
     },
     [buildFilter, view]
   );
@@ -315,6 +328,8 @@ export default function App() {
 
   // Trocar de pasta/categoria limpa a seleção (evita lote órfão de outra view) + volta o scroll ao topo.
   useEffect(() => {
+    // navegação do usuário → pede a cascata, que dispara quando os dados novos chegarem
+    pendingCascade.current = true;
     setSelectedIds(new Set());
     anchorRef.current = null;
     gridRef.current?.scrollToIndex?.(0);
@@ -667,10 +682,13 @@ export default function App() {
 
   const isView = (v: View) => JSON.stringify(v) === JSON.stringify(view);
   // chave de animação: muda na troca de pasta/categoria/aba pra re-disparar a transição
-  const viewKey = `${view.t}-${"v" in view ? (view as { v: unknown }).v : ""}-${layout}-${animTick}`;
+  // A cascata remonta a grade SÓ quando: (a) os dados novos da view chegaram (cascadeTick),
+  // (b) ação em massa (animTick) ou (c) troca de layout. NÃO remonta no clique da aba —
+  // assim não anima com os dados antigos nem "pisca" quando os novos entram.
+  const viewKey = `${cascadeTick}-${animTick}-${layout}`;
 
-  // A cada troca de atalho/pasta/aba, liga a janela de "cascata": os cards entram
-  // escalonados. useLayoutEffect garante a classe já no primeiro paint (sem flash).
+  // Liga a janela de "cascata" quando a grade remonta. useLayoutEffect garante a classe
+  // já no primeiro paint (sem flash).
   useLayoutEffect(() => {
     setSwitching(true);
     const t = setTimeout(() => setSwitching(false), 850);
