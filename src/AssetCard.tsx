@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import { Icon, type IconName } from "./Icons";
 import { dragIcon, type Asset } from "./api";
+import { hoverAutoplayOn } from "./prefs";
 
 // Caminho do ícone de fallback de arrasto, carregado uma vez.
 let FALLBACK_ICON = "";
@@ -70,6 +71,8 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
   const isVideo = asset.type === "video";
   const isGif = asset.type === "gif";
   const isAudio = asset.type === "audio";
+  // Respeita a preferência "Tocar ao passar o mouse" (Configurações › Reprodução).
+  const playHover = hover && hoverAutoplayOn();
 
   return (
     <div
@@ -113,7 +116,7 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
         )}
 
         {/* hover: vídeo toca fluido (auto-play em loop, como o Eagle); mover o mouse faz scrub */}
-        {isVideo && hover && (
+        {isVideo && playHover && (
           <video
             ref={videoRef}
             src={hoverSrc}
@@ -128,7 +131,7 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
           />
         )}
         {isGif && hover && <img src={origUrl} className="media media-over show" alt="" />}
-        {isAudio && hover && (
+        {isAudio && playHover && (
           <audio
             src={origUrl}
             autoPlay
@@ -138,7 +141,7 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
             }}
           />
         )}
-        {isAudio && hover && <span className="audio-hover-ind"><Icon name="audio" size={20} /></span>}
+        {isAudio && playHover && <span className="audio-hover-ind"><Icon name="audio" size={20} /></span>}
 
         {dur && <span className="badge badge-dur">{dur}</span>}
         {asset.rating > 0 && (

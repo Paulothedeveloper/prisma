@@ -138,10 +138,15 @@ function TreeNode({
         ) : (
           <span className="tree-name">{display}</span>
         )}
+        {hidden && (
+          <span className="tree-hidden-badge" title="Pasta oculta">
+            <Icon name="eyeOff" size={12} />
+          </span>
+        )}
         <span className="count">{node.total}</span>
         <button
           className="tree-more"
-          title="Opções da pasta"
+          title="Opções da pasta (renomear, ocultar, cor)"
           onClick={(e) => {
             e.stopPropagation();
             setMenu((o) => !o);

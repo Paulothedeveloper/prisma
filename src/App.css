@@ -3171,7 +3171,7 @@ body {
   position: relative;
 }
 .tree-more {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 22px;
@@ -3180,18 +3180,32 @@ body {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text-2);
+  color: var(--text-3);
+  opacity: 0; /* discreto: aparece no hover/ativo, mas reserva o espaço */
   cursor: pointer;
+  transition: opacity 0.14s ease, background 0.14s ease, color 0.14s ease;
 }
 .tree-row:hover .tree-more {
-  display: flex;
+  opacity: 0.7;
+}
+.tree-more:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+/* selo de "pasta oculta" — deixa o estado inequívoco (não é só opacidade) */
+.tree-hidden-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  color: var(--text-3);
 }
 .tree-more:hover {
   background: rgba(255, 255, 255, 0.14);
   color: var(--text);
 }
 .tree-row.active .tree-more {
-  display: flex;
+  opacity: 0.85;
   color: rgba(255, 255, 255, 0.9);
 }
 .tree-menu-backdrop {
@@ -3504,6 +3518,142 @@ body {
 }
 .set-toggle.on .set-toggle-knob::after {
   transform: translateX(16px);
+}
+
+/* ---------- Configurações em tópicos (estilo Eagle, design PRISMA) ---------- */
+.pref-modal {
+  width: min(760px, 94vw);
+  max-height: 86vh;
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur-strong);
+  -webkit-backdrop-filter: var(--blur-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), var(--glass-hi);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.pref-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+.pref-nav {
+  width: 184px;
+  flex-shrink: 0;
+  padding: 8px;
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+.pref-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.pref-nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+.pref-nav-item.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pref-content {
+  flex: 1;
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+.pref-group {
+  margin-bottom: 22px;
+}
+.pref-group:last-child {
+  margin-bottom: 0;
+}
+.pref-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+.pref-help {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.pref-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pref-toggle-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pref-swatches {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.pref-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.pref-swatch:hover {
+  transform: scale(1.12);
+}
+.pref-swatch.on {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4);
+}
+.pref-range {
+  width: 100%;
+  margin-top: 8px;
+  accent-color: var(--accent);
+}
+.pref-about {
+  text-align: center;
+  padding: 12px 0;
+}
+.pref-about-name {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.pref-about-ver {
+  font-size: 13px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+/* Reduzir transparência: visual mais sólido e leve (preferência do usuário) */
+:root.reduce-glass {
+  --blur-strong: saturate(120%) blur(8px);
+}
+:root.reduce-glass .pref-modal,
+:root.reduce-glass .set-modal,
+:root.reduce-glass .dup-modal,
+:root.reduce-glass .inspector,
+:root.reduce-glass .sidebar {
+  background: var(--bg-2);
 }
 
 /* ---------- Inspetor: remover da biblioteca ---------- */
