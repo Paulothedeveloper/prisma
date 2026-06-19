@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import { Icon, type IconName } from "./Icons";
@@ -46,17 +46,6 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
   const hoverSrc = asset.proxy_path ? convertFileSrc(asset.proxy_path) : origUrl;
   const dur = fmtDuration(asset.duration);
 
-  const onMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const v = videoRef.current;
-      if (!v || !vidReady || !asset.duration) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const pct = (e.clientX - rect.left) / rect.width;
-      v.currentTime = Math.max(0, Math.min(1, pct)) * asset.duration;
-    },
-    [asset.duration, vidReady]
-  );
-
   const onDragStart = (e: React.DragEvent) => {
     // Se o arrasto começou no grip de reordenar, deixa o HTML5 DnD cuidar (não exporta pro SO).
     if ((e.target as HTMLElement)?.dataset?.grip) return;
@@ -91,7 +80,6 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
       onDrop={reorder ? onCardDrop : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      onMouseMove={isVideo ? onMove : undefined}
       onClick={(e) => onClick(asset, e)}
       onDoubleClick={() => onPreview(asset)}
       onContextMenu={(e) => {
@@ -124,13 +112,15 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
           </div>
         )}
 
-        {/* hover: vídeo (qualquer codec — só aparece quando REALMENTE carrega) */}
+        {/* hover: vídeo toca fluido (auto-play em loop, como o Eagle); mover o mouse faz scrub */}
         {isVideo && hover && (
           <video
             ref={videoRef}
             src={hoverSrc}
             muted
-            preload="metadata"
+            autoPlay
+            loop
+            preload="auto"
             playsInline
             className={`media media-over ${vidReady ? "show" : ""}`}
             onLoadedData={() => setVidReady(true)}
