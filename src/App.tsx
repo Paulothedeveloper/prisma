@@ -21,6 +21,7 @@ import {
   setFolderCover,
   setFolderColor,
   autotagFolder,
+  removeFolderLib,
   pasteImage,
   duplicateAsset,
   emptyTrash,
@@ -989,6 +990,15 @@ export default function App() {
                 onRescan={(dir) => rescanFolder(dir)}
                 onColor={(dir, color) => setFolderColor(dir, color).then(refreshMeta)}
                 onAutotag={(dir) => autotagFolder(dir).then(() => { runSearch(true); refreshMeta(); })}
+                onRemoveFolder={(dir) => {
+                  if (!window.confirm(`Remover esta pasta da biblioteca?\n\n${dir}\n\nOs assets dela saem do catálogo do PRISMA. NENHUM arquivo é apagado do disco.`))
+                    return;
+                  removeFolderLib(dir).then(() => {
+                    if (folderSel === dir || (view.t === "folder" && view.v === dir)) setView({ t: "all" });
+                    runSearch(true);
+                    refreshMeta();
+                  });
+                }}
               />
             </div>
           )}

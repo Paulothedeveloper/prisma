@@ -3329,9 +3329,32 @@ body {
 .tree-colors {
   display: flex;
   gap: 6px;
-  padding: 8px 10px 4px;
-  border-top: 1px solid var(--glass-border);
-  margin-top: 3px;
+  padding: 6px 10px 6px;
+  flex-wrap: wrap;
+}
+/* menu de pasta portalizado (reusa .ctx-menu) */
+.tree-ctx {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.ctx-folder-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ctx-colors-label {
+  padding: 2px 10px;
+  font-size: 11px;
+  color: var(--text-3);
 }
 .tree-color {
   width: 17px;
@@ -3558,6 +3581,15 @@ body {
 .set-bulk-btn:disabled {
   opacity: 0.5;
   cursor: default;
+}
+.set-bulk-all {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.set-bulk-all:hover {
+  filter: brightness(1.08);
 }
 .set-toggle {
   display: flex;

@@ -472,12 +472,28 @@ pub fn set_ai_desc(conn: &Connection, id: i64, desc: &str) -> rusqlite::Result<(
 
 /// Ids de assets ainda sem descrição de IA (com thumb), pra análise em lote.
 pub fn assets_needing_ai(conn: &Connection, limit: i64) -> rusqlite::Result<Vec<i64>> {
-    let mut stmt = conn.prepare(
-        "SELECT id FROM assets WHERE ai_desc IS NULL AND thumbnail_path IS NOT NULL AND trashed=0
-         AND type IN ('image','gif','video') LIMIT ?1",
-    )?;
-    let rows = stmt.query_map(params![limit], |r| r.get(0))?;
-    rows.collect()
+    // limit <= 0 → TODAS as pendentes (sem teto).
+    let base = "SELECT id FROM assets WHERE ai_desc IS NULL AND thumbnail_path IS NOT NULL AND trashed=0
+         AND type IN ('image','gif','video')";
+    if limit <= 0 {
+        let mut stmt = conn.prepare(base)?;
+        let rows = stmt.query_map([], |r| r.get(0))?;
+        rows.collect()
+    } else {
+        let mut stmt = conn.prepare(&format!("{base} LIMIT ?1"))?;
+        let rows = stmt.query_map(params![limit], |r| r.get(0))?;
+        rows.collect()
+    }
+}
+
+/// Quantos assets ainda NÃO têm descrição de IA (pra mostrar no botão "Analisar todas").
+pub fn count_needing_ai(conn: &Connection) -> rusqlite::Result<i64> {
+    conn.query_row(
+        "SELECT COUNT(*) FROM assets WHERE ai_desc IS NULL AND thumbnail_path IS NOT NULL AND trashed=0
+         AND type IN ('image','gif','video')",
+        [],
+        |r| r.get(0),
+    )
 }
 
 /// Caminho da thumb de um asset (pra IA analisar a imagem já gerada).
@@ -505,6 +521,31 @@ pub fn videos_without_proxy_under(conn: &Connection, root: &str) -> rusqlite::Re
            AND (dir = ?1 OR dir LIKE ?2)",
     )?;
     let rows = stmt.query_map(params![root, like], |r| r.get(0))?;
+    rows.collect()
+}
+
+/// Remove da BIBLIOTECA (catálogo) todos os assets sob uma pasta (recursivo) + os metadados
+/// da pasta. NÃO apaga arquivos do disco. Retorna quantos assets saíram.
+pub fn remove_folder(conn: &Connection, root: &str) -> rusqlite::Result<usize> {
+    let r = root.trim_end_matches('\\');
+    let like = format!("{r}\\%");
+    let n = conn.execute(
+        "DELETE FROM assets WHERE dir = ?1 OR dir LIKE ?2",
+        params![r, like],
+    )?;
+    let _ = conn.execute(
+        "DELETE FROM folder_meta WHERE dir = ?1 OR dir LIKE ?2",
+        params![r, like],
+    );
+    Ok(n)
+}
+
+/// TODOS os vídeos sem proxy da biblioteca (pro botão "Recarregar proxies").
+pub fn videos_without_proxy_all(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare(
+        "SELECT path FROM assets WHERE type='video' AND proxy_path IS NULL AND trashed=0",
+    )?;
+    let rows = stmt.query_map([], |r| r.get(0))?;
     rows.collect()
 }
 

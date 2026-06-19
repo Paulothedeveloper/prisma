@@ -222,6 +222,10 @@ export const openExternal = (path: string) =>
   invoke<void>("open_external", { path });
 // Redefine o app do zero (zera catálogo + caches; mantém a chave da API) e reinicia.
 export const resetApp = () => invoke<void>("reset_app");
+// Recarrega/gera os proxies que faltam (caso algum tenha falhado). Retorna quantos entraram na fila.
+export const regenProxies = () => invoke<number>("regen_proxies");
+// Remove a pasta da BIBLIOTECA (catálogo) — não apaga do disco. Retorna quantos assets saíram.
+export const removeFolderLib = (dir: string) => invoke<number>("remove_folder_lib", { dir });
 export const setRating = (id: number, rating: number) =>
   invoke<void>("set_rating", { id, rating });
 export const setNotes = (id: number, notes: string) =>
@@ -350,6 +354,8 @@ export const aiAnalyzeMany = (ids: number[]) =>
 // Analisa com IA todos os assets SEM descrição ainda (até um limite, pra controlar custo).
 export const aiAnalyzeUntagged = (limit: number) =>
   invoke<number>("ai_analyze_untagged", { limit });
+// Quantos itens ainda não têm descrição de IA (limit<=0 em aiAnalyzeUntagged = todas).
+export const aiPendingCount = () => invoke<number>("ai_pending_count");
 
 // ----- Duplicados na importação -----
 export const resolveDup = (

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./Icons";
-import type { FolderRow } from "./api";
+import { revealInExplorer, type FolderRow } from "./api";
 
 interface Node {
   name: string;
@@ -70,6 +71,7 @@ function TreeNode({
   onRescan,
   onColor,
   onAutotag,
+  onRemoveFolder,
 }: {
   node: Node;
   depth: number;
@@ -82,10 +84,11 @@ function TreeNode({
   onRescan: (dir: string) => void;
   onColor: (dir: string, color: string | null) => void;
   onAutotag: (dir: string) => void;
+  onRemoveFolder: (dir: string) => void;
 }) {
   const [open, setOpen] = useState(depth < 1);
   const [editing, setEditing] = useState(false);
-  const [menu, setMenu] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const m = meta.get(node.path);
   const hidden = m?.hidden ?? false;
   if (hidden && !showHidden) return null;
@@ -104,7 +107,7 @@ function TreeNode({
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setMenu(true);
+          setMenu({ x: e.clientX, y: e.clientY });
         }}
       >
         <span
@@ -146,49 +149,95 @@ function TreeNode({
         <span className="count">{node.total}</span>
         <button
           className="tree-more"
-          title="Opções da pasta (renomear, ocultar, cor)"
+          title="Opções da pasta"
           onClick={(e) => {
             e.stopPropagation();
-            setMenu((o) => !o);
+            const r = e.currentTarget.getBoundingClientRect();
+            setMenu(menu ? null : { x: r.left - 180, y: r.bottom + 4 });
           }}
         >
           <Icon name="more" size={16} />
         </button>
-        {menu && (
+      </div>
+      {menu &&
+        createPortal(
           <>
-            <div className="tree-menu-backdrop" onClick={(e) => { e.stopPropagation(); setMenu(false); }} />
-            <div className="tree-menu" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => { setEditing(true); setMenu(false); }}>
-                <Icon name="pencil" size={13} /> Renomear (apelido)
+            <div
+              className="ctx-backdrop"
+              onClick={() => setMenu(null)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setMenu(null);
+              }}
+            />
+            <div
+              className="ctx-menu tree-ctx"
+              style={{
+                left: Math.max(8, Math.min(menu.x, window.innerWidth - 248)),
+                top: Math.min(menu.y, window.innerHeight - 360),
+                width: 240,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="ctx-folder-head">
+                <Icon name="folder" size={13} /> {display}
+              </div>
+              <button className="ctx-item" onClick={() => { setMenu(null); onSelect(node.path); }}>
+                <Icon name="folder" size={14} /> <span>Abrir pasta</span>
               </button>
-              <button onClick={() => { onHide(node.path, !hidden); setMenu(false); }}>
-                <Icon name={hidden ? "eye" : "eyeOff"} size={13} /> {hidden ? "Mostrar pasta" : "Ocultar pasta"}
+              {hasKids && (
+                <button className="ctx-item" onClick={() => { setOpen((o) => !o); setMenu(null); }}>
+                  <Icon name="chevronUpDown" size={14} /> <span>{open ? "Recolher" : "Expandir"}</span>
+                </button>
+              )}
+              <div className="ctx-sep" />
+              <button className="ctx-item" onClick={() => { setMenu(null); setEditing(true); }}>
+                <Icon name="pencil" size={14} /> <span>Renomear (apelido)</span>
               </button>
-              <button onClick={() => { onRescan(node.path); setMenu(false); }}>
-                <Icon name="refresh" size={13} /> Re-scan (novos / apagados)
+              <button className="ctx-item" onClick={() => { setMenu(null); onAutotag(node.path); }}>
+                <Icon name="tag" size={14} /> <span>Auto-tag (nome da pasta)</span>
               </button>
-              <button onClick={() => { onAutotag(node.path); setMenu(false); }}>
-                <Icon name="tag" size={13} /> Auto-tag (nome da pasta)
+              <button className="ctx-item" onClick={() => { setMenu(null); onRescan(node.path); }}>
+                <Icon name="refresh" size={14} /> <span>Re-scan (novos / apagados)</span>
               </button>
+              <div className="ctx-sep" />
+              <button className="ctx-item" onClick={() => { setMenu(null); navigator.clipboard.writeText(node.path); }}>
+                <Icon name="copy" size={14} /> <span>Copiar caminho</span>
+              </button>
+              <button className="ctx-item" onClick={() => { setMenu(null); revealInExplorer(node.path); }}>
+                <Icon name="reveal" size={14} /> <span>Abrir no Explorer</span>
+              </button>
+              <button className="ctx-item" onClick={() => { setMenu(null); onHide(node.path, !hidden); }}>
+                <Icon name={hidden ? "eye" : "eyeOff"} size={14} /> <span>{hidden ? "Mostrar pasta" : "Ocultar pasta"}</span>
+              </button>
+              <div className="ctx-sep" />
+              <div className="ctx-colors-label">Cor da pasta</div>
               <div className="tree-colors">
                 <button
                   className="tree-color tree-color-none"
                   title="Sem cor"
-                  onClick={() => { onColor(node.path, null); setMenu(false); }}
+                  onClick={() => { onColor(node.path, null); setMenu(null); }}
                 />
                 {FOLDER_COLORS.map((c) => (
                   <button
                     key={c}
                     className="tree-color"
                     style={{ background: c }}
-                    onClick={() => { onColor(node.path, c); setMenu(false); }}
+                    onClick={() => { onColor(node.path, c); setMenu(null); }}
                   />
                 ))}
               </div>
+              <div className="ctx-sep" />
+              <button
+                className="ctx-item danger"
+                onClick={() => { setMenu(null); onRemoveFolder(node.path); }}
+              >
+                <Icon name="trash" size={14} /> <span>Remover da biblioteca</span>
+              </button>
             </div>
-          </>
+          </>,
+          document.body
         )}
-      </div>
       {open &&
         kids.map((c) => (
           <TreeNode
@@ -204,6 +253,7 @@ function TreeNode({
             onRescan={onRescan}
             onColor={onColor}
             onAutotag={onAutotag}
+            onRemoveFolder={onRemoveFolder}
           />
         ))}
     </div>
@@ -220,6 +270,7 @@ export function FolderTree({
   onRescan,
   onColor,
   onAutotag,
+  onRemoveFolder,
 }: {
   dirs: FolderRow[];
   selected: string | null;
@@ -230,6 +281,7 @@ export function FolderTree({
   onRescan: (dir: string) => void;
   onColor: (dir: string, color: string | null) => void;
   onAutotag: (dir: string) => void;
+  onRemoveFolder: (dir: string) => void;
 }) {
   const roots = useMemo(() => buildTree(dirs).map(collapse), [dirs]);
   const meta = useMemo(() => {
@@ -254,6 +306,7 @@ export function FolderTree({
           onRescan={onRescan}
           onColor={onColor}
           onAutotag={onAutotag}
+          onRemoveFolder={onRemoveFolder}
         />
       ))}
     </div>

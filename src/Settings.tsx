@@ -4,11 +4,13 @@ import {
   aiStatus,
   setAiKey,
   aiAnalyzeUntagged,
+  aiPendingCount,
   exportCatalog,
   importCatalog,
   setAutotagImport,
   setAutoProxyImport,
   resetApp,
+  regenProxies,
 } from "./api";
 import { Icon, type IconName } from "./Icons";
 import { loadPrefs, savePrefs, ACCENTS, type Prefs } from "./prefs";
@@ -46,6 +48,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [saved, setSaved] = useState(false);
   const [aiMsg, setAiMsg] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
+  const [pending, setPending] = useState<number | null>(null);
 
   // importação / sync
   const [autotag, setAutotag] = useState(false);
@@ -53,6 +56,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [syncMsg, setSyncMsg] = useState("");
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [proxyMsg, setProxyMsg] = useState("");
 
   useEffect(() => {
     aiStatus().then((s) => {
@@ -60,6 +64,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
       setModel(s.model);
       setAutotag(s.autotag_on_import);
       setAutoProxy(s.auto_proxy_on_import);
+      if (s.has_key) aiPendingCount().then(setPending).catch(() => {});
     });
   }, []);
 
@@ -161,6 +166,17 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   help="Visual mais sólido e leve — ajuda em máquinas mais fracas."
                 />
 
+                <div className="pref-group">
+                  <div className="pref-label">Recarregar o app</div>
+                  <div className="pref-help">
+                    Recarrega a interface (sem perder nada) — resolve travadinhas e bugs visuais sem precisar
+                    fechar e abrir o programa.
+                  </div>
+                  <button className="set-bulk-btn" onClick={() => window.location.reload()}>
+                    <Icon name="refresh" size={13} /> Recarregar agora
+                  </button>
+                </div>
+
                 <div className="pref-group pref-danger">
                   <div className="pref-label">Redefinir aplicativo</div>
                   <div className="pref-help">
@@ -215,6 +231,36 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   title="Gerar proxies ao importar"
                   help="Ao anexar uma pasta, cria automaticamente um preview leve (H.264 720p) dos vídeos de codec profissional (ProRes, .mov, .m4v) pra eles tocarem no hover e no preview. Roda em segundo plano; os originais não são tocados."
                 />
+                <div className="pref-group">
+                  <div className="pref-label">Recarregar proxies</div>
+                  <div className="pref-help">
+                    Gera de novo os proxies que faltam (caso algum tenha falhado). Roda em segundo plano e mostra
+                    o progresso no canto.
+                  </div>
+                  <button
+                    className="set-bulk-btn"
+                    onClick={async () => {
+                      setProxyMsg("");
+                      try {
+                        const n = await regenProxies();
+                        setProxyMsg(
+                          n > 0
+                            ? `${n.toLocaleString("pt-BR")} ${n === 1 ? "vídeo entrou" : "vídeos entraram"} na fila de proxy.`
+                            : "Nenhum vídeo pendente — todos já têm proxy.",
+                        );
+                      } catch (e) {
+                        setProxyMsg(`Erro: ${String(e)}`);
+                      }
+                    }}
+                  >
+                    <Icon name="refresh" size={13} /> Recarregar proxies faltantes
+                  </button>
+                  {proxyMsg && (
+                    <div className="set-status">
+                      <span className="set-dot on" /> {proxyMsg}
+                    </div>
+                  )}
+                </div>
                 <div className="pref-help" style={{ marginTop: 14 }}>
                   Dica: no preview em tela cheia o player do PRISMA tem scrub quadro-a-quadro, velocidade,
                   loop e atalhos (espaço, J/K/L, F, M).
@@ -267,13 +313,26 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 {hasKey && (
                   <div className="pref-group">
                     <div className="pref-label">Analisar a biblioteca em lote</div>
-                    <div className="pref-help">Gera tags + descrição pra busca por conteúdo. Comece com 100 pra ver o custo.</div>
+                    <div className="pref-help">
+                      Gera tags + descrição pra busca por conteúdo (6 em paralelo). Comece com 100 pra ver o
+                      custo. {pending !== null && (
+                        <b>{pending.toLocaleString("pt-BR")} {pending === 1 ? "item ainda sem" : "itens ainda sem"} descrição.</b>
+                      )}
+                    </div>
                     <div className="set-bulk-row">
-                      {[100, 300, 1000].map((n) => (
+                      {[100, 500, 2000].map((n) => (
                         <button key={n} className="set-bulk-btn" disabled={aiBusy} onClick={() => runBulk(n)}>
-                          Analisar {n} sem descrição
+                          Analisar {n}
                         </button>
                       ))}
+                      <button
+                        className="set-bulk-btn set-bulk-all"
+                        disabled={aiBusy || pending === 0}
+                        onClick={() => runBulk(0)}
+                        title="Analisa TODAS as pendentes (limit 0 = sem teto)"
+                      >
+                        Analisar todas{pending ? ` (${pending.toLocaleString("pt-BR")})` : ""}
+                      </button>
                     </div>
                     {aiMsg && (
                       <div className="set-status">

@@ -10,7 +10,7 @@ mod watcher;
 use rusqlite::Connection;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::{Emitter, Manager};
 
@@ -699,7 +699,10 @@ fn ai_analyze(app: tauri::AppHandle, id: i64) -> Result<Vec<String>, String> {
     Ok(res.tags)
 }
 
-/// Roda a análise de IA num lote de ids, numa thread. Emite ai:progress e ai:done.
+/// Roda a análise de IA num lote de ids, EM PARALELO (várias chamadas à API ao mesmo
+/// tempo) — essencial pra bibliotecas grandes (dezenas de milhares). Emite ai:progress
+/// e ai:done. As gravações no banco serializam pelo Mutex; só as chamadas de rede são
+/// concorrentes.
 fn run_ai_batch(
     app: tauri::AppHandle,
     db: Arc<Mutex<Connection>>,
@@ -707,27 +710,51 @@ fn run_ai_batch(
     model: String,
     ids: Vec<i64>,
 ) {
+    const WORKERS: usize = 6; // chamadas simultâneas à API (equilíbrio velocidade × limites)
     std::thread::spawn(move || {
         let total = ids.len();
-        for (i, id) in ids.into_iter().enumerate() {
-            let thumb = {
-                let conn = db.lock().unwrap();
-                db::thumb_of(&conn, id).ok().flatten()
-            };
-            if let Some(thumb) = thumb {
-                if let Ok(res) = ai::analyze_image(&key, &model, std::path::Path::new(&thumb)) {
+        let ids = Arc::new(ids);
+        let next = Arc::new(AtomicUsize::new(0));
+        let done = Arc::new(AtomicUsize::new(0));
+        let n = WORKERS.min(total.max(1));
+        let mut handles = Vec::with_capacity(n);
+        for _ in 0..n {
+            let app = app.clone();
+            let db = db.clone();
+            let key = key.clone();
+            let model = model.clone();
+            let ids = ids.clone();
+            let next = next.clone();
+            let done = done.clone();
+            handles.push(std::thread::spawn(move || loop {
+                let i = next.fetch_add(1, Ordering::SeqCst);
+                if i >= ids.len() {
+                    break;
+                }
+                let id = ids[i];
+                let thumb = {
                     let conn = db.lock().unwrap();
-                    for t in &res.tags {
-                        if let Ok(tid) = db::create_tag(&conn, t, None) {
-                            let _ = db::assign_tag(&conn, id, tid);
+                    db::thumb_of(&conn, id).ok().flatten()
+                };
+                if let Some(thumb) = thumb {
+                    if let Ok(res) = ai::analyze_image(&key, &model, std::path::Path::new(&thumb)) {
+                        let conn = db.lock().unwrap();
+                        for t in &res.tags {
+                            if let Ok(tid) = db::create_tag(&conn, t, None) {
+                                let _ = db::assign_tag(&conn, id, tid);
+                            }
+                        }
+                        if !res.description.is_empty() {
+                            let _ = db::set_ai_desc(&conn, id, &res.description);
                         }
                     }
-                    if !res.description.is_empty() {
-                        let _ = db::set_ai_desc(&conn, id, &res.description);
-                    }
                 }
-            }
-            let _ = app.emit("ai:progress", serde_json::json!({ "done": i + 1, "total": total }));
+                let d = done.fetch_add(1, Ordering::SeqCst) + 1;
+                let _ = app.emit("ai:progress", serde_json::json!({ "done": d, "total": total }));
+            }));
+        }
+        for h in handles {
+            let _ = h.join();
         }
         let _ = app.emit("ai:done", ());
     });
@@ -747,7 +774,15 @@ fn ai_analyze_many(app: tauri::AppHandle, ids: Vec<i64>) -> Result<(), String> {
     Ok(())
 }
 
-/// Analisa em lote os assets ainda SEM descrição de IA (até `limit`, pra controlar custo).
+/// Quantos assets ainda não têm descrição de IA (pra mostrar no botão "Analisar todas").
+#[tauri::command]
+fn ai_pending_count(app: tauri::AppHandle) -> Result<i64, String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    db::count_needing_ai(&conn).map_err(|e| e.to_string())
+}
+
+/// Analisa em lote os assets ainda SEM descrição de IA. `limit <= 0` = TODAS as pendentes.
 #[tauri::command]
 fn ai_analyze_untagged(app: tauri::AppHandle, limit: i64) -> Result<usize, String> {
     let state = app.state::<AppState>();
@@ -759,7 +794,7 @@ fn ai_analyze_untagged(app: tauri::AppHandle, limit: i64) -> Result<usize, Strin
         .ok_or("Configure sua chave da API nas configurações.")?;
     let ids = {
         let conn = state.db.lock().map_err(|e| e.to_string())?;
-        db::assets_needing_ai(&conn, if limit <= 0 { 200 } else { limit }).map_err(|e| e.to_string())?
+        db::assets_needing_ai(&conn, limit).map_err(|e| e.to_string())?
     };
     let n = ids.len();
     run_ai_batch(app.clone(), state.db.clone(), key, settings.model(), ids);
@@ -969,6 +1004,36 @@ fn clear_dir(dir: &std::path::Path) -> std::io::Result<()> {
     Ok(())
 }
 
+/// Remove uma pasta da BIBLIOTECA (catálogo) — tira os assets dela e das subpastas do
+/// catálogo + metadados. NÃO apaga nada do disco. Para de monitorar a pasta também.
+#[tauri::command]
+fn remove_folder_lib(app: tauri::AppHandle, dir: String) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let n = {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        db::remove_folder(&conn, &dir).map_err(|e| e.to_string())?
+    };
+    Ok(n)
+}
+
+/// Recarrega/gera os proxies que faltam (caso algum tenha falhado). Roda em segundo plano.
+/// Retorna quantos vídeos entraram na fila.
+#[tauri::command]
+fn regen_proxies(app: tauri::AppHandle) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let vids = {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        db::videos_without_proxy_all(&conn).map_err(|e| e.to_string())?
+    };
+    let n = vids.len();
+    if n > 0 {
+        let ffmpeg = thumbs::bin_path("ffmpeg");
+        let proxy_dir = state.data_dir.join("proxies");
+        oficina::run_proxy_batch(app.clone(), state.db.clone(), ffmpeg, proxy_dir, vids);
+    }
+    Ok(n)
+}
+
 /// Redefine o app DO ZERO: zera o catálogo (todas as tabelas, mantém o schema), apaga
 /// miniaturas e proxies, e reseta as configurações — MANTENDO só a chave da API. Reinicia.
 #[tauri::command]
@@ -1104,6 +1169,8 @@ pub fn run() {
             reveal_in_explorer,
             open_external,
             reset_app,
+            regen_proxies,
+            remove_folder_lib,
             set_rating,
             set_notes,
             list_tags,
@@ -1153,6 +1220,7 @@ pub fn run() {
             save_annotated,
             set_autotag_import,
             set_auto_proxy_import,
+            ai_pending_count,
             list_presets,
             save_preset,
             delete_preset,
