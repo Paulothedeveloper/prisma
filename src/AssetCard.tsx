@@ -26,12 +26,14 @@ interface Props {
   reorder?: { index: number; onReorder: (from: number, to: number) => void };
   // Proporção real (waterfall/masonry) — sobrescreve o quadrado padrão.
   aspect?: string;
+  // Atraso (ms) da animação de entrada em cascata na troca de view.
+  animDelayMs?: number;
 }
 
 // Índice de origem do arrasto de reordenação (módulo: só um arrasto por vez).
 let dragFrom: number | null = null;
 
-export function AssetCard({ asset, selected, onClick, onPreview, onContext, reorder, aspect }: Props) {
+export function AssetCard({ asset, selected, onClick, onPreview, onContext, reorder, aspect, animDelayMs }: Props) {
   const [hover, setHover] = useState(false);
   const [vidReady, setVidReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -77,6 +79,7 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
   return (
     <div
       className={`card ${selected ? "selected" : ""}`}
+      style={animDelayMs ? { animationDelay: `${animDelayMs}ms` } : undefined}
       draggable
       onDragStart={onDragStart}
       onDragOver={reorder ? (e) => e.preventDefault() : undefined}

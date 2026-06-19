@@ -26,12 +26,14 @@ export function AssetRow({
   onClick,
   onPreview,
   onContext,
+  animDelayMs,
 }: {
   asset: Asset;
   selected: boolean;
   onClick: (a: Asset, e: React.MouseEvent) => void;
   onPreview: (a: Asset) => void;
   onContext?: (a: Asset, e: React.MouseEvent) => void;
+  animDelayMs?: number;
 }) {
   const thumb = asset.thumbnail_path ? convertFileSrc(asset.thumbnail_path) : null;
   const name = asset.name || asset.filename;
@@ -42,6 +44,7 @@ export function AssetRow({
   return (
     <div
       className={`lrow ${selected ? "selected" : ""}`}
+      style={animDelayMs ? { animationDelay: `${animDelayMs}ms` } : undefined}
       draggable
       onDragStart={onDragStart}
       onClick={(e) => onClick(asset, e)}

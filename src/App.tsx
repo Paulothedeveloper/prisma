@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { VirtuosoGrid, Virtuoso } from "react-virtuoso";
 import { listen } from "@tauri-apps/api/event";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -210,6 +210,7 @@ export default function App() {
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; asset: Asset } | null>(null);
   const [markup, setMarkup] = useState<Asset | null>(null);
   const [animTick, setAnimTick] = useState(0); // re-dispara a animação da grade em ações em massa
+  const [switching, setSwitching] = useState(true); // janela em que os cards entram em cascata
   const [subCards, setSubCards] = useState<SubCard[]>([]);
   const [booted, setBooted] = useState(false);
   const [thumbSize, setThumbSize] = useState(190);
@@ -658,6 +659,14 @@ export default function App() {
   const isView = (v: View) => JSON.stringify(v) === JSON.stringify(view);
   // chave de animação: muda na troca de pasta/categoria/aba pra re-disparar a transição
   const viewKey = `${view.t}-${"v" in view ? (view as { v: unknown }).v : ""}-${layout}-${animTick}`;
+
+  // A cada troca de atalho/pasta/aba, liga a janela de "cascata": os cards entram
+  // escalonados. useLayoutEffect garante a classe já no primeiro paint (sem flash).
+  useLayoutEffect(() => {
+    setSwitching(true);
+    const t = setTimeout(() => setSwitching(false), 850);
+    return () => clearTimeout(t);
+  }, [viewKey]);
   const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
   const folderSel = view.t === "folder" ? view.v : null;
   const anyFilter = minRating || fExt || fRes || fDur || fBright || fWarm || fSat || fOrient;
@@ -1169,7 +1178,7 @@ export default function App() {
               </div>
             </div>
           )}
-          <div className="view-fade" key={viewKey}>
+          <div className={`view-fade${switching ? " anim-in" : ""}`} key={viewKey}>
             {progress.active && assets.length === 0 ? (
               <div className="indexing-loader">
                 <div className="il-prism">
@@ -1213,6 +1222,7 @@ export default function App() {
                     onClick={(a, e) => handleCardClick(a, e, i)}
                     onPreview={setPreviewAsset}
                     onContext={openCtx}
+                    animDelayMs={Math.min(i, 18) * 18}
                   />
                 )}
               />
@@ -1233,6 +1243,7 @@ export default function App() {
                       onPreview={setPreviewAsset}
                       onContext={openCtx}
                       aspect={a.width && a.height ? `${a.width} / ${a.height}` : "1 / 1"}
+                      animDelayMs={Math.min(i, 14) * 25}
                     />
                   </div>
                 ))}
@@ -1254,6 +1265,7 @@ export default function App() {
                     onPreview={setPreviewAsset}
                     onContext={openCtx}
                     reorder={inCollection !== null ? { index: i, onReorder } : undefined}
+                    animDelayMs={Math.min(i, 14) * 25}
                   />
                 )}
               />
