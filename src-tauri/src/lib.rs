@@ -23,6 +23,7 @@ pub struct AppState {
     jobs: Arc<Mutex<HashMap<u64, Arc<AtomicBool>>>>,
     job_counter: Arc<AtomicU64>,
     watcher: Arc<Mutex<Option<notify::RecommendedWatcher>>>,
+    vault_watcher: Arc<Mutex<Option<notify::RecommendedWatcher>>>,
 }
 
 /// Ícone genérico de arrasto (usado quando o asset não tem miniatura).
@@ -1032,8 +1033,17 @@ fn set_vault_path(app: tauri::AppHandle, path: String) -> Result<usize, String> 
     s.vault_path = if path.trim().is_empty() { None } else { Some(path.clone()) };
     ai::save_settings(&state.data_dir, &s)?;
     if let Some(p) = s.vault_path.as_ref() {
-        Ok(vault::index_vault(&state.db, std::path::Path::new(p)))
+        let n = vault::index_vault(&state.db, std::path::Path::new(p));
+        // (re)inicia o watcher na nova pasta (dropar o handle antigo para o watcher anterior)
+        let w = vault::start_watch(app.clone(), state.db.clone(), std::path::PathBuf::from(p));
+        if let Ok(mut slot) = state.vault_watcher.lock() {
+            *slot = w;
+        }
+        Ok(n)
     } else {
+        if let Ok(mut slot) = state.vault_watcher.lock() {
+            *slot = None;
+        }
         let conn = state.db.lock().map_err(|e| e.to_string())?;
         let _ = db::clear_vault(&conn);
         Ok(0)
@@ -1284,6 +1294,8 @@ pub fn run() {
 
             // Watch Folder: monitora as pastas indexadas e cataloga/remove sozinho.
             let watcher = watcher::start(app.handle().clone(), db_arc.clone(), thumbs_dir.clone());
+            let vault_watcher_arc: Arc<Mutex<Option<notify::RecommendedWatcher>>> =
+                Arc::new(Mutex::new(None));
 
             app.manage(AppState {
                 db: db_arc.clone(),
@@ -1293,6 +1305,7 @@ pub fn run() {
                 jobs: Arc::new(Mutex::new(HashMap::new())),
                 job_counter: Arc::new(AtomicU64::new(0)),
                 watcher: Arc::new(Mutex::new(watcher)),
+                vault_watcher: vault_watcher_arc.clone(),
             });
 
             // Retomada: gera no boot os thumbs que faltaram (ex.: app fechado no meio do indice).
@@ -1311,16 +1324,23 @@ pub fn run() {
                     indexer::backfill_traits(handle, db_traits);
                 });
             }
-            // Reindexa o vault Obsidian no boot (mantém a base de conhecimento atual a cada sessão).
+            // Reindexa o vault Obsidian no boot + inicia o watcher (reindexa a cada edição de nota).
             {
                 let settings = ai::load_settings(&data_dir);
                 if let Some(vp) = settings.vault_path {
-                    let db_vault = db_arc.clone();
                     let handle = app.handle().clone();
+                    let emit_handle = handle.clone();
+                    let db_vault = db_arc.clone();
+                    let vp2 = vp.clone();
                     std::thread::spawn(move || {
-                        let n = vault::index_vault(&db_vault, std::path::Path::new(&vp));
-                        let _ = handle.emit("vault:indexed", n);
+                        let n = vault::index_vault(&db_vault, std::path::Path::new(&vp2));
+                        let _ = emit_handle.emit("vault:indexed", n);
                     });
+                    // watcher ao vivo (mantém a base atual a cada edição de nota)
+                    let w = vault::start_watch(handle.clone(), db_arc.clone(), std::path::PathBuf::from(&vp));
+                    if let Ok(mut slot) = vault_watcher_arc.lock() {
+                        *slot = w;
+                    }
                 }
             }
 

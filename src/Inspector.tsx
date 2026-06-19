@@ -403,7 +403,16 @@ export function Inspector({
           <Row k="Codec" v={[v.codec?.toUpperCase(), v.profile].filter(Boolean).join(" · ")} />
           <Row
             k="Resolução"
-            v={v.width && v.height ? `${v.width} × ${v.height}` : null}
+            v={
+              v.width && v.height
+                ? (() => {
+                    const rot = v.rotation === 90 || v.rotation === 270;
+                    const w = rot ? v.height : v.width;
+                    const h = rot ? v.width : v.height;
+                    return `${w} × ${h}${rot ? " (orientada)" : ""}`;
+                  })()
+                : null
+            }
           />
           <Row k="FPS" v={v.fps ? `${v.fps}` : null} />
           <Row k="Bit depth" v={v.bit_depth ? `${v.bit_depth}-bit` : null} />

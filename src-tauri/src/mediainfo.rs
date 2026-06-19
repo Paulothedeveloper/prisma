@@ -569,6 +569,17 @@ fn diagnose(
             if a.channels == Some(1) {
                 out.push(f("yellow", "Áudio mono", "Áudio em 1 canal (mono) — confira antes de editar.", None));
             }
+            if let Some(sr) = a.sample_rate {
+                let common = [32000, 44100, 48000, 88200, 96000, 176400, 192000];
+                if !common.contains(&sr) {
+                    out.push(f(
+                        "yellow",
+                        "Sample rate incomum",
+                        &format!("Áudio a {sr} Hz — fora do comum (48k/44.1k); confira se sincroniza."),
+                        None,
+                    ));
+                }
+            }
         }
     }
     if is_709 && !v.vfr {

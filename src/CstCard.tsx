@@ -57,6 +57,10 @@ function NodeBlock({ title, color, n }: { title: string; color: "in" | "out"; n:
       {row("Gama de Saída", n.gs, color === "in")}
       {row("Mapeamento de Tom", n.tone, n.tone !== "Nenhum")}
       {row("Mapeamento de Gamut", n.gamut, n.gamut !== "Nenhum")}
+      {row("Avançado", "Conversões HDR Padrão: marcado")}
+      {n.tone === "DaVinci" && (
+        <div className="cstn-opt">opcional: Entrada Máx. 1000 / Saída Máx. 100 nits pra ajuste fino do rolloff</div>
+      )}
       <button className="cstn-copy" onClick={copy}>
         <Icon name="copy" size={12} /> {copied ? "Copiado!" : "Copiar config do nó"}
       </button>

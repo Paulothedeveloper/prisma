@@ -2,9 +2,13 @@
 //! Lê os `.md`, quebra por heading (## / ###) e guarda em vault_chunks pra recuperação.
 
 use crate::db;
+use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc::{channel, RecvTimeoutError};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+use tauri::{AppHandle, Emitter};
 
 /// Coleta todos os `.md` da pasta (recursivo).
 fn collect_md(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -73,4 +77,49 @@ pub fn index_vault(db: &Arc<Mutex<Connection>>, dir: &Path) -> usize {
         }
     }
     total
+}
+
+fn is_md(p: &Path) -> bool {
+    p.extension()
+        .and_then(|x| x.to_str())
+        .map(|x| x.eq_ignore_ascii_case("md"))
+        .unwrap_or(false)
+}
+
+/// Watcher do vault: a cada edição de `.md`, reindexa (debounced 1.5s) e emite "vault:indexed".
+/// Mantenha o handle vivo no AppState (substituir o handle = para o watcher antigo).
+pub fn start_watch(app: AppHandle, db: Arc<Mutex<Connection>>, dir: PathBuf) -> Option<RecommendedWatcher> {
+    let (tx, rx) = channel();
+    let mut watcher = notify::recommended_watcher(move |res| {
+        let _ = tx.send(res);
+    })
+    .ok()?;
+    watcher.watch(&dir, RecursiveMode::Recursive).ok()?;
+    std::thread::spawn(move || {
+        let mut dirty: Option<Instant> = None;
+        loop {
+            match rx.recv_timeout(Duration::from_millis(500)) {
+                Ok(Ok(event)) => {
+                    if matches!(
+                        event.kind,
+                        EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
+                    ) && event.paths.iter().any(|p| is_md(p))
+                    {
+                        dirty = Some(Instant::now());
+                    }
+                }
+                Ok(Err(_)) => {}
+                Err(RecvTimeoutError::Timeout) => {}
+                Err(RecvTimeoutError::Disconnected) => break,
+            }
+            if let Some(t) = dirty {
+                if Instant::now().duration_since(t) > Duration::from_millis(1500) {
+                    dirty = None;
+                    let n = index_vault(&db, &dir);
+                    let _ = app.emit("vault:indexed", n);
+                }
+            }
+        }
+    });
+    Some(watcher)
 }
