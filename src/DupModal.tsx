@@ -2,6 +2,7 @@ import { useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { resolveDup, type DupPair } from "./api";
 import { Icon } from "./Icons";
+import { useDismiss } from "./useDismiss";
 
 type Action = "exclude" | "replace" | "ignore";
 
@@ -26,6 +27,7 @@ function fmtSize(n: number): string {
 export function DupModal({ pairs, onDone }: { pairs: DupPair[]; onDone: () => void }) {
   const [decisions, setDecisions] = useState<Record<number, Action>>({});
   const [busy, setBusy] = useState(false);
+  const { closing, dismiss } = useDismiss(onDone);
 
   const setAll = (a: Action) => {
     const next: Record<number, Action> = {};
@@ -44,19 +46,19 @@ export function DupModal({ pairs, onDone }: { pairs: DupPair[]; onDone: () => vo
       }
     } finally {
       setBusy(false);
-      onDone();
+      dismiss();
     }
   };
 
   return (
-    <div className="dup-overlay" onClick={onDone}>
-      <div className="dup-modal" onClick={(e) => e.stopPropagation()}>
+    <div className={`dup-overlay${closing ? " closing" : ""}`} onClick={dismiss}>
+      <div className={`dup-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
             <Icon name="dup" size={17} />
             {pairs.length} {pairs.length === 1 ? "duplicado encontrado" : "duplicados encontrados"}
           </div>
-          <button className="dup-x" onClick={onDone} title="Decidir depois">
+          <button className="dup-x" onClick={dismiss} title="Decidir depois">
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -99,7 +101,7 @@ export function DupModal({ pairs, onDone }: { pairs: DupPair[]; onDone: () => vo
         </div>
 
         <div className="dup-foot">
-          <button className="dup-cancel" onClick={onDone} disabled={busy}>
+          <button className="dup-cancel" onClick={dismiss} disabled={busy}>
             Decidir depois
           </button>
           <button className="dup-apply" onClick={apply} disabled={busy}>

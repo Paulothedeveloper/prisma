@@ -5,6 +5,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { Icon } from "./Icons";
 import { Oficina } from "./Oficina";
 import { AudioPlayer } from "./AudioPlayer";
+import { useDismiss } from "./useDismiss";
 import { getProxy, renameAsset, duplicateAsset, refreshThumb, setCustomThumb } from "./api";
 
 // Codecs que o WebView decodifica. ProRes/DNxHR ficam de fora → prévia no player externo.
@@ -146,6 +147,7 @@ export function Inspector({
   onPreview,
   onMutate,
 }: Props) {
+  const { closing, dismiss } = useDismiss(onClose);
   const [tags, setTags] = useState<Tag[]>([]);
   const [rating, setRatingState] = useState(asset.rating);
   const [notes, setNotesState] = useState(asset.notes ?? "");
@@ -302,10 +304,10 @@ export function Inspector({
   }, [asset.path]);
 
   return (
-    <aside className="inspector">
+    <aside className={`inspector${closing ? " closing" : ""}`}>
       <div className="insp-head">
         <span className="insp-title">Detalhes</span>
-        <button className="icon-btn" onClick={onClose}>
+        <button className="icon-btn" onClick={dismiss}>
           <Icon name="close" size={14} />
         </button>
       </div>
@@ -572,7 +574,7 @@ export function Inspector({
             onClick={async () => {
               await trashAsset(asset.id, false);
               onMutate();
-              onClose();
+              dismiss();
             }}
           >
             <Icon name="inbox" size={13} /> Restaurar da Lixeira
@@ -589,7 +591,7 @@ export function Inspector({
                 onClick={async () => {
                   await removeAsset(asset.id);
                   onMutate();
-                  onClose();
+                  dismiss();
                 }}
               >
                 Mover pra Lixeira

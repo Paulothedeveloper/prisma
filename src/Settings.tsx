@@ -8,6 +8,7 @@ import {
   importCatalog,
   setAutotagImport,
   setAutoProxyImport,
+  resetApp,
 } from "./api";
 import { Icon, type IconName } from "./Icons";
 import { loadPrefs, savePrefs, ACCENTS, type Prefs } from "./prefs";
@@ -50,6 +51,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [autotag, setAutotag] = useState(false);
   const [autoProxy, setAutoProxy] = useState(true);
   const [syncMsg, setSyncMsg] = useState("");
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     aiStatus().then((s) => {
@@ -157,6 +160,39 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   title="Reduzir transparência e desfoque"
                   help="Visual mais sólido e leve — ajuda em máquinas mais fracas."
                 />
+
+                <div className="pref-group pref-danger">
+                  <div className="pref-label">Redefinir aplicativo</div>
+                  <div className="pref-help">
+                    Zera o PRISMA do zero: limpa o catálogo inteiro (suas pastas, tags, estrelas, notas,
+                    coleções), as miniaturas e os proxies. <b>Não apaga nenhum arquivo original do disco.</b>{" "}
+                    A chave da API é mantida. O app reinicia em seguida.
+                  </div>
+                  {!confirmReset ? (
+                    <button className="pref-danger-btn" onClick={() => setConfirmReset(true)}>
+                      <Icon name="trash" size={13} /> Redefinir do zero…
+                    </button>
+                  ) : (
+                    <div className="pref-danger-confirm">
+                      <span>Tem certeza? Isso limpa toda a biblioteca (os arquivos no disco ficam intactos).</span>
+                      <div className="set-bulk-row">
+                        <button className="set-bulk-btn" disabled={resetting} onClick={() => setConfirmReset(false)}>
+                          Cancelar
+                        </button>
+                        <button
+                          className="pref-danger-btn"
+                          disabled={resetting}
+                          onClick={() => {
+                            setResetting(true);
+                            resetApp().catch(() => setResetting(false));
+                          }}
+                        >
+                          {resetting ? "Redefinindo…" : "Sim, redefinir e reiniciar"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
 

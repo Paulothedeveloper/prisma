@@ -3,6 +3,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { Icon } from "./Icons";
 import { PopupButton } from "./Menu";
 import { encodeRun, listPresets, savePreset, deletePreset, type Asset, type EncodeOpts, type EncoderPreset } from "./api";
+import { useDismiss } from "./useDismiss";
 
 const DEFAULTS: EncodeOpts = {
   container: "", vcodec: "h264", scale: "", fps: null, crf: 20, preset: "medium",
@@ -76,6 +77,7 @@ const ACODECS: [string, string][] = [
 const usesCrf = (v: string) => ["h264", "h265", "av1", "vp9"].includes(v);
 
 export function Encoder({ asset, onClose }: { asset: Asset; onClose: () => void }) {
+  const { closing, dismiss } = useDismiss(onClose);
   const [o, setO] = useState<EncodeOpts>({
     container: "",
     vcodec: "h264",
@@ -131,7 +133,7 @@ export function Encoder({ asset, onClose }: { asset: Asset; onClose: () => void 
 
   const start = (op?: string) => {
     encodeRun(asset.path, { ...o, op: op ?? o.op ?? null });
-    onClose();
+    dismiss();
   };
   const pickLut = async () => {
     const f = await openDialog({ multiple: false, filters: [{ name: "LUT", extensions: ["cube", "3dl"] }] });
@@ -141,19 +143,19 @@ export function Encoder({ asset, onClose }: { asset: Asset; onClose: () => void 
     const f = await openDialog({ multiple: false, filters: [{ name: "Imagem", extensions: ["png", "jpg", "jpeg"] }] });
     if (typeof f === "string") {
       encodeRun(asset.path, { ...o, op: "watermark", watermark_path: f });
-      onClose();
+      dismiss();
     }
   };
   const lutName = o.lut_path ? o.lut_path.split(/[\\/]/).pop() : null;
 
   return (
-    <div className="dup-overlay" onClick={onClose}>
-      <div className="enc-modal" onClick={(e) => e.stopPropagation()}>
+    <div className={`dup-overlay${closing ? " closing" : ""}`} onClick={dismiss}>
+      <div className={`enc-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
             <Icon name="sliders" size={16} /> Codificar — {asset.filename}
           </div>
-          <button className="dup-x" onClick={onClose}>
+          <button className="dup-x" onClick={dismiss}>
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -189,7 +191,7 @@ export function Encoder({ asset, onClose }: { asset: Asset; onClose: () => void 
               className="enc-quick-btn"
               onClick={() => {
                 encodeRun(asset.path, { ...o, op: "loudnorm", lufs: -14 });
-                onClose();
+                dismiss();
               }}
             >
               <Icon name="audio" size={13} /> Normalizar áudio (-14 LUFS)
@@ -275,7 +277,7 @@ export function Encoder({ asset, onClose }: { asset: Asset; onClose: () => void 
         </div>
 
         <div className="dup-foot">
-          <button className="dup-cancel" onClick={onClose}>Cancelar</button>
+          <button className="dup-cancel" onClick={dismiss}>Cancelar</button>
           <button className="dup-apply" onClick={() => start()}>Codificar</button>
         </div>
       </div>

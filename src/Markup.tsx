@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Icon } from "./Icons";
 import { saveAnnotated, type Asset } from "./api";
+import { useDismiss } from "./useDismiss";
 
 // Markup/anotação (Briefing 4 #9): rabisca/marca em cima da imagem e salva uma cópia anotada.
 const COLORS = ["#FF3B30", "#FFD60A", "#30D158", "#0A84FF", "#FFFFFF", "#000000"];
 
 export function Markup({ asset, onClose, onSaved }: { asset: Asset; onClose: () => void; onSaved: () => void }) {
+  const { closing, dismiss } = useDismiss(onClose);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const [color, setColor] = useState("#FF3B30");
@@ -67,13 +69,13 @@ export function Markup({ asset, onClose, onSaved }: { asset: Asset; onClose: () 
   };
 
   return (
-    <div className="dup-overlay" onClick={onClose}>
-      <div className="mk-modal" onClick={(e) => e.stopPropagation()}>
+    <div className={`dup-overlay${closing ? " closing" : ""}`} onClick={dismiss}>
+      <div className={`mk-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
             <Icon name="pencil" size={16} /> Anotar — {asset.name || asset.filename}
           </div>
-          <button className="dup-x" onClick={onClose}>
+          <button className="dup-x" onClick={dismiss}>
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -101,7 +103,7 @@ export function Markup({ asset, onClose, onSaved }: { asset: Asset; onClose: () 
           />
         </div>
         <div className="dup-foot">
-          <button className="dup-cancel" onClick={onClose} disabled={busy}>Cancelar</button>
+          <button className="dup-cancel" onClick={dismiss} disabled={busy}>Cancelar</button>
           <button className="dup-apply" onClick={save} disabled={busy}>{busy ? "Salvando…" : "Salvar anotação"}</button>
         </div>
       </div>

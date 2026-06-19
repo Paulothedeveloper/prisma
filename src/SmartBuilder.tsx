@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Icon } from "./Icons";
 import { PopupButton } from "./Menu";
 import { createSmart, updateSmart, smartPreview, type SmartFolder, type SmartRule } from "./api";
+import { useDismiss } from "./useDismiss";
 
 // Construtor de pasta inteligente (regra → preview ao vivo da contagem).
 type FieldDef = {
@@ -43,6 +44,7 @@ export function SmartBuilder({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { closing, dismiss } = useDismiss(onClose);
   const [name, setName] = useState(editing?.name ?? "Nova pasta inteligente");
   const [matchMode, setMatchMode] = useState(editing?.match_mode ?? "all");
   const [rules, setRules] = useState<SmartRule[]>(() => {
@@ -76,13 +78,13 @@ export function SmartBuilder({
   };
 
   return (
-    <div className="dup-overlay" onClick={onClose}>
-      <div className="sb-modal" onClick={(e) => e.stopPropagation()}>
+    <div className={`dup-overlay${closing ? " closing" : ""}`} onClick={dismiss}>
+      <div className={`sb-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
             <Icon name="stack" size={16} /> {editing ? "Editar" : "Nova"} pasta inteligente
           </div>
-          <button className="dup-x" onClick={onClose}>
+          <button className="dup-x" onClick={dismiss}>
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -137,7 +139,7 @@ export function SmartBuilder({
         </div>
 
         <div className="dup-foot">
-          <button className="dup-cancel" onClick={onClose}>Cancelar</button>
+          <button className="dup-cancel" onClick={dismiss}>Cancelar</button>
           <button className="dup-apply" onClick={save}>{editing ? "Salvar" : "Criar"}</button>
         </div>
       </div>

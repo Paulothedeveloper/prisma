@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Icon } from "./Icons";
 import { renameFiles, type Asset } from "./api";
+import { useDismiss } from "./useDismiss";
 
 // Batch Rename (Briefing 4 #4): renomeia os ARQUIVOS no disco por padrão + tokens.
 // ⚠️ mexe no arquivo real — avisa e guarda os nomes antigos pra desfazer.
@@ -29,6 +30,7 @@ function applyPattern(pattern: string, a: Asset, index: number, find: string, re
 }
 
 export function BatchRename({ assets, onClose, onDone }: { assets: Asset[]; onClose: () => void; onDone: () => void }) {
+  const { closing, dismiss } = useDismiss(onClose);
   const [pattern, setPattern] = useState("{nome}");
   const [find, setFind] = useState("");
   const [replace, setReplace] = useState("");
@@ -65,13 +67,13 @@ export function BatchRename({ assets, onClose, onDone }: { assets: Asset[]; onCl
   };
 
   return (
-    <div className="dup-overlay" onClick={onClose}>
-      <div className="br-modal" onClick={(e) => e.stopPropagation()}>
+    <div className={`dup-overlay${closing ? " closing" : ""}`} onClick={dismiss}>
+      <div className={`br-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
             <Icon name="pencil" size={16} /> Renomear em lote — {assets.length} arquivos
           </div>
-          <button className="dup-x" onClick={onClose}>
+          <button className="dup-x" onClick={dismiss}>
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -114,7 +116,7 @@ export function BatchRename({ assets, onClose, onDone }: { assets: Asset[]; onCl
           {undo ? (
             <button className="dup-cancel" onClick={doUndo} disabled={busy}>Desfazer</button>
           ) : (
-            <button className="dup-cancel" onClick={onClose} disabled={busy}>Cancelar</button>
+            <button className="dup-cancel" onClick={dismiss} disabled={busy}>Cancelar</button>
           )}
           <button className="dup-apply" onClick={apply} disabled={busy}>
             {busy ? "Renomeando…" : undo ? "Renomear de novo" : "Renomear"}

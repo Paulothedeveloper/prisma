@@ -220,6 +220,8 @@ export const revealInExplorer = (path: string) =>
 // Abre a mídia no player/app padrão do sistema (não a pasta).
 export const openExternal = (path: string) =>
   invoke<void>("open_external", { path });
+// Redefine o app do zero (zera catálogo + caches; mantém a chave da API) e reinicia.
+export const resetApp = () => invoke<void>("reset_app");
 export const setRating = (id: number, rating: number) =>
   invoke<void>("set_rating", { id, rating });
 export const setNotes = (id: number, notes: string) =>

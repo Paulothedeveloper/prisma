@@ -954,6 +954,60 @@ fn open_external(path: String) -> Result<(), String> {
     Ok(())
 }
 
+// Apaga o CONTEÚDO de uma pasta (arquivos e subpastas), sem remover a pasta em si.
+fn clear_dir(dir: &std::path::Path) -> std::io::Result<()> {
+    if dir.exists() {
+        for entry in std::fs::read_dir(dir)? {
+            let p = entry?.path();
+            if p.is_dir() {
+                let _ = std::fs::remove_dir_all(&p);
+            } else {
+                let _ = std::fs::remove_file(&p);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Redefine o app DO ZERO: zera o catálogo (todas as tabelas, mantém o schema), apaga
+/// miniaturas e proxies, e reseta as configurações — MANTENDO só a chave da API. Reinicia.
+#[tauri::command]
+fn reset_app(app: tauri::AppHandle) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    // 1) esvazia todas as tabelas do catálogo (preserva a estrutura)
+    {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        let tables: Vec<String> = {
+            let mut stmt = conn
+                .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+                .map_err(|e| e.to_string())?;
+            let rows = stmt
+                .query_map([], |r| r.get::<_, String>(0))
+                .map_err(|e| e.to_string())?;
+            rows.filter_map(|r| r.ok()).collect()
+        };
+        for t in tables {
+            let _ = conn.execute(&format!("DELETE FROM \"{t}\""), []);
+        }
+        let _ = conn.execute("DELETE FROM sqlite_sequence", []);
+        let _ = conn.execute("VACUUM", []);
+    }
+    // 2) limpa os caches em disco (miniaturas + proxies)
+    let _ = clear_dir(&state.thumbs_dir);
+    let _ = clear_dir(&state.data_dir.join("proxies"));
+    // 3) reseta as configurações preservando a chave/modelo da API
+    let s = ai::load_settings(&state.data_dir);
+    let kept = ai::Settings {
+        anthropic_key: s.anthropic_key,
+        model: s.model,
+        autotag_on_import: None,
+        auto_proxy_on_import: None,
+    };
+    let _ = ai::save_settings(&state.data_dir, &kept);
+    // 4) reinicia o app pra reinicializar tudo do zero (catálogo vazio)
+    app.restart()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1049,6 +1103,7 @@ pub fn run() {
             get_proxy,
             reveal_in_explorer,
             open_external,
+            reset_app,
             set_rating,
             set_notes,
             list_tags,

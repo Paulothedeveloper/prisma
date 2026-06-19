@@ -46,7 +46,9 @@
         "headerImage": "installer/header.bmp",
         "sidebarImage": "installer/sidebar.bmp",
         "installMode": "currentUser",
-        "compression": "lzma"
+        "compression": "lzma",
+        "languages": ["PortugueseBR"],
+        "displayLanguageSelector": false
       }
     }
   }
