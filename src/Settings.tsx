@@ -11,19 +11,47 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [saved, setSaved] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
   const [autotag, setAutotag] = useState(false);
+  const [aiMsg, setAiMsg] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+
+  // Análise em lote: dá retorno IMEDIATO (quantas entraram na fila ou "nada a fazer") e não fecha o modal.
+  const runBulk = async (n: number) => {
+    setAiBusy(true);
+    setAiMsg("");
+    try {
+      const c = await aiAnalyzeUntagged(n);
+      setAiMsg(
+        c > 0
+          ? `Iniciado — analisando ${c} ${c === 1 ? "imagem" : "imagens"} em segundo plano. O progresso aparece no canto inferior.`
+          : "Nenhuma imagem sem descrição encontrada — tudo já foi analisado.",
+      );
+    } catch (e) {
+      setAiMsg(`Erro ao iniciar: ${String(e)}`);
+    } finally {
+      setAiBusy(false);
+    }
+  };
 
   const doExport = async () => {
-    const p = await saveDialog({ defaultPath: "prisma-catalogo.json", filters: [{ name: "JSON", extensions: ["json"] }] });
-    if (typeof p === "string") {
-      const n = await exportCatalog(p);
-      setSyncMsg(`Exportados ${n} itens com metadados.`);
+    try {
+      const p = await saveDialog({ defaultPath: "prisma-catalogo.json", filters: [{ name: "JSON", extensions: ["json"] }] });
+      if (typeof p === "string") {
+        const n = await exportCatalog(p);
+        setSyncMsg(`Exportados ${n} itens com metadados.`);
+      }
+    } catch (e) {
+      setSyncMsg(`Erro ao exportar: ${String(e)}`);
     }
   };
   const doImport = async () => {
-    const p = await openDialog({ multiple: false, filters: [{ name: "JSON", extensions: ["json"] }] });
-    if (typeof p === "string") {
-      const n = await importCatalog(p);
-      setSyncMsg(`Aplicado em ${n} itens desta biblioteca (casados por conteúdo).`);
+    try {
+      const p = await openDialog({ multiple: false, filters: [{ name: "JSON", extensions: ["json"] }] });
+      if (typeof p === "string") {
+        const n = await importCatalog(p);
+        setSyncMsg(`Aplicado em ${n} itens desta biblioteca (casados por conteúdo).`);
+      }
+    } catch (e) {
+      setSyncMsg(`Erro ao importar: ${String(e)}`);
     }
   };
 
@@ -88,15 +116,18 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   <button
                     key={n}
                     className="set-bulk-btn"
-                    onClick={() => {
-                      aiAnalyzeUntagged(n);
-                      onClose();
-                    }}
+                    disabled={aiBusy}
+                    onClick={() => runBulk(n)}
                   >
                     Analisar {n} sem descrição
                   </button>
                 ))}
               </div>
+              {aiMsg && (
+                <div className="set-status">
+                  <span className="set-dot on" /> {aiMsg}
+                </div>
+              )}
               <div className="set-help">
                 Roda em segundo plano (mostra o progresso no canto). Cada imagem consome sua API — comece com 100 pra ver o custo.
               </div>

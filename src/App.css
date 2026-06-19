@@ -3462,6 +3462,10 @@ body {
 .set-bulk-btn:hover {
   background: rgba(10, 132, 255, 0.22);
 }
+.set-bulk-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .set-toggle {
   display: flex;
   align-items: center;
