@@ -5,6 +5,10 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { Icon } from "./Icons";
 import { Oficina } from "./Oficina";
 import { AudioPlayer } from "./AudioPlayer";
+import { CstCard } from "./CstCard";
+import { HealthCard } from "./HealthCard";
+import { FixConfirm } from "./FixConfirm";
+import { ColorPlanCard } from "./ColorPlanCard";
 import { useDismiss } from "./useDismiss";
 import { fireTip } from "./tips";
 import { getProxy, renameAsset, duplicateAsset, refreshThumb, setCustomThumb } from "./api";
@@ -82,47 +86,6 @@ function Row({ k, v }: { k: string; v: string | null | undefined }) {
   );
 }
 
-function CstPanel({ info }: { info: MediaInfo }) {
-  const c = info.cst;
-  const [copied, setCopied] = useState(false);
-  const tone = c.tone_mapping ? "warn" : c.needs_cst ? "info" : c.determinate ? "ok" : "warn";
-  const copy = () => {
-    navigator.clipboard.writeText(c.copy_text || c.summary);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-  return (
-    <div className={`cst cst-${tone}`}>
-      <div className="cst-head">CST RECOMENDADO</div>
-      {c.needs_cst ? (
-        <>
-          <div className="cst-line">
-            <span className="cst-k">Entrada</span>
-            <span className="cst-v mono">
-              {c.input_color_space} / {c.input_gamma}
-            </span>
-          </div>
-          <div className="cst-line">
-            <span className="cst-k">Saída</span>
-            <span className="cst-v mono">{c.output}</span>
-          </div>
-          {c.tone_mapping && <div className="cst-tone">Tone Mapping: DaVinci (HDR)</div>}
-        </>
-      ) : (
-        <div className="cst-noneed mono">
-          {c.determinate ? "Sem CST — já é Rec.709" : "Indeterminado"}
-        </div>
-      )}
-      <div className="cst-summary">{c.summary}</div>
-      {c.copy_text && (
-        <button className="cst-copy" onClick={copy}>
-          {copied ? "Copiado" : "Copiar config do CST"}
-        </button>
-      )}
-    </div>
-  );
-}
-
 interface Props {
   asset: Asset;
   collections: Collection[];
@@ -150,6 +113,7 @@ export function Inspector({
 }: Props) {
   const { closing, dismiss } = useDismiss(onClose);
   const asideRef = useRef<HTMLElement>(null);
+  const [fixOp, setFixOp] = useState<string | null>(null);
   useEffect(() => {
     const t = setTimeout(() => fireTip("inspector", asideRef.current), 350);
     return () => clearTimeout(t);
@@ -405,8 +369,28 @@ export function Inspector({
       </div>
       <div className="insp-hint">Arraste o card direto pro DaVinci / Premiere</div>
 
-      {/* CST: o coração pro Paulo */}
-      {info?.ok && v && <CstPanel info={info} />}
+      {/* Playbook: tipo reconhecido + caminho resumido (determinístico) */}
+      {info?.ok && v && info.playbook && (
+        <div className="playbook">
+          <div className="playbook-kind">
+            <Icon name="stack" size={13} /> {info.playbook.kind}
+          </div>
+          <ul className="playbook-steps">
+            {info.playbook.steps.map((s, i) => (
+              <li key={i}>{s}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {/* Diagnóstico (selos de saúde) — antes de graduar */}
+      {info?.ok && v && <HealthCard info={info} onFix={setFixOp} />}
+      {fixOp && info && (
+        <FixConfirm fix={fixOp} path={asset.path} info={info} onClose={() => setFixOp(null)} />
+      )}
+      {/* CST: o coração pro Paulo — 2 nós (IN/OUT) + destino de entrega */}
+      {info?.ok && v && <CstCard info={info} />}
+      {/* Plano de Color sob medida (IA + vault) — sob demanda */}
+      {info?.ok && v && <ColorPlanCard path={asset.path} />}
       {loadingInfo && <div className="insp-loading">Lendo metadados…</div>}
 
       {/* OFICINA: botões de conserto contextuais */}

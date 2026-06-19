@@ -5,6 +5,7 @@ mod indexer;
 mod mediainfo;
 mod oficina;
 mod thumbs;
+mod vault;
 mod watcher;
 
 use rusqlite::Connection;
@@ -1004,6 +1005,169 @@ fn clear_dir(dir: &std::path::Path) -> std::io::Result<()> {
     Ok(())
 }
 
+// ---------- Vault (base de conhecimento RAG — Briefing 6) ----------
+
+#[derive(serde::Serialize)]
+pub struct VaultStatus {
+    path: Option<String>,
+    count: i64,
+}
+
+#[tauri::command]
+fn vault_status(app: tauri::AppHandle) -> Result<VaultStatus, String> {
+    let state = app.state::<AppState>();
+    let s = ai::load_settings(&state.data_dir);
+    let count = {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        db::vault_count(&conn).unwrap_or(0)
+    };
+    Ok(VaultStatus { path: s.vault_path, count })
+}
+
+/// Define a pasta do vault e reindexa na hora. Retorna o nº de chunks.
+#[tauri::command]
+fn set_vault_path(app: tauri::AppHandle, path: String) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let mut s = ai::load_settings(&state.data_dir);
+    s.vault_path = if path.trim().is_empty() { None } else { Some(path.clone()) };
+    ai::save_settings(&state.data_dir, &s)?;
+    if let Some(p) = s.vault_path.as_ref() {
+        Ok(vault::index_vault(&state.db, std::path::Path::new(p)))
+    } else {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        let _ = db::clear_vault(&conn);
+        Ok(0)
+    }
+}
+
+/// Reindexa o vault já configurado. Retorna o nº de chunks.
+#[tauri::command]
+fn reindex_vault(app: tauri::AppHandle) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let s = ai::load_settings(&state.data_dir);
+    match s.vault_path {
+        Some(p) => Ok(vault::index_vault(&state.db, std::path::Path::new(&p))),
+        None => Err("Nenhuma pasta de vault configurada.".into()),
+    }
+}
+
+/// Busca chunks do vault por palavra-chave (RAG simples). Usado pelo Plano de Color.
+#[tauri::command]
+fn search_vault(app: tauri::AppHandle, query: String, limit: i64) -> Result<Vec<db::VaultChunk>, String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    db::search_vault(&conn, &query, if limit <= 0 { 6 } else { limit }).map_err(|e| e.to_string())
+}
+
+#[derive(serde::Serialize, Default)]
+pub struct ColorPlanOut {
+    ok: bool,             // a IA respondeu
+    plan: String,         // texto do plano (Haiku)
+    sources: Vec<String>, // notas do vault citadas
+    note: String,         // mensagem quando offline/sem chave
+}
+
+/// Plano de Color sob medida (Briefing 6 §4): metadados + diagnóstico + CST + RAG do vault → Haiku.
+/// O técnico (CST/diagnóstico) é determinístico e já vem nos cards; aqui a IA só MONTA/EXPLICA.
+#[tauri::command]
+fn color_plan(app: tauri::AppHandle, path: String) -> Result<ColorPlanOut, String> {
+    let state = app.state::<AppState>();
+    let settings = ai::load_settings(&state.data_dir);
+    let info = mediainfo::probe(std::path::Path::new(&path));
+    let v = info.video.as_ref();
+    let make = info.camera.as_ref().and_then(|c| c.make.clone()).unwrap_or_default();
+    let trc = v.and_then(|x| x.transfer.clone()).unwrap_or_default();
+    let prim = v.and_then(|x| x.color_primaries.clone()).unwrap_or_default();
+    let codec = v.and_then(|x| x.codec.clone()).unwrap_or_default();
+    let depth = v.and_then(|x| x.bit_depth);
+    let (w, h) = (v.and_then(|x| x.width).unwrap_or(0), v.and_then(|x| x.height).unwrap_or(0));
+    let vertical = h > w;
+
+    // RAG: recupera chunks relevantes do vault.
+    let query = format!(
+        "{make} {trc} {prim} {codec} CST Log HLG exposição método nós LUT tempero {}",
+        if vertical { "Reels vertical" } else { "" }
+    );
+    let chunks = {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        db::search_vault(&conn, &query, 6).unwrap_or_default()
+    };
+    let mut sources: Vec<String> = Vec::new();
+    for c in &chunks {
+        if !sources.contains(&c.note) {
+            sources.push(c.note.clone());
+        }
+    }
+
+    let key = match settings.anthropic_key.clone().filter(|k| !k.is_empty()) {
+        Some(k) => k,
+        None => {
+            return Ok(ColorPlanOut {
+                ok: false,
+                plan: String::new(),
+                sources,
+                note: "Configure a chave da IA (Configurações › IA e busca) pra montar o plano explicado. O CST e o diagnóstico acima já funcionam offline.".into(),
+            })
+        }
+    };
+
+    let cst = &info.cst;
+    let diag = info
+        .health
+        .iter()
+        .map(|x| format!("- {} ({}): {}", x.label, x.level, x.detail))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let cst_txt = if cst.needs_cst {
+        format!(
+            "Origem detectada: {} / {} (determinístico={}). Método de 2 nós: NÓ IN = origem → DaVinci Wide Gamut/Intermediate (Tone e Gamut = Nenhum); NÓ OUT = DaVinci Wide Gamut/Intermediate → entrega (Tone = DaVinci e Gamut = Compressão de Saturação quando HDR/wide → SDR).",
+            cst.input_color_space.clone().unwrap_or_default(),
+            cst.input_gamma.clone().unwrap_or_default(),
+            cst.determinate
+        )
+    } else {
+        format!("CST: {}", cst.summary)
+    };
+    let vault_text = if chunks.is_empty() {
+        "(vault vazio ou nada relevante encontrado)".to_string()
+    } else {
+        chunks
+            .iter()
+            .map(|c| format!("[{} › {}]\n{}", c.note, c.heading, c.text.chars().take(900).collect::<String>()))
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    };
+    let meta = format!(
+        "Codec: {codec}; bit depth: {}; primaries: {}; transfer: {}; resolução: {}x{} ({}); fps_mode: {}",
+        depth.map(|d| d.to_string()).unwrap_or_else(|| "?".into()),
+        if prim.is_empty() { "?".into() } else { prim.clone() },
+        if trc.is_empty() { "ausente".into() } else { trc.clone() },
+        w, h,
+        if vertical { "vertical 9:16" } else { "horizontal" },
+        if v.map(|x| x.vfr).unwrap_or(false) { "VFR" } else { "CFR" },
+    );
+
+    let system = "Você é o assistente de pós-produção do PRISMA, para um editor/colorista brasileiro. \
+Monte um PLANO DE COLOR conciso e prático em português, baseado APENAS no contexto técnico e nas NOTAS DO VAULT fornecidas. \
+REGRAS DE OURO: (1) NÃO invente nada — se não houver base nas notas pra alguma recomendação, escreva 'sem regra no vault — confira manualmente'. \
+(2) O CST e o diagnóstico técnico são DETERMINÍSTICOS e já foram calculados; explique-os, não os contradiga. \
+(3) Cite a nota-fonte entre colchetes [Nota › Heading] sempre que usar uma regra do vault. \
+(4) Marque incerteza quando a origem/transfer for deduzida. Seja direto, em tópicos curtos.";
+    let user = format!(
+        "METADADOS:\n{meta}\n\nDIAGNÓSTICO (selos):\n{diag}\n\nCST (determinístico):\n{cst_txt}\n\nNOTAS DO VAULT:\n{vault_text}\n\nCONTEXTO FIXO DO EDITOR: institucional (SEPAT) + clientes (Mentors); entrega Reels/web Rec.709; usa método de 2 nós + tempero La Creme.\n\nMonte o plano cobrindo: tipo detectado; precisa CFR?; método de nós; alvos de exposição; LUT de tempero e dosagem; avisos. Cite as notas usadas."
+    );
+
+    match ai::ask_text(&key, &settings.model(), system, &user) {
+        Ok(plan) => Ok(ColorPlanOut { ok: true, plan, sources, note: String::new() }),
+        Err(e) => Ok(ColorPlanOut {
+            ok: false,
+            plan: String::new(),
+            sources,
+            note: format!("Sem internet ou erro na IA ({e}). O CST e o diagnóstico acima funcionam offline."),
+        }),
+    }
+}
+
 /// Remove uma pasta da BIBLIOTECA (catálogo) — tira os assets dela e das subpastas do
 /// catálogo + metadados. NÃO apaga nada do disco. Para de monitorar a pasta também.
 #[tauri::command]
@@ -1067,6 +1231,7 @@ fn reset_app(app: tauri::AppHandle) -> Result<(), String> {
         model: s.model,
         autotag_on_import: None,
         auto_proxy_on_import: None,
+        vault_path: s.vault_path,
     };
     let _ = ai::save_settings(&state.data_dir, &kept);
     // 4) reinicia o app pra reinicializar tudo do zero (catálogo vazio)
@@ -1146,6 +1311,18 @@ pub fn run() {
                     indexer::backfill_traits(handle, db_traits);
                 });
             }
+            // Reindexa o vault Obsidian no boot (mantém a base de conhecimento atual a cada sessão).
+            {
+                let settings = ai::load_settings(&data_dir);
+                if let Some(vp) = settings.vault_path {
+                    let db_vault = db_arc.clone();
+                    let handle = app.handle().clone();
+                    std::thread::spawn(move || {
+                        let n = vault::index_vault(&db_vault, std::path::Path::new(&vp));
+                        let _ = handle.emit("vault:indexed", n);
+                    });
+                }
+            }
 
             // Hook de teste/conveniencia: indexa uma pasta no boot se PRISMA_AUTOINDEX estiver setado.
             if let Ok(path) = std::env::var("PRISMA_AUTOINDEX") {
@@ -1171,6 +1348,11 @@ pub fn run() {
             reset_app,
             regen_proxies,
             remove_folder_lib,
+            vault_status,
+            set_vault_path,
+            reindex_vault,
+            search_vault,
+            color_plan,
             set_rating,
             set_notes,
             list_tags,

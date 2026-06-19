@@ -210,7 +210,73 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "ALTER TABLE collection_items ADD COLUMN position INTEGER NOT NULL DEFAULT 0",
         [],
     );
+    // Base de conhecimento (RAG): chunks do vault Obsidian por heading (Briefing 6 §1).
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS vault_chunks (
+            id      INTEGER PRIMARY KEY,
+            note    TEXT NOT NULL,
+            heading TEXT,
+            text    TEXT NOT NULL
+        )",
+        [],
+    )?;
     Ok(())
+}
+
+/// Apaga todos os chunks do vault (antes de reindexar).
+pub fn clear_vault(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute("DELETE FROM vault_chunks", [])?;
+    Ok(())
+}
+
+/// Insere um chunk do vault.
+pub fn insert_vault_chunk(conn: &Connection, note: &str, heading: &str, text: &str) -> rusqlite::Result<()> {
+    conn.execute(
+        "INSERT INTO vault_chunks (note, heading, text) VALUES (?1, ?2, ?3)",
+        params![note, heading, text],
+    )?;
+    Ok(())
+}
+
+#[derive(serde::Serialize)]
+pub struct VaultChunk {
+    pub note: String,
+    pub heading: String,
+    pub text: String,
+}
+
+/// Busca por palavra-chave nos chunks do vault (RAG simples). Pontua por nº de termos
+/// que aparecem em nota/heading/texto e devolve os melhores.
+pub fn search_vault(conn: &Connection, query: &str, limit: i64) -> rusqlite::Result<Vec<VaultChunk>> {
+    let terms: Vec<String> = query
+        .to_lowercase()
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|t| t.len() >= 3)
+        .map(|t| t.to_string())
+        .collect();
+    let mut stmt = conn.prepare("SELECT note, heading, text FROM vault_chunks")?;
+    let rows = stmt.query_map([], |r| {
+        Ok(VaultChunk {
+            note: r.get(0)?,
+            heading: r.get::<_, Option<String>>(1)?.unwrap_or_default(),
+            text: r.get(2)?,
+        })
+    })?;
+    let mut scored: Vec<(i32, VaultChunk)> = Vec::new();
+    for c in rows.flatten() {
+        let hay = format!("{} {} {}", c.note, c.heading, c.text).to_lowercase();
+        let score = terms.iter().filter(|t| hay.contains(t.as_str())).count() as i32;
+        if score > 0 {
+            scored.push((score, c));
+        }
+    }
+    scored.sort_by(|a, b| b.0.cmp(&a.0));
+    Ok(scored.into_iter().take(limit.max(1) as usize).map(|(_, c)| c).collect())
+}
+
+/// Quantos chunks de vault estão indexados.
+pub fn vault_count(conn: &Connection) -> rusqlite::Result<i64> {
+    conn.query_row("SELECT COUNT(*) FROM vault_chunks", [], |r| r.get(0))
 }
 
 pub fn upsert_folder(conn: &Connection, path: &str, added_at: i64) -> rusqlite::Result<i64> {

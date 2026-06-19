@@ -26,6 +26,24 @@ pub struct MediaInfo {
     pub cst: CstRec,
     pub warnings: Vec<String>,
     pub has_gyro: bool,
+    pub health: Vec<HealthFinding>,
+    pub playbook: Option<Playbook>,
+}
+
+/// Playbook por tipo de arquivo (Briefing 6 §5) — reconhece o "tipo" e resume o caminho.
+#[derive(Serialize, Default, Clone)]
+pub struct Playbook {
+    pub kind: String,       // tipo reconhecido (ex.: "Samsung Log HLG 10-bit")
+    pub steps: Vec<String>, // caminho resumido: conserto · CST · método
+}
+
+/// Selo de saúde do arquivo (diagnóstico automático — Briefing 6 §2). Determinístico.
+#[derive(Serialize, Default, Clone)]
+pub struct HealthFinding {
+    pub level: String,        // "red" | "yellow" | "green"
+    pub label: String,        // curto (vira o selo)
+    pub detail: String,       // explicação
+    pub fix: Option<String>,  // op de auto-conserto: "cfr" | "banding" | "proxy" | null
 }
 
 #[derive(Serialize, Default)]
@@ -265,6 +283,17 @@ pub fn probe(path: &Path) -> MediaInfo {
                 "⚠️ Arquivo parece TRANSCODIFICADO — metadados de fabricante perdidos. Pra CST 100% confiável, leia o ARQUIVO ORIGINAL da câmera.".into(),
             );
         }
+        // Diagnóstico de saúde (selos) — determinístico, a partir do MediaInfo.
+        let is_709 = info.cst.determinate && !info.cst.needs_cst;
+        info.health = diagnose(
+            &v,
+            if have_audio { Some(&a) } else { None },
+            info.overall_bitrate,
+            info.duration,
+            info.cst.needs_cst,
+            is_709,
+        );
+        info.playbook = playbook(&v, make.as_deref(), &info.cst, is_709);
         info.video = Some(v);
     } else {
         info.cst = indeterminado("sem trilha de vídeo");
@@ -389,6 +418,168 @@ fn indeterminado(motivo: &str) -> CstRec {
     }
 }
 
+/// Playbook por tipo de arquivo (Briefing 6 §5) — determinístico. Reconhece o tipo e
+/// resume conserto · CST · método. Complementa o plano da IA (que explica em detalhe).
+fn playbook(v: &VideoInfo, make: Option<&str>, cst: &CstRec, is_709: bool) -> Option<Playbook> {
+    let make_l = make.unwrap_or("").to_ascii_lowercase();
+    let trc = v.transfer.as_deref().unwrap_or("");
+    let prim = v.color_primaries.as_deref().unwrap_or("");
+    let depth = v.bit_depth.unwrap_or(8);
+    let vertical = matches!((v.width, v.height), (Some(w), Some(h)) if h > w);
+    let hlg = trc.contains("arib-std-b67") || trc.eq_ignore_ascii_case("hlg");
+    let pq = trc.contains("smpte2084") || trc.contains("pq");
+    let bt2020 = prim.contains("bt2020") || prim.contains("2020");
+
+    let mut steps: Vec<String> = Vec::new();
+    if v.vfr {
+        steps.push("Converter pra CFR primeiro (botão Consertar)".into());
+    }
+
+    let kind = if make_l.contains("samsung") || (bt2020 && hlg && make_l.is_empty()) {
+        steps.push("CST 2 nós: Rec.2020 / Rec.2100 HLG → Rec.709 (Tone DaVinci + Compressão de Saturação no nó OUT)".into());
+        steps.push("Método de 2 nós + tempero La Creme (dose ~60-70%); alvos cinza ~53% / branco ~71%".into());
+        format!("Samsung/HLG Log {}-bit{}", depth, if vertical { " vertical (Reels)" } else { "" })
+    } else if make_l.contains("sony") {
+        steps.push("CST 2 nós: S-Gamut3.Cine / S-Log3 → Rec.709".into());
+        if depth <= 8 {
+            steps.push("8-bit: mão leve, ETTR na captação; cuidado com banding".into());
+        }
+        "Sony S-Log3".into()
+    } else if make_l.contains("apple") {
+        steps.push("CST 2 nós: Rec.2020 / Apple Log → Rec.709".into());
+        "Apple Log (iPhone)".into()
+    } else if make_l.contains("dji") {
+        steps.push("CST 2 nós: Rec.2020 / DJI D-Log → Rec.709".into());
+        "DJI D-Log".into()
+    } else if make_l.contains("panasonic") || make_l.contains("lumix") {
+        steps.push("CST 2 nós: V-Gamut / V-Log → Rec.709".into());
+        "Panasonic V-Log".into()
+    } else if make_l.contains("canon") {
+        steps.push("CST 2 nós: Cinema Gamut / Canon Log 3 → Rec.709".into());
+        "Canon C-Log3".into()
+    } else if pq {
+        steps.push("CST 2 nós: Rec.2020 / ST2084 (PQ) → Rec.709 (mapear nits)".into());
+        "HDR PQ".into()
+    } else if hlg {
+        steps.push("CST 2 nós: Rec.2020 / Rec.2100 HLG → Rec.709".into());
+        "HDR HLG".into()
+    } else if is_709 {
+        steps.push("Sem CST — material já em Rec.709, grade direto no look".into());
+        "Rec.709 / GoPro / pronto".into()
+    } else if cst.needs_cst {
+        steps.push("CST 2 nós conforme a origem (confirme no arquivo ORIGINAL)".into());
+        "Log/Wide (a confirmar)".into()
+    } else {
+        return None;
+    };
+    if vertical && !steps.iter().any(|s| s.contains("vertical")) {
+        steps.push("Timeline/entrega vertical 1080×1920 (Reels)".into());
+    }
+    Some(Playbook { kind, steps })
+}
+
+/// Diagnóstico de saúde do arquivo (Briefing 6 §2) — regras determinísticas do MediaInfo.
+fn diagnose(
+    v: &VideoInfo,
+    audio: Option<&AudioInfo>,
+    overall_bitrate: Option<i64>,
+    duration: Option<f64>,
+    needs_cst: bool,
+    is_709: bool,
+) -> Vec<HealthFinding> {
+    let mut out = Vec::new();
+    let f = |level: &str, label: &str, detail: &str, fix: Option<&str>| HealthFinding {
+        level: level.into(),
+        label: label.into(),
+        detail: detail.into(),
+        fix: fix.map(|s| s.into()),
+    };
+
+    if v.vfr {
+        out.push(f(
+            "red",
+            "VFR",
+            "Frame rate variável — desincroniza o áudio e trava o scrub no DaVinci. Converta pra CFR.",
+            Some("cfr"),
+        ));
+    }
+    if v.bit_depth == Some(8) && needs_cst {
+        out.push(f(
+            "yellow",
+            "8-bit Log",
+            "Pouca margem de cor — mão leve no grade; cuidado com banding em céu/parede lisos.",
+            None,
+        ));
+    }
+    // bitrate baixo pra Log/HDR → risco de banding
+    let bpp = {
+        let br = v.bitrate.or(overall_bitrate);
+        match (br, v.width, v.height, v.fps) {
+            (Some(b), Some(w), Some(h), Some(fps)) if w > 0 && h > 0 && fps > 0.0 => {
+                Some(b as f64 / (w as f64 * h as f64 * fps))
+            }
+            _ => None,
+        }
+    };
+    if needs_cst {
+        if let Some(bpp) = bpp {
+            if bpp < 0.07 {
+                out.push(f(
+                    "yellow",
+                    "Bitrate baixo",
+                    "Log/HDR com bitrate apertado → risco de banding ao graduar. Reencode com mais bitrate (CRF 16).",
+                    Some("banding"),
+                ));
+            }
+        }
+    }
+    let prim = v.color_primaries.as_deref().unwrap_or("");
+    if (prim.contains("bt2020") || prim.contains("2020")) && v.transfer.is_none() {
+        out.push(f(
+            "yellow",
+            "BT.2020 sem transfer",
+            "Provável HLG (o transcode perdeu a etiqueta). Confirme no ARQUIVO ORIGINAL da câmera.",
+            None,
+        ));
+    }
+    if let Some(r) = v.rotation {
+        if r != 0 {
+            out.push(f(
+                "yellow",
+                &format!("Girado {r}°"),
+                "A resolução pode aparecer trocada — o PRISMA já mostra orientada.",
+                None,
+            ));
+        }
+    }
+    let codec = v.codec.as_deref().unwrap_or("").to_ascii_lowercase();
+    let heavy = (codec.contains("hevc") || codec.contains("265") || codec.contains("prores") || codec.contains("dnx"))
+        && v.bit_depth.unwrap_or(8) >= 10;
+    if heavy && duration.unwrap_or(0.0) > 60.0 {
+        out.push(f(
+            "yellow",
+            "Codec pesado",
+            "Codec 10-bit longo pode travar o scrub em máquina fraca. Gere um proxy pra editar liso.",
+            Some("proxy"),
+        ));
+    }
+    match audio {
+        None => out.push(f("yellow", "Sem áudio", "O arquivo não tem trilha de áudio.", None)),
+        Some(a) => {
+            if a.channels == Some(1) {
+                out.push(f("yellow", "Áudio mono", "Áudio em 1 canal (mono) — confira antes de editar.", None));
+            }
+        }
+    }
+    if is_709 && !v.vfr {
+        out.push(f("green", "Rec.709", "Material já normalizado — sem CST, grade direto.", None));
+    }
+    if out.is_empty() {
+        out.push(f("green", "OK", "Nenhum problema técnico detectado.", None));
+    }
+    out
+}
+
 /// A regra central do CST (Briefing 2, seção 5). Prioriza fabricante > Transfer/Primaries.
 fn decide_cst(v: &VideoInfo, make: Option<&str>) -> CstRec {
     let prim = v.color_primaries.as_deref().unwrap_or("");
@@ -464,10 +655,40 @@ fn decide_cst(v: &VideoInfo, make: Option<&str>) -> CstRec {
     }
     if make_l.contains("apple") {
         let mut r = rec(
-            "Apple Log",
+            "Rec.2020",
             "Apple Log",
             false,
-            "Apple detectado → se gravou em Apple Log (Blackmagic Cam), use Apple Log. Confirme no MediaInfo.".into(),
+            "Apple detectado → se gravou em Apple Log (Blackmagic Cam), use Rec.2020 / Apple Log. Confirme no MediaInfo.".into(),
+        );
+        r.determinate = false;
+        return r;
+    }
+    if make_l.contains("dji") {
+        let mut r = rec(
+            "Rec.2020",
+            "DJI D-Log",
+            false,
+            "DJI detectado → se gravou em D-Log, use Rec.2020 / DJI D-Log. Confirme no MediaInfo.".into(),
+        );
+        r.determinate = false;
+        return r;
+    }
+    if make_l.contains("panasonic") || make_l.contains("lumix") {
+        let mut r = rec(
+            "V-Gamut",
+            "V-Log",
+            false,
+            "Panasonic detectado → se gravou em V-Log, use V-Gamut / V-Log. Confirme no MediaInfo.".into(),
+        );
+        r.determinate = false;
+        return r;
+    }
+    if make_l.contains("canon") {
+        let mut r = rec(
+            "Cinema Gamut",
+            "Canon Log 3",
+            false,
+            "Canon detectado → se gravou em C-Log3, use Cinema Gamut / Canon Log 3. Confirme no MediaInfo.".into(),
         );
         r.determinate = false;
         return r;

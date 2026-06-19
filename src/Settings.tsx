@@ -11,6 +11,9 @@ import {
   setAutoProxyImport,
   resetApp,
   regenProxies,
+  vaultStatus,
+  setVaultPath,
+  reindexVault,
 } from "./api";
 import { Icon, type IconName } from "./Icons";
 import { loadPrefs, savePrefs, ACCENTS, type Prefs } from "./prefs";
@@ -55,6 +58,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [aiMsg, setAiMsg] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [pending, setPending] = useState<number | null>(null);
+  const [vault, setVault] = useState<{ path: string | null; count: number }>({ path: null, count: 0 });
+  const [vaultMsg, setVaultMsg] = useState("");
 
   // importação / sync
   const [autotag, setAutotag] = useState(false);
@@ -72,7 +77,32 @@ export function Settings({ onClose }: { onClose: () => void }) {
       setAutoProxy(s.auto_proxy_on_import);
       if (s.has_key) aiPendingCount().then(setPending).catch(() => {});
     });
+    vaultStatus().then(setVault).catch(() => {});
   }, []);
+
+  const pickVault = async () => {
+    const p = await openDialog({ directory: true });
+    if (typeof p === "string") {
+      setVaultMsg("Indexando…");
+      try {
+        const n = await setVaultPath(p);
+        setVault({ path: p, count: n });
+        setVaultMsg(`${n.toLocaleString("pt-BR")} trechos indexados.`);
+      } catch (e) {
+        setVaultMsg(`Erro: ${String(e)}`);
+      }
+    }
+  };
+  const doReindexVault = async () => {
+    setVaultMsg("Reindexando…");
+    try {
+      const n = await reindexVault();
+      setVault((v) => ({ ...v, count: n }));
+      setVaultMsg(`${n.toLocaleString("pt-BR")} trechos reindexados.`);
+    } catch (e) {
+      setVaultMsg(`Erro: ${String(e)}`);
+    }
+  };
 
   // Altera uma preferência local e aplica na hora (cor, vidro, zoom, autoplay).
   const setPref = <K extends keyof Prefs>(k: K, v: Prefs[K]) => {
@@ -347,6 +377,35 @@ export function Settings({ onClose }: { onClose: () => void }) {
                     )}
                   </div>
                 )}
+
+                <div className="pref-group">
+                  <div className="pref-label">Base de conhecimento (vault Obsidian)</div>
+                  <div className="pref-help">
+                    O PRISMA lê suas notas <b>.md</b> e usa como base das recomendações de color (citando a
+                    nota-fonte). Aponte a pasta do seu vault do DaVinci.
+                  </div>
+                  <div className="set-status">
+                    <span className={`set-dot ${vault.path ? "on" : ""}`} />
+                    {vault.path
+                      ? `${vault.count.toLocaleString("pt-BR")} trechos · ${vault.path}`
+                      : "Nenhum vault configurado"}
+                  </div>
+                  <div className="set-bulk-row">
+                    <button className="set-bulk-btn" onClick={pickVault}>
+                      <Icon name="folder" size={13} /> Escolher pasta do vault…
+                    </button>
+                    {vault.path && (
+                      <button className="set-bulk-btn" onClick={doReindexVault}>
+                        <Icon name="refresh" size={13} /> Reindexar
+                      </button>
+                    )}
+                  </div>
+                  {vaultMsg && (
+                    <div className="set-status">
+                      <span className="set-dot on" /> {vaultMsg}
+                    </div>
+                  )}
+                </div>
               </>
             )}
 

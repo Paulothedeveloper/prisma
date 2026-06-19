@@ -13,6 +13,7 @@ pub struct Settings {
     pub model: Option<String>,
     pub autotag_on_import: Option<bool>, // workflow: ao importar, marca itens com o nome da pasta
     pub auto_proxy_on_import: Option<bool>, // ao importar, gera proxy H.264 dos vídeos de codec não-web
+    pub vault_path: Option<String>, // pasta do vault Obsidian (base de conhecimento RAG, Briefing 6)
 }
 
 impl Settings {
@@ -111,6 +112,46 @@ pub fn analyze_image(key: &str, model: &str, thumb_path: &Path) -> Result<AiResu
         .to_string();
 
     Ok(parse_result(&text))
+}
+
+/// Chamada de TEXTO ao Claude (sem imagem) — usada pelo Plano de Color (Briefing 6 §4).
+/// Bloqueante (rode numa thread). Retorna o texto da resposta.
+pub fn ask_text(key: &str, model: &str, system: &str, user: &str) -> Result<String, String> {
+    let body = serde_json::json!({
+        "model": model,
+        "max_tokens": 1200,
+        "system": system,
+        "messages": [{ "role": "user", "content": user }]
+    });
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client
+        .post("https://api.anthropic.com/v1/messages")
+        .header("x-api-key", key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .map_err(|e| format!("rede: {e}"))?;
+    let status = resp.status();
+    let json: serde_json::Value = resp.json().map_err(|e| e.to_string())?;
+    if !status.is_success() {
+        let msg = json
+            .get("error")
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+            .unwrap_or("falha na API");
+        return Err(format!("Claude {status}: {msg}"));
+    }
+    Ok(json
+        .get("content")
+        .and_then(|c| c.get(0))
+        .and_then(|b| b.get("text"))
+        .and_then(|t| t.as_str())
+        .unwrap_or("")
+        .to_string())
 }
 
 fn parse_result(text: &str) -> AiResult {

@@ -150,6 +150,20 @@ export interface MediaInfo {
   cst: CstRec;
   warnings: string[];
   has_gyro: boolean;
+  health: HealthFinding[];
+  playbook: Playbook | null;
+}
+
+export interface HealthFinding {
+  level: "red" | "yellow" | "green";
+  label: string;
+  detail: string;
+  fix: string | null; // "cfr" | "banding" | "proxy" | null
+}
+
+export interface Playbook {
+  kind: string;
+  steps: string[];
 }
 
 export interface JobOpts {
@@ -356,6 +370,25 @@ export const aiAnalyzeUntagged = (limit: number) =>
   invoke<number>("ai_analyze_untagged", { limit });
 // Quantos itens ainda não têm descrição de IA (limit<=0 em aiAnalyzeUntagged = todas).
 export const aiPendingCount = () => invoke<number>("ai_pending_count");
+
+// ----- Vault (base de conhecimento RAG, Briefing 6) -----
+export interface VaultChunk {
+  note: string;
+  heading: string;
+  text: string;
+}
+export const vaultStatus = () => invoke<{ path: string | null; count: number }>("vault_status");
+export const setVaultPath = (path: string) => invoke<number>("set_vault_path", { path });
+export const reindexVault = () => invoke<number>("reindex_vault");
+export const searchVault = (query: string, limit = 6) =>
+  invoke<VaultChunk[]>("search_vault", { query, limit });
+export interface ColorPlanOut {
+  ok: boolean;
+  plan: string;
+  sources: string[];
+  note: string;
+}
+export const colorPlan = (path: string) => invoke<ColorPlanOut>("color_plan", { path });
 
 // ----- Duplicados na importação -----
 export const resolveDup = (
