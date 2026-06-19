@@ -152,7 +152,7 @@ function TreeNode({
             setMenu((o) => !o);
           }}
         >
-          <Icon name="more" size={14} />
+          <Icon name="more" size={16} />
         </button>
         {menu && (
           <>

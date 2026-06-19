@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { Icon } from "./Icons";
 import { Oficina } from "./Oficina";
@@ -24,6 +23,7 @@ import {
   removeAsset,
   trashAsset,
   aiAnalyze,
+  openExternal,
   type Asset,
   type Tag,
   type Collection,
@@ -274,9 +274,13 @@ export function Inspector({
   // toca o original se web-compatível, senão o proxy (existente ou recém-gerado)
   const proxiedSrc = proxyUrl ?? localProxy;
   const playSrc = videoPlayable ? origUrl : proxiedSrc;
-  // só assume a proporção quando REALMENTE vai mostrar vídeo/imagem (senão a caixa colapsa numa tira)
+  // assume a proporção real sempre que houver QUALQUER visual (vídeo tocável, ou a
+  // miniatura do vídeo não-suportado, ou imagem/gif). Sem visual nenhum, mantém a caixa
+  // padrão pra não colapsar numa tira.
   const showsMedia =
-    (asset.type === "video" && !!playSrc) || asset.type === "image" || asset.type === "gif";
+    asset.type === "image" ||
+    asset.type === "gif" ||
+    (asset.type === "video" && (!!playSrc || !!previewUrl));
   const useAspect = aspect && showsMedia;
 
   // Proxy é ESCOLHA do usuário (botão "Gerar proxy" na Oficina) — não automático.
@@ -324,7 +328,7 @@ export function Inspector({
               {previewUrl && <img src={previewUrl} alt="" />}
               <button
                 className="insp-openext"
-                onClick={() => openPath(asset.path).catch(() => revealInExplorer(asset.path))}
+                onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
               >
                 <Icon name="play" size={14} /> Abrir no player
               </button>

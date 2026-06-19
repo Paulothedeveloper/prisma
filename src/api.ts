@@ -217,6 +217,9 @@ export const probeMedia = (path: string) =>
   invoke<MediaInfo>("probe_media", { path });
 export const revealInExplorer = (path: string) =>
   invoke<void>("reveal_in_explorer", { path });
+// Abre a mídia no player/app padrão do sistema (não a pasta).
+export const openExternal = (path: string) =>
+  invoke<void>("open_external", { path });
 export const setRating = (id: number, rating: number) =>
   invoke<void>("set_rating", { id, rating });
 export const setNotes = (id: number, notes: string) =>

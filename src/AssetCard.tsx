@@ -129,7 +129,10 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
             preload="auto"
             playsInline
             className={`media media-over ${vidReady ? "show" : ""}`}
-            onLoadedData={() => setVidReady(true)}
+            onLoadedData={() => {
+              setVidReady(true);
+              videoRef.current?.play().catch(() => {});
+            }}
             onError={() => setVidReady(false)}
           />
         )}

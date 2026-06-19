@@ -21,7 +21,14 @@ const APP_VERSION = "0.4.0";
 
 export function Settings({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("geral");
+  const [closing, setClosing] = useState(false);
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
+
+  // Fecha com animação de saída (regra do app: tudo que abre/fecha anima).
+  const close = () => {
+    setClosing(true);
+    setTimeout(onClose, 180);
+  };
 
   // chave/IA
   const [key, setKey] = useState("");
@@ -94,13 +101,13 @@ export function Settings({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="dup-overlay" onClick={onClose}>
-      <div className="pref-modal" onClick={(e) => e.stopPropagation()}>
+    <div className={`dup-overlay${closing ? " closing" : ""}`} onClick={close}>
+      <div className={`pref-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
             <Icon name="sliders" size={16} /> Configurações
           </div>
-          <button className="dup-x" onClick={onClose}>
+          <button className="dup-x" onClick={close}>
             <Icon name="close" size={14} />
           </button>
         </div>
@@ -114,7 +121,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
             ))}
           </nav>
 
-          <div className="pref-content">
+          <div className="pref-content" key={tab}>
             {/* ---------- GERAL ---------- */}
             {tab === "geral" && (
               <>

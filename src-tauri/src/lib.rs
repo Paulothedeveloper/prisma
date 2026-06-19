@@ -904,6 +904,28 @@ fn reveal_in_explorer(path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Abre o arquivo no aplicativo PADRÃO do sistema (o player de vídeo do Windows, etc.).
+/// Usamos um comando próprio porque o `openPath` do plugin é restrito por escopo e
+/// estava caindo no fallback (abrindo a pasta em vez da mídia).
+#[tauri::command]
+fn open_external(path: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // `cmd /C start "" "arquivo"` → ShellExecute com o app padrão da extensão.
+        std::process::Command::new("cmd")
+            .raw_arg(format!("/C start \"\" \"{}\"", path))
+            .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -998,6 +1020,7 @@ pub fn run() {
             open_gyroflow,
             get_proxy,
             reveal_in_explorer,
+            open_external,
             set_rating,
             set_notes,
             list_tags,

@@ -601,11 +601,18 @@ body {
   color: rgba(255, 255, 255, 0.8);
 }
 .tree-caret {
-  width: 12px;
-  font-size: 9px;
-  color: var(--text-2);
-  transition: transform 0.12s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0.7;
+  transition: transform 0.12s, opacity 0.12s;
   flex-shrink: 0;
+}
+.tree-row:hover .tree-caret {
+  opacity: 1;
 }
 .tree-caret.open {
   transform: rotate(90deg);
@@ -935,8 +942,10 @@ body {
   padding: 40px;
 }
 .insp-unsupported {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
   min-height: 170px;
   display: flex;
   align-items: center;
@@ -3201,19 +3210,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   margin-left: 4px;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text-3);
-  opacity: 0; /* discreto: aparece no hover/ativo, mas reserva o espaço */
+  color: var(--text-2);
+  opacity: 0.4; /* sempre levemente visível p/ ser descoberto; forte no hover */
   cursor: pointer;
   transition: opacity 0.14s ease, background 0.14s ease, color 0.14s ease;
 }
 .tree-row:hover .tree-more {
-  opacity: 0.7;
+  opacity: 0.85;
 }
 .tree-more:hover {
   opacity: 1;
@@ -3270,6 +3279,14 @@ body {
   font-size: 12.5px;
   text-align: left;
   cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.tree-menu button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.tree-menu .tree-colors button:hover {
+  background: none;
 }
 .tree-menu button:hover {
   background: var(--accent);
@@ -3671,6 +3688,30 @@ body {
   margin-top: 2px;
 }
 
+/* Animações da janela de Configurações (regra do app: abrir/fechar/alternar anima) */
+.pref-modal {
+  animation: popIn 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.pref-modal.closing {
+  animation: popOut 0.18s ease forwards;
+}
+.pref-nav-item:active {
+  transform: scale(0.97);
+}
+@keyframes prefTabIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pref-content {
+  animation: prefTabIn 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
 /* Reduzir transparência: visual mais sólido e leve (preferência do usuário) */
 :root.reduce-glass {
   --blur-strong: saturate(120%) blur(8px);
@@ -3747,6 +3788,10 @@ body {
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  animation: overlayIn 0.18s ease;
+}
+.dup-overlay.closing {
+  animation: overlayOut 0.18s ease forwards;
 }
 .dup-modal {
   width: min(760px, 92vw);

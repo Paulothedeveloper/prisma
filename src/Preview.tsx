@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { Icon } from "./Icons";
 import { VideoPlayer } from "./VideoPlayer";
 import { AudioPlayer } from "./AudioPlayer";
-import { probeMedia, revealInExplorer, type Asset } from "./api";
+import { probeMedia, revealInExplorer, openExternal, type Asset } from "./api";
 
 const WEB_VIDEO_CODECS = new Set(["h264", "vp8", "vp9", "av1", "avc1"]);
 
@@ -83,7 +82,7 @@ export function Preview({ asset, onClose, onNav }: Props) {
               {playable === false && (
                 <button
                   className="preview-openext"
-                  onClick={() => openPath(asset.path).catch(() => revealInExplorer(asset.path))}
+                  onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
                 >
                   <Icon name="play" size={16} /> Abrir no player externo
                 </button>
