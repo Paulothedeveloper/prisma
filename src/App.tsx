@@ -63,6 +63,9 @@ import { FolderTree } from "./FolderTree";
 import { Logo } from "./Logo";
 import { Icon, type IconName } from "./Icons";
 import { extSuggestion } from "./extInfo";
+import { Coachmark } from "./Coachmark";
+import { WelcomeModal } from "./WelcomeModal";
+import { onTip, fireTip, isFirstLaunch, markWelcomed } from "./tips";
 import { PopupButton } from "./Menu";
 import { TrafficLights } from "./TrafficLights";
 import "./App.css";
@@ -208,6 +211,10 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [aiProgress, setAiProgress] = useState<{ done: number; total: number } | null>(null);
   const [proxyProgress, setProxyProgress] = useState<{ done: number; total: number; made: number } | null>(null);
+  const [tip, setTip] = useState<{ id: string; rect: DOMRect } | null>(null);
+  const [welcome, setWelcome] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
   const [batchRename, setBatchRename] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; asset: Asset } | null>(null);
   const [markup, setMarkup] = useState<Asset | null>(null);
@@ -317,6 +324,21 @@ export default function App() {
     // splash premium até a primeira carga de metadados (com tempo mínimo pro efeito)
     Promise.all([refreshMeta(), new Promise((r) => setTimeout(r, 900))]).then(() => setBooted(true));
   }, [refreshMeta]);
+
+  // Onboarding: escuta o barramento de dicas e mostra boas-vindas na 1ª vez.
+  useEffect(() => {
+    onTip((id, rect) => setTip({ id, rect }));
+    if (isFirstLaunch()) setWelcome(true);
+    return () => onTip(null);
+  }, []);
+
+  // Depois do boot (e sem o modal de boas-vindas aberto), dispara a 1ª dica (barra lateral).
+  useEffect(() => {
+    if (booted && !welcome) {
+      const t = setTimeout(() => fireTip("sidebar", sidebarRef.current), 500);
+      return () => clearTimeout(t);
+    }
+  }, [booted, welcome]);
 
   // Troca de view (aba/pasta/atalho): carrega os dados novos e SÓ ENTÃO cascateia —
   // determinístico, sem animar com dados antigos nem "piscar". Também limpa seleção e scroll.
@@ -750,10 +772,12 @@ export default function App() {
             <Icon name="search" size={15} />
           </span>
           <input
+            ref={searchRef}
             className="search"
             placeholder="Buscar"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => fireTip("search", searchRef.current)}
           />
           {query && (
             <button className="search-clear" onClick={() => setQuery("")}>
@@ -862,7 +886,7 @@ export default function App() {
       )}
 
       <div className="body">
-        <aside className="sidebar">
+        <aside className="sidebar" ref={sidebarRef}>
           <div className="side-group">
             <SideItem
               icon="all"
@@ -1350,6 +1374,16 @@ export default function App() {
       )}
 
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+
+      {welcome && (
+        <WelcomeModal
+          onClose={() => {
+            markWelcomed();
+            setWelcome(false);
+          }}
+        />
+      )}
+      {tip && <Coachmark id={tip.id} rect={tip.rect} onClose={() => setTip(null)} />}
 
       {ctxMenu && (
         <ContextMenu

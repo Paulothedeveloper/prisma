@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { save as saveDialog, open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   aiStatus,
@@ -14,6 +14,7 @@ import {
 } from "./api";
 import { Icon, type IconName } from "./Icons";
 import { loadPrefs, savePrefs, ACCENTS, type Prefs } from "./prefs";
+import { fireTip, resetTips } from "./tips";
 
 // Configurações em TÓPICOS (estilo Eagle, em português, design próprio do PRISMA).
 // Regra: nada de botão morto — cada controle aqui muda algo de verdade.
@@ -32,6 +33,11 @@ const APP_VERSION = "0.4.0";
 
 export function Settings({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("geral");
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const t = setTimeout(() => fireTip("settings", modalRef.current), 350);
+    return () => clearTimeout(t);
+  }, []);
   const [closing, setClosing] = useState(false);
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
 
@@ -120,7 +126,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
   return (
     <div className={`dup-overlay${closing ? " closing" : ""}`} onClick={close}>
-      <div className={`pref-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} className={`pref-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
             <Icon name="sliders" size={16} /> Configurações
@@ -374,6 +380,16 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   Gerenciador de mídia feito pra editores de vídeo. Leitor CST, Oficina (codificação) e
                   MotionSilk (estabilização) embutidos. Seus arquivos originais nunca são movidos nem alterados.
                 </div>
+                <button
+                  className="set-bulk-btn"
+                  style={{ marginTop: 16 }}
+                  onClick={() => {
+                    resetTips();
+                    window.location.reload();
+                  }}
+                >
+                  <Icon name="play" size={13} /> Ver o tutorial de novo
+                </button>
               </div>
             )}
           </div>

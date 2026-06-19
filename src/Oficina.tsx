@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icons";
 import { Encoder } from "./Encoder";
 import { PopupButton } from "./Menu";
 import { oficinaRun, type Asset, type MediaInfo, type JobOpts } from "./api";
+import { fireTip } from "./tips";
 
 // OFICINA: os botões de conserto aparecem SÓ quando fazem sentido pro que o leitor detectou.
 const IMG_FORMATS: [string, string][] = [
@@ -21,6 +22,11 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
   const [gcodec, setGcodec] = useState("h265");
   const [gyroAdv, setGyroAdv] = useState(false);
   const [encoder, setEncoder] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const t = setTimeout(() => fireTip("oficina", rootRef.current), 400);
+    return () => clearTimeout(t);
+  }, []);
   const v = info.video;
   const isVideo = asset.type === "video";
   const isImage = asset.type === "image" || asset.type === "gif";
@@ -36,7 +42,7 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
   };
 
   return (
-    <div className="oficina">
+    <div className="oficina" ref={rootRef}>
       <div className="insp-section-title oficina-title">
         <Icon name="sliders" size={13} /> Oficina
       </div>

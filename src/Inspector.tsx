@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
@@ -6,6 +6,7 @@ import { Icon } from "./Icons";
 import { Oficina } from "./Oficina";
 import { AudioPlayer } from "./AudioPlayer";
 import { useDismiss } from "./useDismiss";
+import { fireTip } from "./tips";
 import { getProxy, renameAsset, duplicateAsset, refreshThumb, setCustomThumb } from "./api";
 
 // Codecs que o WebView decodifica. ProRes/DNxHR ficam de fora → prévia no player externo.
@@ -148,6 +149,11 @@ export function Inspector({
   onMutate,
 }: Props) {
   const { closing, dismiss } = useDismiss(onClose);
+  const asideRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const t = setTimeout(() => fireTip("inspector", asideRef.current), 350);
+    return () => clearTimeout(t);
+  }, []);
   const [tags, setTags] = useState<Tag[]>([]);
   const [rating, setRatingState] = useState(asset.rating);
   const [notes, setNotesState] = useState(asset.notes ?? "");
@@ -304,7 +310,7 @@ export function Inspector({
   }, [asset.path]);
 
   return (
-    <aside className={`inspector${closing ? " closing" : ""}`}>
+    <aside ref={asideRef} className={`inspector${closing ? " closing" : ""}`}>
       <div className="insp-head">
         <span className="insp-title">Detalhes</span>
         <button className="icon-btn" onClick={dismiss}>
