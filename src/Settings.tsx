@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { save as saveDialog, open as openDialog } from "@tauri-apps/plugin-dialog";
-import { aiStatus, setAiKey, aiAnalyzeUntagged, exportCatalog, importCatalog, setAutotagImport } from "./api";
+import {
+  aiStatus,
+  setAiKey,
+  aiAnalyzeUntagged,
+  exportCatalog,
+  importCatalog,
+  setAutotagImport,
+  setAutoProxyImport,
+} from "./api";
 import { Icon, type IconName } from "./Icons";
 import { loadPrefs, savePrefs, ACCENTS, type Prefs } from "./prefs";
 
@@ -40,6 +48,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
   // importação / sync
   const [autotag, setAutotag] = useState(false);
+  const [autoProxy, setAutoProxy] = useState(true);
   const [syncMsg, setSyncMsg] = useState("");
 
   useEffect(() => {
@@ -47,6 +56,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
       setHasKey(s.has_key);
       setModel(s.model);
       setAutotag(s.autotag_on_import);
+      setAutoProxy(s.auto_proxy_on_import);
     });
   }, []);
 
@@ -158,6 +168,16 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   onClick={() => setPref("hoverAutoplay", !prefs.hoverAutoplay)}
                   title="Tocar ao passar o mouse"
                   help="Vídeos e áudios reproduzem fluido quando você passa o mouse pela miniatura (como o Eagle)."
+                />
+                <Toggle
+                  on={autoProxy}
+                  onClick={() => {
+                    const v = !autoProxy;
+                    setAutoProxy(v);
+                    setAutoProxyImport(v);
+                  }}
+                  title="Gerar proxies ao importar"
+                  help="Ao anexar uma pasta, cria automaticamente um preview leve (H.264 720p) dos vídeos de codec profissional (ProRes, .mov, .m4v) pra eles tocarem no hover e no preview. Roda em segundo plano; os originais não são tocados."
                 />
                 <div className="pref-help" style={{ marginTop: 14 }}>
                   Dica: no preview em tela cheia o player do PRISMA tem scrub quadro-a-quadro, velocidade,

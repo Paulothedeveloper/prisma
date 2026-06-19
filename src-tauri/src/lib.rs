@@ -78,10 +78,27 @@ fn index_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
             }
         }
     }
-    let autotag = ai::load_settings(&state.data_dir).autotag_on_import.unwrap_or(false);
+    let settings = ai::load_settings(&state.data_dir);
+    let autotag = settings.autotag_on_import.unwrap_or(false);
+    let auto_proxy = settings.auto_proxy_on_import.unwrap_or(true); // padrão LIGADO
+    let proxy_dir = state.data_dir.join("proxies");
     let app2 = app.clone();
+    let path2 = path.clone();
     std::thread::spawn(move || {
-        indexer::index_folder(app2, db, thumbs_dir, path, autotag);
+        indexer::index_folder(app2.clone(), db.clone(), thumbs_dir, path, autotag);
+        // Após indexar, gera proxies dos vídeos de codec não-web (ProRes/.mov etc.)
+        // pra eles tocarem no hover/preview. Em segundo plano, sem tocar os originais.
+        if auto_proxy {
+            let vids = db
+                .lock()
+                .ok()
+                .and_then(|c| db::videos_without_proxy_under(&c, &path2).ok())
+                .unwrap_or_default();
+            if !vids.is_empty() {
+                let ffmpeg = thumbs::bin_path("ffmpeg");
+                oficina::run_proxy_batch(app2, db, ffmpeg, proxy_dir, vids);
+            }
+        }
     });
     Ok(())
 }
@@ -613,6 +630,7 @@ pub struct AiStatus {
     has_key: bool,
     model: String,
     autotag_on_import: bool,
+    auto_proxy_on_import: bool,
 }
 
 #[tauri::command]
@@ -623,6 +641,7 @@ fn ai_status(app: tauri::AppHandle) -> Result<AiStatus, String> {
         has_key: s.anthropic_key.as_deref().map(|k| !k.is_empty()).unwrap_or(false),
         model: s.model(),
         autotag_on_import: s.autotag_on_import.unwrap_or(false),
+        auto_proxy_on_import: s.auto_proxy_on_import.unwrap_or(true),
     })
 }
 
@@ -632,6 +651,15 @@ fn set_autotag_import(app: tauri::AppHandle, on: bool) -> Result<(), String> {
     let state = app.state::<AppState>();
     let mut s = ai::load_settings(&state.data_dir);
     s.autotag_on_import = Some(on);
+    ai::save_settings(&state.data_dir, &s)
+}
+
+/// Liga/desliga a geração automática de proxies (preview de codecs pro) ao importar.
+#[tauri::command]
+fn set_auto_proxy_import(app: tauri::AppHandle, on: bool) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let mut s = ai::load_settings(&state.data_dir);
+    s.auto_proxy_on_import = Some(on);
     ai::save_settings(&state.data_dir, &s)
 }
 
@@ -1069,6 +1097,7 @@ pub fn run() {
             paste_image,
             save_annotated,
             set_autotag_import,
+            set_auto_proxy_import,
             list_presets,
             save_preset,
             delete_preset,

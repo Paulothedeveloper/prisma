@@ -154,6 +154,97 @@ fn sv(s: &[&str]) -> Vec<String> {
     s.iter().map(|x| x.to_string()).collect()
 }
 
+// Codecs que o WebView (Chromium) decodifica direto — não precisam de proxy.
+const WEB_CODECS: &[&str] = &["h264", "avc1", "vp8", "vp9", "av01", "av1"];
+
+// Nome estável (determinístico) pro arquivo de proxy a partir do caminho original.
+fn proxy_stem(path: &str) -> String {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut h = DefaultHasher::new();
+    path.hash(&mut h);
+    format!("{:016x}", h.finish())
+}
+
+/// Gera proxies H.264 leves (720p) pros vídeos de codec NÃO-web (ProRes, DNxHR, etc.)
+/// que ainda não têm proxy. Roda em segundo plano, um por vez (não trava o app).
+/// Os proxies ficam no cache do app — os ORIGINAIS nunca são tocados.
+pub fn run_proxy_batch(
+    app: AppHandle,
+    db: Arc<Mutex<Connection>>,
+    ffmpeg: PathBuf,
+    proxy_dir: PathBuf,
+    paths: Vec<String>,
+) {
+    std::thread::spawn(move || {
+        let _ = std::fs::create_dir_all(&proxy_dir);
+        let total = paths.len();
+        let mut made = 0usize;
+        for (i, input) in paths.into_iter().enumerate() {
+            let in_path = Path::new(&input);
+            if !in_path.exists() {
+                continue;
+            }
+            // já tem proxy ligado? pula
+            if let Ok(conn) = db.lock() {
+                if db::get_proxy(&conn, &input).ok().flatten().is_some() {
+                    continue;
+                }
+            }
+            // codec web-compatível não precisa de proxy
+            let info = mediainfo::probe(in_path);
+            let codec = info
+                .video
+                .as_ref()
+                .and_then(|v| v.codec.clone())
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            if codec.is_empty() || WEB_CODECS.iter().any(|c| codec.contains(c)) {
+                continue;
+            }
+            let out = proxy_dir.join(format!("{}.mp4", proxy_stem(&input)));
+            // proxy já existe em cache (de um import anterior) → só religa
+            if out.exists() {
+                if let Ok(conn) = db.lock() {
+                    let _ = db::set_proxy(&conn, &input, &out.to_string_lossy());
+                }
+                let _ = app.emit("proxy:made", &input);
+                made += 1;
+                continue;
+            }
+            let mut cmd = Command::new(&ffmpeg);
+            cmd.args(["-y", "-i", &input]);
+            cmd.args([
+                "-map", "0:v:0", "-map", "0:a?", "-c:v", "libx264", "-crf", "24",
+                "-preset", "veryfast", "-vf", "scale=-2:720", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-movflags", "+faststart",
+            ]);
+            cmd.arg(out.to_string_lossy().to_string());
+            #[cfg(windows)]
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let ok = cmd
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .map(|s| s.success())
+                .unwrap_or(false);
+            if ok && out.exists() {
+                if let Ok(conn) = db.lock() {
+                    let _ = db::set_proxy(&conn, &input, &out.to_string_lossy());
+                }
+                made += 1;
+                let _ = app.emit("proxy:made", &input);
+            }
+            let _ = app.emit(
+                "proxy:progress",
+                serde_json::json!({ "done": i + 1, "total": total, "made": made }),
+            );
+        }
+        let _ = app.emit("proxy:done", made);
+    });
+}
+
 // ---------- Codificador avançado (estilo HandBrake / Shutter Encoder) ----------
 
 #[derive(serde::Deserialize, Default, Clone)]

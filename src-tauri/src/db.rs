@@ -495,6 +495,19 @@ pub fn set_proxy(conn: &Connection, original_path: &str, proxy: &str) -> rusqlit
     Ok(())
 }
 
+/// Vídeos SEM proxy sob uma pasta (recursivo): candidatos a gerar proxy ao importar.
+/// Filtra por dir exato ou subpastas (dir começando com `<root>\`).
+pub fn videos_without_proxy_under(conn: &Connection, root: &str) -> rusqlite::Result<Vec<String>> {
+    let like = format!("{}\\%", root.trim_end_matches('\\'));
+    let mut stmt = conn.prepare(
+        "SELECT path FROM assets
+         WHERE type='video' AND proxy_path IS NULL AND trashed=0
+           AND (dir = ?1 OR dir LIKE ?2)",
+    )?;
+    let rows = stmt.query_map(params![root, like], |r| r.get(0))?;
+    rows.collect()
+}
+
 /// Retorna o proxy_path de um asset pelo caminho original (pro preview inline).
 pub fn get_proxy(conn: &Connection, original_path: &str) -> rusqlite::Result<Option<String>> {
     conn.query_row(

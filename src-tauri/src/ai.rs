@@ -12,6 +12,7 @@ pub struct Settings {
     pub anthropic_key: Option<String>,
     pub model: Option<String>,
     pub autotag_on_import: Option<bool>, // workflow: ao importar, marca itens com o nome da pasta
+    pub auto_proxy_on_import: Option<bool>, // ao importar, gera proxy H.264 dos vídeos de codec não-web
 }
 
 impl Settings {

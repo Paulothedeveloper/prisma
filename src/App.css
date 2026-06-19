@@ -2649,6 +2649,10 @@ body {
   font-variant-numeric: tabular-nums;
   animation: popIn 0.2s ease;
 }
+/* segundo pill (proxies) empilha acima do de IA pra não sobrepor */
+.ai-progress-pill.proxy-pill {
+  bottom: 70px;
+}
 .ai-pill-dot {
   width: 9px;
   height: 9px;

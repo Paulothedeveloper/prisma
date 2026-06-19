@@ -334,10 +334,13 @@ export interface AiStatus {
   has_key: boolean;
   model: string;
   autotag_on_import: boolean;
+  auto_proxy_on_import: boolean;
 }
 export const aiStatus = () => invoke<AiStatus>("ai_status");
 export const setAutotagImport = (on: boolean) =>
   invoke<void>("set_autotag_import", { on });
+export const setAutoProxyImport = (on: boolean) =>
+  invoke<void>("set_auto_proxy_import", { on });
 export const setAiKey = (key: string) => invoke<void>("set_ai_key", { key });
 export const aiAnalyze = (id: number) => invoke<string[]>("ai_analyze", { id });
 export const aiAnalyzeMany = (ids: number[]) =>

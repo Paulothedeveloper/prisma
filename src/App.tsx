@@ -206,6 +206,7 @@ export default function App() {
   const [dupPairs, setDupPairs] = useState<DupPair[] | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [aiProgress, setAiProgress] = useState<{ done: number; total: number } | null>(null);
+  const [proxyProgress, setProxyProgress] = useState<{ done: number; total: number; made: number } | null>(null);
   const [batchRename, setBatchRename] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; asset: Asset } | null>(null);
   const [markup, setMarkup] = useState<Asset | null>(null);
@@ -395,6 +396,14 @@ export default function App() {
       setAiProgress(null);
       runSearch(true);
       refreshMeta();
+    }).then((u) => unl.push(u));
+    // Proxies automáticos (ao importar): progresso + fim → atualiza a grade pra já tocar.
+    listen<{ done: number; total: number; made: number }>("proxy:progress", (e) =>
+      setProxyProgress(e.payload),
+    ).then((u) => unl.push(u));
+    listen("proxy:done", () => {
+      setProxyProgress(null);
+      runSearch(true);
     }).then((u) => unl.push(u));
 
     // OFICINA: progresso/fim/erro dos jobs de conserto
@@ -1322,6 +1331,13 @@ export default function App() {
         <div className="ai-progress-pill">
           <span className="ai-pill-dot" />
           Analisando com IA… {aiProgress.done}/{aiProgress.total}
+        </div>
+      )}
+
+      {proxyProgress && (
+        <div className="ai-progress-pill proxy-pill">
+          <span className="ai-pill-dot" />
+          Gerando proxies… {proxyProgress.done}/{proxyProgress.total}
         </div>
       )}
 
