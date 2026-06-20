@@ -122,7 +122,7 @@ Construo as ferramentas que eu mesmo uso, sempre partindo de um problema real de
 *Video producer & editor and indie developer. I build the tools I use myself — PRISMA is open-source and improves every day.*
 
 [![Email](https://img.shields.io/badge/-paulothedeveloper@protonmail.com-8B5CF6?style=flat&logo=protonmail&logoColor=white)](mailto:paulothedeveloper@protonmail.com)
-[![Instagram](https://img.shields.io/badge/-@paulomentors-E4405F?style=flat&logo=instagram&logoColor=white)](https://instagram.com/paulomentors)
+[![Instagram](https://img.shields.io/badge/-@paulo.videodev-E4405F?style=flat&logo=instagram&logoColor=white)](https://instagram.com/paulo.videodev)
 [![LinkedIn](https://img.shields.io/badge/-Paulo%20Adriel-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/paulo-adriel/)
 [![GitHub](https://img.shields.io/badge/-Paulothedeveloper-181717?style=flat&logo=github&logoColor=white)](https://github.com/Paulothedeveloper)
 
