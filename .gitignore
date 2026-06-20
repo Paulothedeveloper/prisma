@@ -32,3 +32,6 @@ src-tauri/binaries/
 # Ícone-fonte gerado
 src-tauri/icons/source-prisma.png
 Thumbs.db
+
+# Chave PRIVADA do updater (NUNCA versionar)
+src-tauri/prisma-update.key

@@ -66,6 +66,7 @@ import { Icon, type IconName } from "./Icons";
 import { extSuggestion } from "./extInfo";
 import { Coachmark } from "./Coachmark";
 import { WelcomeModal } from "./WelcomeModal";
+import { UpdateBanner } from "./UpdateBanner";
 import { onTip, fireTip, isFirstLaunch, markWelcomed } from "./tips";
 import { t } from "./i18n";
 import { PopupButton } from "./Menu";
@@ -1436,6 +1437,7 @@ export default function App() {
         />
       )}
       {tip && <Coachmark id={tip.id} rect={tip.rect} onClose={() => setTip(null)} />}
+      <UpdateBanner />
 
       {ctxMenu && (
         <ContextMenu

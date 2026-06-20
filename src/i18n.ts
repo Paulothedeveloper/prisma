@@ -265,6 +265,13 @@ const PT: Dict = {
   "ban.keepOne": "Manter só 1 de cada",
   "ban.trash": "Itens na Lixeira não aparecem na biblioteca. Esvaziar remove do catálogo (não apaga do disco).",
   "ban.empty": "Esvaziar lixeira",
+  "update.available": "Atualização disponível",
+  "update.sub": "Uma versão nova do PRISMA está pronta. Atualize por aqui — sem baixar nada manualmente.",
+  "update.now": "Atualizar agora",
+  "update.later": "Depois",
+  "update.installing": "Baixando atualização…",
+  "update.restart": "O app reinicia ao terminar.",
+  "update.failed": "Falha ao atualizar",
 };
 
 const EN: Dict = {
@@ -498,6 +505,13 @@ const EN: Dict = {
   "ban.keepOne": "Keep only 1 of each",
   "ban.trash": "Items in Trash don't show in the library. Emptying removes them from the catalog (not from disk).",
   "ban.empty": "Empty trash",
+  "update.available": "Update available",
+  "update.sub": "A new version of PRISMA is ready. Update right here — no manual download.",
+  "update.now": "Update now",
+  "update.later": "Later",
+  "update.installing": "Downloading update…",
+  "update.restart": "The app restarts when it finishes.",
+  "update.failed": "Update failed",
 };
 
 const ES: Dict = {
@@ -731,6 +745,13 @@ const ES: Dict = {
   "ban.keepOne": "Mantener solo 1 de cada",
   "ban.trash": "Los elementos en la Papelera no aparecen en la biblioteca. Vaciar los quita del catálogo (no del disco).",
   "ban.empty": "Vaciar papelera",
+  "update.available": "Actualización disponible",
+  "update.sub": "Hay una versión nueva de PRISMA lista. Actualiza aquí — sin descargar nada manualmente.",
+  "update.now": "Actualizar ahora",
+  "update.later": "Después",
+  "update.installing": "Descargando actualización…",
+  "update.restart": "La app se reinicia al terminar.",
+  "update.failed": "Error al actualizar",
 };
 
 const DICTS: Record<Locale, Dict> = { pt: PT, en: EN, es: ES };
