@@ -1,6 +1,6 @@
 //! Camada SQLite. Indice de todos os assets — e o que da a busca instantanea.
 
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -360,6 +360,31 @@ pub fn upsert_asset(conn: &Connection, a: &NewAsset) -> rusqlite::Result<i64> {
         params![a.path],
         |r| r.get(0),
     )
+}
+
+/// Como `upsert_asset`, mas também diz se a MINIATURA precisa ser (re)gerada.
+/// `needs_thumb` = true quando: o asset é novo, OU o conteúdo mudou (tamanho/mtime
+/// diferentes), OU ainda não há thumbnail em disco. Evita regenerar milhares de
+/// miniaturas ao re-adicionar uma pasta já catalogada (regra de cache do Bloco 2).
+pub fn upsert_asset_cached(conn: &Connection, a: &NewAsset) -> rusqlite::Result<(i64, bool)> {
+    // lê o estado ANTERIOR antes do upsert sobrescrever size/modified_at
+    let prev: Option<(i64, i64, Option<String>)> = conn
+        .query_row(
+            "SELECT size, modified_at, thumbnail_path FROM assets WHERE path = ?1",
+            params![a.path],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .optional()?;
+    let id = upsert_asset(conn, a)?;
+    let needs_thumb = match prev {
+        None => true, // asset novo
+        Some((size, modified, thumb)) => {
+            size != a.size
+                || modified != a.modified_at
+                || thumb.as_deref().map(|p| !Path::new(p).exists()).unwrap_or(true)
+        }
+    };
+    Ok((id, needs_thumb))
 }
 
 /// Assets thumbnailaveis ainda sem miniatura (pra retomar indexacao interrompida).

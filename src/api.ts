@@ -184,6 +184,29 @@ export interface JobOpts {
   sync_search?: number | null;
 }
 
+// ----- Mutações consolidadas (Bloco 2) -----
+// Uma só ida ao backend pra editar vários campos. Preferir estes aos setters avulsos
+// (set_rating/set_notes/etc. seguem existindo como aliases por compatibilidade).
+export interface AssetPatch {
+  rating?: number;
+  notes?: string;
+  name?: string; // "" limpa (volta ao nome do arquivo)
+  trashed?: boolean;
+  add_tags?: string[];
+  remove_tag_ids?: number[];
+}
+export const mutateAsset = (id: number, patch: AssetPatch) =>
+  invoke<void>("mutate_asset", { id, patch });
+
+export interface FolderPatch {
+  alias?: string; // "" limpa
+  hidden?: boolean;
+  color?: string; // "" limpa
+  cover?: string; // "" limpa
+}
+export const folderMeta = (dir: string, patch: FolderPatch) =>
+  invoke<void>("folder_meta", { dir, patch });
+
 export const indexPath = (path: string) => invoke<void>("index_path", { path });
 export const searchAssets = (filter: Filter) =>
   invoke<Asset[]>("search_assets", { filter });

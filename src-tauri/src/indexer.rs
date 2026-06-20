@@ -118,8 +118,12 @@ pub fn index_folder(
                 modified_at: modified,
                 folder_id,
             };
-            if let Ok(id) = db::upsert_asset(&tx, &na) {
-                pending.push((id, na.path, ext, kind));
+            // Regra de cache: só (re)gera miniatura pra assets novos ou cujo conteúdo
+            // mudou. Re-adicionar uma pasta já catalogada não regenera tudo de novo.
+            if let Ok((id, needs_thumb)) = db::upsert_asset_cached(&tx, &na) {
+                if needs_thumb {
+                    pending.push((id, na.path, ext, kind));
+                }
             }
         }
         let _ = tx.commit();

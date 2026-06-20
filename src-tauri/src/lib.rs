@@ -1,8 +1,10 @@
 mod ai;
 mod classify;
 mod db;
+mod dbpool;
 mod features;
 mod indexer;
+mod jobs;
 mod mediainfo;
 mod oficina;
 mod thumbs;
@@ -12,19 +14,21 @@ mod watcher;
 use features::FeatureFlags;
 
 use rusqlite::Connection;
-use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 
 pub struct AppState {
+    /// Conexão de ESCRITA única (SQLite só permite um escritor por vez).
     db: Arc<Mutex<Connection>>,
+    /// Pool de conexões de LEITURA (WAL) — a UI lê sem disputar o lock da escrita.
+    reads: Arc<dbpool::ReadPool>,
     thumbs_dir: PathBuf,
     data_dir: PathBuf,
     drag_icon: PathBuf,
-    jobs: Arc<Mutex<HashMap<u64, Arc<AtomicBool>>>>,
-    job_counter: Arc<AtomicU64>,
+    /// Sistema de jobs unificado (registro/cancelamento + lotes IA/saúde).
+    jobs: Arc<jobs::Jobs>,
     watcher: Arc<Mutex<Option<notify::RecommendedWatcher>>>,
     vault_watcher: Arc<Mutex<Option<notify::RecommendedWatcher>>>,
 }
@@ -131,33 +135,33 @@ fn rescan_folder(app: tauri::AppHandle, dir: String) -> Result<(), String> {
 #[tauri::command]
 fn search_assets(app: tauri::AppHandle, filter: db::Filter) -> Result<Vec<db::Asset>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::search(&conn, &filter).map_err(|e| e.to_string())
+    // Leitura no pool: não bloqueia mesmo com indexação/scan gravando em background.
+    state.reads.with(|conn| db::search(conn, &filter)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn get_counts(app: tauri::AppHandle) -> Result<Counts, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    let (untagged, uncollected, trash) = db::topic_counts(&conn).map_err(|e| e.to_string())?;
-    Ok(Counts {
-        total: db::total(&conn).map_err(|e| e.to_string())?,
-        dups: db::dups_total(&conn).map_err(|e| e.to_string())?,
-        untagged,
-        uncollected,
-        trash,
-        by_type: db::counts(&conn).map_err(|e| e.to_string())?,
-        by_color: db::color_buckets(&conn).map_err(|e| e.to_string())?,
-        by_ext: db::ext_counts(&conn).map_err(|e| e.to_string())?,
-        by_unknown_ext: db::unknown_exts(&conn).map_err(|e| e.to_string())?,
+    state.reads.with(|conn| {
+        let (untagged, uncollected, trash) = db::topic_counts(conn).map_err(|e| e.to_string())?;
+        Ok(Counts {
+            total: db::total(conn).map_err(|e| e.to_string())?,
+            dups: db::dups_total(conn).map_err(|e| e.to_string())?,
+            untagged,
+            uncollected,
+            trash,
+            by_type: db::counts(conn).map_err(|e| e.to_string())?,
+            by_color: db::color_buckets(conn).map_err(|e| e.to_string())?,
+            by_ext: db::ext_counts(conn).map_err(|e| e.to_string())?,
+            by_unknown_ext: db::unknown_exts(conn).map_err(|e| e.to_string())?,
+        })
     })
 }
 
 #[tauri::command]
 fn get_folders(app: tauri::AppHandle) -> Result<Vec<db::FolderRow>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::folder_dirs(&conn).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::folder_dirs(conn)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -193,8 +197,7 @@ fn set_folder_color(app: tauri::AppHandle, dir: String, color: Option<String>) -
 #[tauri::command]
 fn subfolders(app: tauri::AppHandle, parent: String) -> Result<Vec<db::SubCard>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::subfolders(&conn, &parent).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::subfolders(conn, &parent)).map_err(|e| e.to_string())
 }
 
 /// Salva uma imagem ANOTADA (markup) ao lado da original e cataloga (Briefing 4 #9).
@@ -295,13 +298,7 @@ fn oficina_run(
     opts: oficina::JobOpts,
 ) -> Result<u64, String> {
     let state = app.state::<AppState>();
-    let job = state.job_counter.fetch_add(1, Ordering::SeqCst) + 1;
-    let cancel = Arc::new(AtomicBool::new(false));
-    state
-        .jobs
-        .lock()
-        .map_err(|e| e.to_string())?
-        .insert(job, cancel.clone());
+    let (job, cancel) = state.jobs.register();
     let db = state.db.clone();
     let thumbs_dir = state.thumbs_dir.clone();
     let app2 = app.clone();
@@ -326,9 +323,7 @@ fn encode_run(
     opts: oficina::EncodeOpts,
 ) -> Result<u64, String> {
     let state = app.state::<AppState>();
-    let job = state.job_counter.fetch_add(1, Ordering::SeqCst) + 1;
-    let cancel = Arc::new(AtomicBool::new(false));
-    state.jobs.lock().map_err(|e| e.to_string())?.insert(job, cancel.clone());
+    let (job, cancel) = state.jobs.register();
     let db = state.db.clone();
     let thumbs_dir = state.thumbs_dir.clone();
     let app2 = app.clone();
@@ -366,7 +361,7 @@ fn delete_preset(app: tauri::AppHandle, id: i64) -> Result<(), String> {
 #[tauri::command]
 fn concat_run(app: tauri::AppHandle, inputs: Vec<String>) -> Result<u64, String> {
     let state = app.state::<AppState>();
-    let job = state.job_counter.fetch_add(1, Ordering::SeqCst) + 1;
+    let (job, _cancel) = state.jobs.register();
     let db = state.db.clone();
     let thumbs_dir = state.thumbs_dir.clone();
     let app2 = app.clone();
@@ -380,9 +375,7 @@ fn concat_run(app: tauri::AppHandle, inputs: Vec<String>) -> Result<u64, String>
 #[tauri::command]
 fn oficina_cancel(app: tauri::AppHandle, job: u64) -> Result<(), String> {
     let state = app.state::<AppState>();
-    if let Some(c) = state.jobs.lock().map_err(|e| e.to_string())?.get(&job) {
-        c.store(true, Ordering::SeqCst);
-    }
+    state.jobs.cancel(job);
     Ok(())
 }
 
@@ -417,15 +410,13 @@ fn set_notes(app: tauri::AppHandle, id: i64, notes: String) -> Result<(), String
 #[tauri::command]
 fn list_tags(app: tauri::AppHandle) -> Result<Vec<db::Tag>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::list_tags(&conn).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::list_tags(conn)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn tags_for_asset(app: tauri::AppHandle, id: i64) -> Result<Vec<db::Tag>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::tags_for_asset(&conn, id).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::tags_for_asset(conn, id)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -447,6 +438,92 @@ fn remove_tag(app: tauri::AppHandle, id: i64, tag_id: i64) -> Result<(), String>
     let state = app.state::<AppState>();
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     db::unassign_tag(&conn, id, tag_id).map_err(|e| e.to_string())
+}
+
+// ---------- Mutações consolidadas (Bloco 2) ----------
+
+/// Campos editáveis de um asset numa só chamada. `None` = não mexe; `name`/tags vazios
+/// têm semântica própria (ver `mutate_asset`).
+#[derive(serde::Deserialize, Default)]
+pub struct AssetPatch {
+    pub rating: Option<i64>,
+    pub notes: Option<String>,
+    pub name: Option<String>, // "" limpa (volta ao nome do arquivo)
+    pub trashed: Option<bool>,
+    pub add_tags: Option<Vec<String>>,
+    pub remove_tag_ids: Option<Vec<i64>>,
+}
+
+/// Mutação consolidada de um asset: aplica vários campos numa só ida ao backend.
+/// Substitui set_rating/set_notes/rename_asset/trash_asset/add_tag/remove_tag (mantidos
+/// como aliases por compatibilidade). Uma só aquisição do writer = menos contenção.
+#[tauri::command]
+fn mutate_asset(app: tauri::AppHandle, id: i64, patch: AssetPatch) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    if let Some(r) = patch.rating {
+        db::set_rating(&conn, id, r).map_err(|e| e.to_string())?;
+    }
+    if let Some(n) = patch.notes {
+        db::set_notes(&conn, id, &n).map_err(|e| e.to_string())?;
+    }
+    if let Some(nm) = patch.name {
+        let t = nm.trim();
+        db::set_name(&conn, id, if t.is_empty() { None } else { Some(t) }).map_err(|e| e.to_string())?;
+    }
+    if let Some(tr) = patch.trashed {
+        db::set_trashed(&conn, id, tr).map_err(|e| e.to_string())?;
+    }
+    if let Some(tags) = patch.add_tags {
+        for t in tags {
+            let t = t.trim();
+            if t.is_empty() {
+                continue;
+            }
+            if let Ok(tid) = db::create_tag(&conn, t, None) {
+                let _ = db::assign_tag(&conn, id, tid);
+            }
+        }
+    }
+    if let Some(ids) = patch.remove_tag_ids {
+        for tid in ids {
+            let _ = db::unassign_tag(&conn, id, tid);
+        }
+    }
+    Ok(())
+}
+
+/// Metadados editáveis de uma pasta numa só chamada. `None` = não mexe; string vazia limpa.
+#[derive(serde::Deserialize, Default)]
+pub struct FolderPatch {
+    pub alias: Option<String>,
+    pub hidden: Option<bool>,
+    pub color: Option<String>,
+    pub cover: Option<String>,
+}
+
+/// Mutação consolidada dos metadados de pasta. Substitui set_folder_alias/hidden/color/cover
+/// (mantidos como aliases por compatibilidade).
+#[tauri::command]
+fn folder_meta(app: tauri::AppHandle, dir: String, patch: FolderPatch) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    if let Some(a) = patch.alias {
+        let a = a.trim();
+        db::set_folder_alias(&conn, &dir, if a.is_empty() { None } else { Some(a) }).map_err(|e| e.to_string())?;
+    }
+    if let Some(h) = patch.hidden {
+        db::set_folder_hidden(&conn, &dir, h).map_err(|e| e.to_string())?;
+    }
+    if let Some(c) = patch.color {
+        let c = c.trim();
+        db::set_folder_color(&conn, &dir, if c.is_empty() { None } else { Some(c) }).map_err(|e| e.to_string())?;
+    }
+    if let Some(cv) = patch.cover {
+        let cv = cv.trim();
+        db::set_folder_cover(&conn, &dir, if cv.is_empty() { None } else { Some(cv) }).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 // ---------- Sync notebook↔desktop (metadados por hash) ----------
@@ -532,8 +609,7 @@ fn import_catalog(app: tauri::AppHandle, path: String) -> Result<usize, String> 
 #[tauri::command]
 fn list_smart(app: tauri::AppHandle) -> Result<Vec<db::SmartFolder>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::list_smart(&conn).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::list_smart(conn)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -560,8 +636,7 @@ fn delete_smart(app: tauri::AppHandle, id: i64) -> Result<(), String> {
 #[tauri::command]
 fn smart_search(app: tauri::AppHandle, id: i64, sort: Option<String>) -> Result<Vec<db::Asset>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::smart_search(&conn, id, sort.as_deref()).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::smart_search(conn, id, sort.as_deref())).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -576,8 +651,7 @@ fn smart_preview(app: tauri::AppHandle, match_mode: String, rules: String) -> Re
 #[tauri::command]
 fn list_collections(app: tauri::AppHandle) -> Result<Vec<db::Collection>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::list_collections(&conn).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::list_collections(conn)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -628,8 +702,7 @@ fn reorder_collection(app: tauri::AppHandle, collection_id: i64, ordered: Vec<i6
 #[tauri::command]
 fn collections_for_asset(app: tauri::AppHandle, id: i64) -> Result<Vec<i64>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::collections_for_asset(&conn, id).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::collections_for_asset(conn, id)).map_err(|e| e.to_string())
 }
 
 /// Resolve um duplicado da importação. action: "exclude" (remove o novo da biblioteca),
@@ -733,52 +806,25 @@ fn run_ai_batch(
     ids: Vec<i64>,
 ) {
     const WORKERS: usize = 6; // chamadas simultâneas à API (equilíbrio velocidade × limites)
-    std::thread::spawn(move || {
-        let total = ids.len();
-        let ids = Arc::new(ids);
-        let next = Arc::new(AtomicUsize::new(0));
-        let done = Arc::new(AtomicUsize::new(0));
-        let n = WORKERS.min(total.max(1));
-        let mut handles = Vec::with_capacity(n);
-        for _ in 0..n {
-            let app = app.clone();
-            let db = db.clone();
-            let key = key.clone();
-            let model = model.clone();
-            let ids = ids.clone();
-            let next = next.clone();
-            let done = done.clone();
-            handles.push(std::thread::spawn(move || loop {
-                let i = next.fetch_add(1, Ordering::SeqCst);
-                if i >= ids.len() {
-                    break;
-                }
-                let id = ids[i];
-                let thumb = {
-                    let conn = db.lock().unwrap();
-                    db::thumb_of(&conn, id).ok().flatten()
-                };
-                if let Some(thumb) = thumb {
-                    if let Ok(res) = ai::analyze_image(&key, &model, std::path::Path::new(&thumb)) {
-                        let conn = db.lock().unwrap();
-                        for t in &res.tags {
-                            if let Ok(tid) = db::create_tag(&conn, t, None) {
-                                let _ = db::assign_tag(&conn, id, tid);
-                            }
-                        }
-                        if !res.description.is_empty() {
-                            let _ = db::set_ai_desc(&conn, id, &res.description);
+    let jobs = app.state::<AppState>().jobs.clone();
+    // Só a rede é concorrente; as gravações serializam no writer Mutex dentro do work.
+    let _ = jobs.run_batch(app.clone(), "ai", ids, WORKERS, move |id: &i64| {
+        let id = *id;
+        let thumb = db.lock().ok().and_then(|conn| db::thumb_of(&conn, id).ok().flatten());
+        if let Some(thumb) = thumb {
+            if let Ok(res) = ai::analyze_image(&key, &model, std::path::Path::new(&thumb)) {
+                if let Ok(conn) = db.lock() {
+                    for t in &res.tags {
+                        if let Ok(tid) = db::create_tag(&conn, t, None) {
+                            let _ = db::assign_tag(&conn, id, tid);
                         }
                     }
+                    if !res.description.is_empty() {
+                        let _ = db::set_ai_desc(&conn, id, &res.description);
+                    }
                 }
-                let d = done.fetch_add(1, Ordering::SeqCst) + 1;
-                let _ = app.emit("ai:progress", serde_json::json!({ "done": d, "total": total }));
-            }));
+            }
         }
-        for h in handles {
-            let _ = h.join();
-        }
-        let _ = app.emit("ai:done", ());
     });
 }
 
@@ -800,8 +846,7 @@ fn ai_analyze_many(app: tauri::AppHandle, ids: Vec<i64>) -> Result<(), String> {
 #[tauri::command]
 fn ai_pending_count(app: tauri::AppHandle) -> Result<i64, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::count_needing_ai(&conn).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::count_needing_ai(conn)).map_err(|e| e.to_string())
 }
 
 /// Analisa em lote os assets ainda SEM descrição de IA. `limit <= 0` = TODAS as pendentes.
@@ -827,8 +872,8 @@ fn ai_analyze_untagged(app: tauri::AppHandle, limit: i64) -> Result<usize, Strin
 #[tauri::command]
 fn similar_assets(app: tauri::AppHandle, id: i64, limit: i64) -> Result<Vec<db::Asset>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::similar(&conn, id, if limit <= 0 { 60 } else { limit }).map_err(|e| e.to_string())
+    let lim = if limit <= 0 { 60 } else { limit };
+    state.reads.with(|conn| db::similar(conn, id, lim)).map_err(|e| e.to_string())
 }
 
 // ---------- Ações de item (estilo Eagle) ----------
@@ -1212,40 +1257,15 @@ REGRAS DE OURO: (1) NÃO invente nada — se não houver base nas notas pra algu
 /// Roda o diagnóstico (probe) de vários vídeos EM PARALELO e grava em cache.
 fn run_health_scan(app: tauri::AppHandle, db: Arc<Mutex<Connection>>, paths: Vec<String>) {
     const WORKERS: usize = 6;
-    std::thread::spawn(move || {
-        let total = paths.len();
-        let paths = Arc::new(paths);
-        let next = Arc::new(AtomicUsize::new(0));
-        let done = Arc::new(AtomicUsize::new(0));
-        let n = WORKERS.min(total.max(1));
-        let mut handles = Vec::with_capacity(n);
-        for _ in 0..n {
-            let app = app.clone();
-            let db = db.clone();
-            let paths = paths.clone();
-            let next = next.clone();
-            let done = done.clone();
-            handles.push(std::thread::spawn(move || loop {
-                let i = next.fetch_add(1, Ordering::SeqCst);
-                if i >= paths.len() {
-                    break;
-                }
-                let path = &paths[i];
-                let info = mediainfo::probe(std::path::Path::new(path));
-                if info.video.is_some() {
-                    let (level, flags) = mediainfo::health_summary(&info);
-                    if let Ok(conn) = db.lock() {
-                        let _ = db::set_health(&conn, path, &level, &flags);
-                    }
-                }
-                let d = done.fetch_add(1, Ordering::SeqCst) + 1;
-                let _ = app.emit("health:progress", serde_json::json!({ "done": d, "total": total }));
-            }));
+    let jobs = app.state::<AppState>().jobs.clone();
+    let _ = jobs.run_batch(app.clone(), "health", paths, WORKERS, move |path: &String| {
+        let info = mediainfo::probe(std::path::Path::new(path));
+        if info.video.is_some() {
+            let (level, flags) = mediainfo::health_summary(&info);
+            if let Ok(conn) = db.lock() {
+                let _ = db::set_health(&conn, path, &level, &flags);
+            }
         }
-        for h in handles {
-            let _ = h.join();
-        }
-        let _ = app.emit("health:done", ());
     });
 }
 
@@ -1268,8 +1288,7 @@ fn scan_health(app: tauri::AppHandle, limit: i64) -> Result<usize, String> {
 #[tauri::command]
 fn health_counts(app: tauri::AppHandle) -> Result<std::collections::HashMap<String, i64>, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::health_counts(&conn).map_err(|e| e.to_string())
+    state.reads.with(|conn| db::health_counts(conn)).map_err(|e| e.to_string())
 }
 
 /// Remove uma pasta da BIBLIOTECA (catálogo) — tira os assets dela e das subpastas do
@@ -1396,6 +1415,9 @@ pub fn run() {
             );
 
             let db_arc = Arc::new(Mutex::new(conn));
+            // Pool de leitura (WAL): a UI lê sem disputar o lock do writer. 4 conexões
+            // pré-abertas cobrem as leituras curtas (busca/contagens/listas).
+            let reads = Arc::new(dbpool::ReadPool::new(db_path.clone(), 4));
 
             // Watch Folder: monitora as pastas indexadas e cataloga/remove sozinho.
             let watcher = watcher::start(app.handle().clone(), db_arc.clone(), thumbs_dir.clone());
@@ -1404,11 +1426,11 @@ pub fn run() {
 
             app.manage(AppState {
                 db: db_arc.clone(),
+                reads,
                 thumbs_dir: thumbs_dir.clone(),
                 data_dir: data_dir.clone(),
                 drag_icon,
-                jobs: Arc::new(Mutex::new(HashMap::new())),
-                job_counter: Arc::new(AtomicU64::new(0)),
+                jobs: Arc::new(jobs::Jobs::new()),
                 watcher: Arc::new(Mutex::new(watcher)),
                 vault_watcher: vault_watcher_arc.clone(),
             });
@@ -1460,6 +1482,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             feature_flags,
+            mutate_asset,
+            folder_meta,
             index_path,
             search_assets,
             get_counts,
