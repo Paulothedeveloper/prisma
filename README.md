@@ -123,6 +123,7 @@ Construo as ferramentas que eu mesmo uso, sempre partindo de um problema real de
 
 [![Email](https://img.shields.io/badge/-paulothedeveloper@protonmail.com-8B5CF6?style=flat&logo=protonmail&logoColor=white)](mailto:paulothedeveloper@protonmail.com)
 [![Instagram](https://img.shields.io/badge/-@paulomentors-E4405F?style=flat&logo=instagram&logoColor=white)](https://instagram.com/paulomentors)
+[![LinkedIn](https://img.shields.io/badge/-Paulo%20Adriel-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/paulo-adriel/)
 [![GitHub](https://img.shields.io/badge/-Paulothedeveloper-181717?style=flat&logo=github&logoColor=white)](https://github.com/Paulothedeveloper)
 
 <sub>Feito com cuidado, por quem edita — para quem edita. · Made with care, by an editor — for editors.</sub>
