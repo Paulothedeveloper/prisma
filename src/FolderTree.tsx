@@ -118,7 +118,7 @@ function TreeNode({
             setOpen((o) => !o);
           }}
         >
-          {hasKids ? "▸" : ""}
+          {hasKids ? <Icon name="chevronRight" size={13} /> : null}
         </span>
         <span className="tree-folder-ico" style={m?.color ? { color: m.color } : undefined}>
           <Icon name="folder" size={16} />

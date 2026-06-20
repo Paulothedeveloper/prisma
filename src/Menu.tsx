@@ -23,9 +23,17 @@ export function PopupButton({
   useLayoutEffect(() => {
     if (open && btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setPos({ left: r.left, top: r.bottom + 6, width: r.width });
+      const menuW = Math.max(r.width, 180);
+      const estH = options.length * 32 + 14; // altura estimada do menu
+      let left = r.left;
+      let top = r.bottom + 6; // padrão: ABAIXO do botão
+      // sem espaço embaixo → abre ACIMA
+      if (top + estH > window.innerHeight - 8) top = Math.max(8, r.top - estH - 6);
+      // nunca sai pelas laterais
+      left = Math.max(8, Math.min(left, window.innerWidth - menuW - 8));
+      setPos({ left, top, width: r.width });
     }
-  }, [open]);
+  }, [open, options.length]);
 
   useEffect(() => {
     if (!open) return;

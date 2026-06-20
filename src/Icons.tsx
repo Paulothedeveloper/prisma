@@ -64,7 +64,13 @@ export type IconName =
   | "layoutGrid"
   | "layoutList"
   | "layoutWaterfall"
-  | "motionsilk";
+  | "motionsilk"
+  | "contrast"
+  | "moon"
+  | "sun"
+  | "flame"
+  | "snowflake"
+  | "sparkles";
 
 export function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
   switch (name) {
@@ -127,6 +133,45 @@ export function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
           <circle cx="9" cy="9.5" r="1.4" fill="currentColor" stroke="none" />
           <circle cx="15" cy="9.5" r="1.4" fill="currentColor" stroke="none" />
           <circle cx="12" cy="15" r="1.4" fill="currentColor" stroke="none" />
+        </S>
+      );
+    case "contrast": // Preto & Branco
+      return (
+        <S size={size}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" />
+        </S>
+      );
+    case "moon": // Escuros / Moody
+      return (
+        <S size={size}>
+          <path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5 8.5 8.5 0 1 0 20.5 14.3z" />
+        </S>
+      );
+    case "sun": // Claros / Clean
+      return (
+        <S size={size}>
+          <circle cx="12" cy="12" r="4.2" />
+          <path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7" />
+        </S>
+      );
+    case "flame": // Tons quentes
+      return (
+        <S size={size}>
+          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </S>
+      );
+    case "snowflake": // Tons frios
+      return (
+        <S size={size}>
+          <path d="M12 2v20M20.66 7 3.34 17M3.34 7l17.32 10M12 6l-2.5-2M12 6l2.5-2M12 18l-2.5 2M12 18l2.5 2M5.5 9 4.7 6.1M5.5 9 2.6 9.8M18.5 15l.8 2.9M18.5 15l2.9-.8M5.5 15l-2.9-.8M5.5 15l-.8 2.9M18.5 9l.8-2.9M18.5 9l2.9.8" />
+        </S>
+      );
+    case "sparkles": // 4K e acima (qualidade/nitidez)
+      return (
+        <S size={size}>
+          <path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" />
+          <path d="M19 14.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" />
         </S>
       );
     case "font":
@@ -275,16 +320,16 @@ export function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
     case "eye":
       return (
         <S size={size}>
-          <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
-          <circle cx="12" cy="12" r="2.8" />
+          <path d="M2.5 12s3.4-6.5 9.5-6.5S21.5 12 21.5 12 18.1 18.5 12 18.5 2.5 12 2.5 12z" />
+          <circle cx="12" cy="12" r="3" />
         </S>
       );
     case "eyeOff":
       return (
         <S size={size}>
-          <path d="M4 4l16 16" />
-          <path d="M9.5 5.8A8 8 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a14 14 0 0 1-2.6 3.2M6 7.4A14 14 0 0 0 2.5 12S6 18.5 12 18.5a8 8 0 0 0 2.8-.5" />
-          <path d="M9.8 9.9a2.8 2.8 0 0 0 3.9 3.9" />
+          <path d="M10.7 5.6A8.5 8.5 0 0 1 12 5.5c6.1 0 9.5 6.5 9.5 6.5a16 16 0 0 1-2.3 3.1M6.3 7.1A15 15 0 0 0 2.5 12s3.4 6.5 9.5 6.5a8.4 8.4 0 0 0 3.4-.7" />
+          <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+          <path d="M3.5 3.5l17 17" />
         </S>
       );
     case "shuffle":

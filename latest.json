@@ -1,0 +1,11 @@
+{
+    "version":  "0.5.1",
+    "notes":  "Correcoes de interface: posicao dos popups, icones de cor distintos, animacao de tamanho de miniatura e fim da piscada ao trocar de pasta/categoria.",
+    "pub_date":  "2026-06-20T12:21:11Z",
+    "platforms":  {
+                      "windows-x86_64":  {
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTgyd0lVVXozZUtxeXRpcDl3bGRDNkNRVkI0VGJTSXFSU3E5VEd4ekNZcGJFeWp5bnVRYWd6Z09tK1ZiY2JHdlBHeGV3VHdwSWM0VEl5U3JRaVA3bFFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxOTcyNDM5CWZpbGU6UFJJU01BXzAuNS4xX3g2NC1zZXR1cC5leGUKcmpYd3BSL0NXb1BZVnJaam01cXhlblhlVGd5eVhZNWlUV2txUzBiRDF1RjJtQjd1TjhBL21zR2ZqUjEzSlJtekVUNzZjR2o4VHlBT3NSK0hxRGhyQmc9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.5.1/PRISMA_0.5.1_x64-setup.exe"
+                                         }
+                  }
+}

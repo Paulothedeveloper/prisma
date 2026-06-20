@@ -1,3 +1,11 @@
+/* --thumb registrado como propriedade animável → a troca de tamanho da miniatura
+   (slider de zoom) faz as colunas da grade fluírem suave em vez de pular. */
+@property --thumb {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 190px;
+}
+
 :root {
   --bg: #1a1a1c;
   --bg-2: #161618;
@@ -60,6 +68,8 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* anima a troca de tamanho da miniatura (--thumb) */
+  transition: --thumb 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
   /* fundo ambiente sutil pro vidro líquido "ler" a translucidez */
   background-color: var(--bg);
   /* acento prismático sutil (eco da logo) — raio de luz refratado no topo + glows ambientes */
@@ -2842,14 +2852,12 @@ body {
 .add-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 1000;
 }
 .add-menu {
-  position: absolute;
-  top: calc(100% + 7px);
-  right: 0;
-  z-index: 61;
-  min-width: 190px;
+  position: fixed;
+  z-index: 1001;
+  min-width: 200px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -2893,7 +2901,6 @@ body {
 .inspector,
 .jobs-panel,
 .batch-bar,
-.add-menu,
 .dup-modal,
 .set-modal {
   position: relative;

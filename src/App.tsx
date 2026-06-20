@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { VirtuosoGrid, Virtuoso } from "react-virtuoso";
 import { listen } from "@tauri-apps/api/event";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -153,12 +154,12 @@ type SmartPreset = {
 };
 const SMART_PRESETS: SmartPreset[] = [
   { id: "reels", label: "Reels / Verticais", icon: "video", f: { kind: "video", orient: "portrait" } },
-  { id: "uhd", label: "4K e acima", icon: "image", f: { res: "uhd" } },
-  { id: "pb", label: "Preto & Branco", icon: "lut", f: { sat: "pb" } },
-  { id: "moody", label: "Escuros / Moody", icon: "lut", f: { bright: "escuro" } },
-  { id: "clean", label: "Claros / Clean", icon: "image", f: { bright: "claro" } },
-  { id: "quente", label: "Tons quentes", icon: "lut", f: { warm: "quente" } },
-  { id: "frio", label: "Tons frios", icon: "lut", f: { warm: "frio" } },
+  { id: "uhd", label: "4K e acima", icon: "sparkles", f: { res: "uhd" } },
+  { id: "pb", label: "Preto & Branco", icon: "contrast", f: { sat: "pb" } },
+  { id: "moody", label: "Escuros / Moody", icon: "moon", f: { bright: "escuro" } },
+  { id: "clean", label: "Claros / Clean", icon: "sun", f: { bright: "claro" } },
+  { id: "quente", label: "Tons quentes", icon: "flame", f: { warm: "quente" } },
+  { id: "frio", label: "Tons frios", icon: "snowflake", f: { warm: "frio" } },
 ];
 
 type View =
@@ -224,9 +225,10 @@ export default function App() {
   const [batchRename, setBatchRename] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; asset: Asset } | null>(null);
   const [markup, setMarkup] = useState<Asset | null>(null);
-  const [cascadeTick, setCascadeTick] = useState(0); // remonta+cascateia a grade (nav + pós-remoção)
   const [clearing, setClearing] = useState(false); // animação de SAÍDA (esvaziar lixeira / apagar dups)
   const [switching, setSwitching] = useState(true); // janela em que os cards entram em cascata
+  const cascadeOnNextLoad = useRef(true); // pede cascata na PRÓXIMA carga (nav/layout); animação sem remount
+  const cascadeTimer = useRef<number | null>(null);
   const [subCards, setSubCards] = useState<SubCard[]>([]);
   const [booted, setBooted] = useState(false);
   const [thumbSize, setThumbSize] = useState(190);
@@ -289,24 +291,36 @@ export default function App() {
 
   const runSearch = useCallback(
     async (reset = true) => {
-      // "Buscar por imagem": resultado por similaridade, sem paginação.
+      // Abre a janela de cascata NO MESMO lote em que os dados novos entram, SÓ quando a
+      // navegação pediu (cascadeOnNextLoad). Assim os cards novos animam ao montar, sem
+      // remontar a grade inteira (que causava a "piscada") e sem re-animar os antigos.
+      const fireCascade = () => {
+        if (reset && cascadeOnNextLoad.current) {
+          cascadeOnNextLoad.current = false;
+          setSwitching(true);
+          if (cascadeTimer.current) clearTimeout(cascadeTimer.current);
+          cascadeTimer.current = window.setTimeout(() => setSwitching(false), 850);
+        }
+      };
       if (view.t === "similar") {
         const rows = await similarAssets(view.v);
         offsetRef.current = rows.length;
         setAssets(rows);
+        fireCascade();
         return;
       }
-      // Pasta inteligente: roda a regra.
       if (view.t === "smart") {
         const rows = await smartSearch(view.v, sort);
         offsetRef.current = rows.length;
         setAssets(rows);
+        fireCascade();
         return;
       }
       const offset = reset ? 0 : offsetRef.current;
       const rows = await searchAssets(buildFilter(offset));
       offsetRef.current = offset + rows.length;
       setAssets((prev) => (reset ? rows : [...prev, ...rows]));
+      fireCascade();
     },
     [buildFilter, view]
   );
@@ -357,15 +371,18 @@ export default function App() {
     // subpastas como cards-capa (só na visão de pasta)
     if (view.t === "folder") subfolders(view.v).then(setSubCards).catch(() => setSubCards([]));
     else setSubCards([]);
-    let alive = true;
-    runSearch(true).then(() => {
-      if (alive) setCascadeTick((c) => c + 1);
-    });
-    return () => {
-      alive = false;
-    };
+    // pede cascata na carga que vem (a animação dispara quando os dados novos montam)
+    cascadeOnNextLoad.current = true;
+    runSearch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
+
+  // Trocar de layout (grade/lista/waterfall) também cascateia (sem remmontar nada).
+  useEffect(() => {
+    cascadeOnNextLoad.current = true;
+    runSearch(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout]);
 
   // Navegar pra uma pasta/categoria LIMPA os filtros do topo (resolução/tom/etc),
   // senão um preset tipo "4K e acima" fica grudado e some com vídeos LOG/720p e Documentos.
@@ -531,6 +548,21 @@ export default function App() {
   }, [runSearch, refreshMeta]);
 
   const [addMenu, setAddMenu] = useState(false);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
+  const [addPos, setAddPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    if (addMenu && addBtnRef.current) {
+      const r = addBtnRef.current.getBoundingClientRect();
+      const W = 210;
+      const estH = 92;
+      let top = r.bottom + 7; // ABAIXO do botão
+      if (top + estH > window.innerHeight - 8) top = Math.max(8, r.top - estH - 7);
+      const left = Math.max(8, Math.min(r.right - W, window.innerWidth - W - 8));
+      setAddPos({ left, top });
+    } else {
+      setAddPos(null);
+    }
+  }, [addMenu]);
   const addFolders = async () => {
     setAddMenu(false);
     const sel = await open({ directory: true, multiple: true });
@@ -570,10 +602,10 @@ export default function App() {
       setClearing(true);
       window.setTimeout(async () => {
         await Promise.resolve(doRemoval());
-        await runSearch(true);
-        refreshMeta();
+        cascadeOnNextLoad.current = true; // os que sobraram entram em cascata
         setClearing(false);
-        setCascadeTick((c) => c + 1); // os que sobraram entram em cascata
+        await runSearch(true); // dispara a cascata no mesmo lote dos dados recarregados
+        refreshMeta();
       }, 260);
     },
     [runSearch, refreshMeta]
@@ -747,18 +779,6 @@ export default function App() {
   const inCollection = view.t === "collection" ? view.v : null;
 
   const isView = (v: View) => JSON.stringify(v) === JSON.stringify(view);
-  // chave de animação: muda na troca de pasta/categoria/aba pra re-disparar a transição
-  // A grade remonta+cascateia SÓ via cascadeTick (nav e pós-remoção) ou troca de layout —
-  // nunca no clique cru (senão animaria com os dados antigos e "piscaria").
-  const viewKey = `${cascadeTick}-${layout}`;
-
-  // Liga a janela de "cascata" quando a grade remonta. useLayoutEffect garante a classe
-  // já no primeiro paint (sem flash).
-  useLayoutEffect(() => {
-    setSwitching(true);
-    const t = setTimeout(() => setSwitching(false), 850);
-    return () => clearTimeout(t);
-  }, [viewKey]);
   const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
   const folderSel = view.t === "folder" ? view.v : null;
   const anyFilter = minRating || fExt || fRes || fDur || fBright || fWarm || fSat || fOrient;
@@ -818,24 +838,27 @@ export default function App() {
             <Icon name="sliders" size={16} />
           </button>
           <div className="add-wrap">
-            <button className="btn-primary btn-add" onClick={() => setAddMenu((o) => !o)}>
+            <button ref={addBtnRef} className="btn-primary btn-add" onClick={() => setAddMenu((o) => !o)}>
               <Icon name="plus" size={15} />
               Adicionar
               <Icon name="chevronUpDown" size={13} />
             </button>
-            {addMenu && (
-              <>
-                <div className="add-backdrop" onClick={() => setAddMenu(false)} />
-                <div className="add-menu">
-                  <button onClick={addFolders}>
-                    <Icon name="folder" size={15} /> Pastas… <span className="add-hint">(várias)</span>
-                  </button>
-                  <button onClick={addFiles}>
-                    <Icon name="image" size={15} /> Arquivos… <span className="add-hint">(vários)</span>
-                  </button>
-                </div>
-              </>
-            )}
+            {addMenu &&
+              addPos &&
+              createPortal(
+                <>
+                  <div className="add-backdrop" onClick={() => setAddMenu(false)} />
+                  <div className="add-menu" style={{ left: addPos.left, top: addPos.top }}>
+                    <button onClick={addFolders}>
+                      <Icon name="folder" size={15} /> Pastas… <span className="add-hint">(várias)</span>
+                    </button>
+                    <button onClick={addFiles}>
+                      <Icon name="image" size={15} /> Arquivos… <span className="add-hint">(vários)</span>
+                    </button>
+                  </div>
+                </>,
+                document.body
+              )}
           </div>
         </div>
       </header>
@@ -1297,10 +1320,7 @@ export default function App() {
               </div>
             </div>
           )}
-          <div
-            className={`view-fade${switching ? " anim-in" : ""}${clearing ? " clearing" : ""}`}
-            key={viewKey}
-          >
+          <div className={`view-fade${switching ? " anim-in" : ""}${clearing ? " clearing" : ""}`}>
             {progress.active && assets.length === 0 ? (
               <div className="indexing-loader">
                 <div className="il-prism">
