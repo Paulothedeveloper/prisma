@@ -98,18 +98,6 @@ Beyond cataloging, PRISMA understands the **technical** side of video: it reads 
 
 ---
 
-## Quem fez · About the creator
-
-<img src="docs/creator.jpg" align="left" width="132" hspace="18" vspace="4" alt="Paulo Adriel — PRISMA" />
-
-**Paulo Adriel** — produtor e editor de vídeo (Mentors Studio). O PRISMA nasceu de problemas reais do dia a dia de edição e finalização: uma biblioteca que entendesse de **vídeo de verdade** (cor, codec, proxy), não só de miniaturas. O desenvolvimento é **aberto e contínuo** — todo dia a gente tenta melhorar.
-
-**Paulo Adriel** — video producer & editor. PRISMA was born from real day-to-day editing and finishing problems: a library that actually understands **video** (color, codec, proxy), not just thumbnails. Development is **open and ongoing** — we try to improve it every day.
-
-📷 Instagram: [@paulomentors](https://instagram.com/paulomentors) · ✉️ paulobatista19988@proton.me
-
-<br clear="left"/>
-
 ## Stack
 
 - **Desktop:** [Tauri 2](https://tauri.app) (Rust) · **UI:** React 19 + TypeScript (Vite) · **DB:** SQLite
@@ -122,25 +110,21 @@ Distribuído **gratuitamente** · Distributed **free of charge**.
 ---
 
 <div align="center">
-<sub>Feito com cuidado, por quem edita — para quem edita. · Made with care, by an editor — for editors.</sub>
-</div>
 
+<img src="docs/paulo.jpg" alt="Paulo Adriel" width="150" style="border-radius:16px" />
 
----
+### 👤 Sobre o criador · About the creator
 
-<div align="center">
+**Paulo Adriel** — produtor & editor de vídeo (Mentors Studio) e desenvolvedor indie · Porto Velho/RO, Brasil 🇧🇷
 
-<img src="docs/paulo.jpg" alt="Paulo Adriel" width="130" style="border-radius:16px" />
+Construo as ferramentas que eu mesmo uso, sempre partindo de um problema real de edição e finalização. O PRISMA é **open-source** e melhora todo dia.
 
-### 👤 Sobre o desenvolvedor · About the developer
-
-**Paulo Adriel** — produtor de vídeo & desenvolvedor indie · Porto Velho/RO, Brasil 🇧🇷
-Construo apps com Tauri, React, Flutter e Kotlin, sempre partindo de um problema real.
-*Video producer & indie developer. I build the tools I use myself.*
+*Video producer & editor and indie developer. I build the tools I use myself — PRISMA is open-source and improves every day.*
 
 [![Email](https://img.shields.io/badge/-paulothedeveloper@protonmail.com-8B5CF6?style=flat&logo=protonmail&logoColor=white)](mailto:paulothedeveloper@protonmail.com)
-[![Instagram](https://img.shields.io/badge/-Instagram-E4405F?style=flat&logo=instagram&logoColor=white)](https://instagram.com/)
-[![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://linkedin.com/)
+[![Instagram](https://img.shields.io/badge/-@paulomentors-E4405F?style=flat&logo=instagram&logoColor=white)](https://instagram.com/paulomentors)
 [![GitHub](https://img.shields.io/badge/-Paulothedeveloper-181717?style=flat&logo=github&logoColor=white)](https://github.com/Paulothedeveloper)
+
+<sub>Feito com cuidado, por quem edita — para quem edita. · Made with care, by an editor — for editors.</sub>
 
 </div>
