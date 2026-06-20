@@ -3,91 +3,124 @@
 # PRISMA
 
 ### Biblioteca inteligente de mídia, feita por um editor de vídeo — para editores de vídeo.
+### Smart media library, built by a video editor — for video editors.
 
-**Organize, leia e prepare seus arquivos de vídeo, áudio e imagem em um só lugar.**
-Gratuito · Funciona offline · Nunca toca nos seus arquivos originais.
+**Gratuito · Funciona offline · Nunca toca nos seus arquivos originais.**
+**Free · Works offline · Never touches your original files.**
 
 <sub>Windows · Tauri 2 (Rust) + React/TypeScript + SQLite + ffmpeg</sub>
 
-[**⬇ Baixar a última versão**](https://github.com/EllaeMyApp/prisma/releases/latest) · [Releases](https://github.com/EllaeMyApp/prisma/releases) · [Reportar um problema](https://github.com/EllaeMyApp/prisma/issues)
+[**⬇ Baixar / Download**](https://github.com/EllaeMyApp/prisma/releases/latest) · [Releases](https://github.com/EllaeMyApp/prisma/releases) · [Issues](https://github.com/EllaeMyApp/prisma/issues)
+
+**🇧🇷 [Português](#-português) · 🇺🇸 [English](#-english)**
 
 </div>
 
 ---
 
-## O que é o PRISMA
+## 🇧🇷 Português
 
-O PRISMA é um **gerenciador de acervo de mídia (DAM — Digital Asset Manager)** pensado do zero para o fluxo de quem **edita e finaliza vídeo**. Ele indexa as suas pastas **no lugar onde elas já estão** — não move, não copia, não renomeia e **não altera** nenhum arquivo original — e te dá uma central rápida para encontrar, pré-visualizar, etiquetar e **preparar** seus assets.
+### O que é o PRISMA
 
-Além de catalogar (como o Eagle e outros), o PRISMA entende a parte **técnica** do vídeo: ele lê os metadados de cor de cada clipe e te diz **como configurar a conversão de espaço de cor (CST) no DaVinci Resolve**, gera **proxies** automaticamente para tocar codecs profissionais, e tem uma oficina de **codificação e estabilização** embutida.
+O PRISMA é um **gerenciador de acervo de mídia (DAM)** pensado do zero para o fluxo de quem **edita e finaliza vídeo**. Ele indexa as suas pastas **no lugar onde elas já estão** — não move, não copia, não renomeia e **não altera** nenhum arquivo original — e te dá uma central rápida para encontrar, pré-visualizar, etiquetar e **preparar** seus assets.
 
-## Para quem é
+Além de catalogar, o PRISMA entende a parte **técnica** do vídeo: lê os metadados de cor de cada clipe e recomenda **a configuração de CST (espaço de cor) para o DaVinci Resolve**, gera **proxies** automaticamente para tocar codecs profissionais, **diagnostica problemas** (VFR, banding, codec pesado) e **conserta** com um clique — sempre em arquivo novo.
 
-- **Editores e finalizadores de vídeo** que têm milhares de arquivos espalhados em HDs e precisam achar tudo rápido.
-- **Coloristas** que querem a recomendação de CST certa por clipe (Rec.709, S-Log3, HLG, Apple Log…).
-- **Criadores de conteúdo / social media** (Reels, YouTube) que trabalham com material de câmera, celular e banco de assets.
-- Qualquer pessoa que queira uma biblioteca de mídia **local, privada e sem mensalidade**.
+### Para quem é
 
-## Principais recursos
+- **Editores e finalizadores** com milhares de arquivos espalhados em HDs.
+- **Coloristas** que querem a recomendação de CST certa por clipe (709, S-Log3, HLG, Apple Log…).
+- **Criadores de conteúdo** (Reels, YouTube) que trabalham com material de câmera e celular.
+- Quem quer uma biblioteca de mídia **local, privada e sem mensalidade**.
 
-| | |
-|---|---|
-| 🗂️ **Catálogo de qualquer mídia** | Vídeo, áudio, imagem, GIF e qualquer extensão. Miniaturas, forma de onda de áudio, cor dominante, duração, estrelas, notas e tags. |
-| ⚡ **Pré-visualização fluida** | Toca ao passar o mouse, player próprio com scrub quadro-a-quadro, e **proxies automáticos** para tocar ProRes/DNxHR/.mov/.m4v que o navegador não decodifica. |
-| 🎨 **Leitor CST** | Lê os metadados de cor (MediaInfo/ffprobe) e **recomenda a transformação de espaço de cor** para o DaVinci — incluindo o aviso quando o arquivo perdeu a etiqueta de transfer. |
-| 🛠️ **Oficina** | Codificação avançada (codec, resolução, FPS, qualidade, áudio, filtros), VFR→CFR, reencapsular, extrair áudio, proxies e entrega — tudo **não destrutivo** (saída em subpasta). |
-| 🎚️ **MotionSilk** | Estabilização de vídeo embutida. |
-| 🤖 **Busca por conteúdo com IA** | Ache por "praia", "pessoa", "céu". Opcional, com **sua própria chave** (veja abaixo). |
-| 📁 **Pastas inteligentes & Watch Folder** | Coleções por regra e indexação automática quando você adiciona arquivos. |
-| 🔎 **Busca por imagem** | Ache visualmente parecidos (hash perceptual, local). |
-| 🧹 **Duplicados & Lixeira** | Detecção de duplicados e lixeira reversível — **sem apagar nada do disco**. |
+### Principais recursos
 
-## Privacidade e segurança — pode usar sem medo
+- 🗂️ **Catálogo de qualquer mídia** (vídeo, áudio, imagem, GIF) — miniaturas, forma de onda, cor, tags, estrelas.
+- ⚡ **Pré-visualização fluida** + **proxies automáticos** para tocar ProRes/DNxHR/.mov.
+- 🎨 **Leitor CST de 2 nós** (entrada + saída) com destino de entrega configurável.
+- 🩺 **Saúde da biblioteca**: selos de diagnóstico e **auto-conserto** (VFR→CFR, anti-banding, proxy).
+- 🤖 **Assistente de pós com IA** (opcional): lê o seu vault e monta um plano de color citando a fonte.
+- 🛠️ **Oficina** de codificação + **MotionSilk** (estabilização).
+- 📁 **Pastas inteligentes**, **busca por imagem**, **duplicados** e **Lixeira** reversível.
 
-A gente leva isso a sério. O PRISMA foi feito para ser **seguro e transparente**:
+### Privacidade e segurança — pode usar sem medo
 
-- 🔒 **Roda 100% no seu computador.** Não há servidor, login nem nuvem. Sua biblioteca é sua.
-- 🛡️ **Nunca toca nos seus originais.** Toda operação (conversão, proxy, estabilização) gera **arquivos novos em subpastas**. O arquivo original fica exatamente como estava.
-- 👀 **Código aberto.** Este repositório é **público** — qualquer pessoa pode inspecionar exatamente o que o programa faz.
-- 🤖 **A IA é opcional e usa a SUA chave.** A busca por conteúdo só funciona se **você** colar a sua própria chave da API da Anthropic. A chave fica **somente neste PC** (em um arquivo de configurações local), **nunca é enviada para nós** nem para terceiros. Só a **miniatura** (512px) é enviada para análise, e **apenas quando você clica em "Analisar"** — nunca de forma automática.
-- ♻️ **Reversível.** Excluir vai para a Lixeira; "Remover da biblioteca" tira do catálogo do PRISMA **sem apagar o arquivo do disco**.
+- 🔒 **Roda 100% no seu computador.** Sem servidor, sem login, sem nuvem.
+- 🛡️ **Nunca toca nos originais.** Toda operação gera arquivos novos em subpastas.
+- 👀 **Código aberto.** Este repositório é público — dá pra inspecionar tudo.
+- 🤖 **A IA é opcional e usa a SUA chave** da API da Anthropic. A chave fica **só neste PC**, **nunca é enviada para nós**; só a miniatura (512px) é analisada, e **apenas quando você clica**. Sem IA, todo o resto funciona offline.
 
-> **Sobre a chave de IA:** você usa a sua própria chave para ter **controle total do custo** e da privacidade. Crie a sua em [console.anthropic.com](https://console.anthropic.com) e cole nas Configurações › IA e busca. Se você não quiser usar IA, todo o resto do PRISMA funciona normalmente, **offline**.
-
-## Como instalar
+### Como instalar
 
 1. Vá em **[Releases](https://github.com/EllaeMyApp/prisma/releases/latest)**.
-2. Baixe o instalador do Windows: **`PRISMA_x.y.z_x64-setup.exe`** (em português).
-3. Rode o instalador e abra o PRISMA. Adicione uma pasta e pronto.
+2. Baixe **`PRISMA_x.y.z_x64-setup.exe`** (instalador em português).
+3. Rode, abra o PRISMA e adicione uma pasta. O instalador é autocontido (ffmpeg embutido).
 
-> O instalador é **autocontido** — já vem com o ffmpeg e o motor de estabilização embutidos. Não precisa instalar mais nada.
+---
 
-## Quem fez
+## 🇺🇸 English
 
-<!-- Foto do criador entra aqui quando disponível: docs/creator.jpg -->
+### What PRISMA is
 
-O PRISMA é criado por **Paulo Adriel**, produtor e editor de vídeo. Ele nasceu de uma necessidade real do dia a dia de edição: ter uma biblioteca de mídia que entendesse de **vídeo de verdade** — cor, codec, proxy, finalização — e não só de miniaturas bonitas. Cada recurso saiu de um problema concreto de produção.
+PRISMA is a **Digital Asset Manager (DAM)** built from scratch for people who **edit and finish video**. It indexes your folders **in place** — it never moves, copies, renames or **alters** your original files — and gives you a fast hub to find, preview, tag and **prepare** your assets.
 
-O desenvolvimento é feito de forma **aberta e contínua**, pareando a experiência prática do Paulo em edição e color com IA de programação. **Todo dia a gente tenta melhorar o PRISMA** — corrigindo, refinando e adicionando o que falta para o fluxo de pós-produção.
+Beyond cataloging, PRISMA understands the **technical** side of video: it reads each clip's color metadata and recommends the **Color Space Transform (CST) setup for DaVinci Resolve**, auto-generates **proxies** to play pro codecs, **diagnoses problems** (VFR, banding, heavy codecs) and **fixes them** in one click — always to a new file.
 
-## Stack técnica
+### Who it's for
 
-- **Desktop:** [Tauri 2](https://tauri.app) (backend em **Rust**)
-- **Interface:** **React 19 + TypeScript** (Vite)
-- **Banco:** **SQLite** (rusqlite, embutido)
-- **Mídia:** **ffmpeg / ffprobe** locais (miniaturas, forma de onda, proxies, codificação)
-- **IA (opcional):** API da Anthropic (Claude) — chave do próprio usuário
+- **Editors & finishers** with thousands of files scattered across drives.
+- **Colorists** who want the right per-clip CST (709, S-Log3, HLG, Apple Log…).
+- **Content creators** (Reels, YouTube) working with camera and phone footage.
+- Anyone who wants a **local, private, subscription-free** media library.
 
-## Contribuindo e feedback
+### Key features
 
-O PRISMA está em evolução constante. Achou um bug, tem uma ideia ou quer um recurso? **Abra uma [issue](https://github.com/EllaeMyApp/prisma/issues).** Todo retorno ajuda a melhorar o programa para a comunidade.
+- 🗂️ **Catalog any media** (video, audio, image, GIF) — thumbnails, waveform, color, tags, ratings.
+- ⚡ **Fluid preview** + **automatic proxies** to play ProRes/DNxHR/.mov.
+- 🎨 **2-node CST reader** (input + output) with a configurable delivery target.
+- 🩺 **Library health**: diagnosis badges and **auto-fix** (VFR→CFR, anti-banding, proxy).
+- 🤖 **AI post-assistant** (optional): reads your notes vault and builds a color plan, citing the source.
+- 🛠️ **Encoder workshop** + **MotionSilk** (stabilization).
+- 📁 **Smart folders**, **image search**, **duplicates** and a reversible **Trash**.
 
-## Licença
+### Privacy & security — use it with confidence
 
-Distribuído **gratuitamente**. Uso livre.
+- 🔒 **Runs 100% on your computer.** No server, no login, no cloud.
+- 🛡️ **Never touches originals.** Every operation writes new files in subfolders.
+- 👀 **Open source.** This repo is public — inspect everything.
+- 🤖 **AI is optional and uses YOUR own Anthropic API key.** The key stays **only on your PC**, is **never sent to us**; only the 512px thumbnail is analyzed, and **only when you click**. Without AI, everything else works offline.
+
+### Install
+
+1. Go to **[Releases](https://github.com/EllaeMyApp/prisma/releases/latest)**.
+2. Download **`PRISMA_x.y.z_x64-setup.exe`**.
+3. Run it, open PRISMA and add a folder. The installer is self-contained (ffmpeg bundled).
+
+---
+
+## Quem fez · About the creator
+
+<img src="docs/creator.jpg" align="left" width="132" hspace="18" vspace="4" alt="Paulo Adriel — PRISMA" />
+
+**Paulo Adriel** — produtor e editor de vídeo (Mentors Studio). O PRISMA nasceu de problemas reais do dia a dia de edição e finalização: uma biblioteca que entendesse de **vídeo de verdade** (cor, codec, proxy), não só de miniaturas. O desenvolvimento é **aberto e contínuo** — todo dia a gente tenta melhorar.
+
+**Paulo Adriel** — video producer & editor. PRISMA was born from real day-to-day editing and finishing problems: a library that actually understands **video** (color, codec, proxy), not just thumbnails. Development is **open and ongoing** — we try to improve it every day.
+
+📷 Instagram: [@paulomentors](https://instagram.com/paulomentors) · ✉️ paulobatista19988@proton.me
+
+<br clear="left"/>
+
+## Stack
+
+- **Desktop:** [Tauri 2](https://tauri.app) (Rust) · **UI:** React 19 + TypeScript (Vite) · **DB:** SQLite
+- **Media:** ffmpeg / ffprobe · **AI (optional):** Anthropic API (Claude) — user's own key
+
+## Licença · License
+
+Distribuído **gratuitamente** · Distributed **free of charge**.
 
 ---
 
 <div align="center">
-<sub>Feito com cuidado, por quem edita — para quem edita.</sub>
+<sub>Feito com cuidado, por quem edita — para quem edita. · Made with care, by an editor — for editors.</sub>
 </div>

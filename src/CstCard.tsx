@@ -131,6 +131,16 @@ export function CstCard({ info }: { info: MediaInfo }) {
             />
           </div>
           <NodeBlock title="NÓ FINAL — CST de SAÍDA" color="out" n={nodeOut} />
+          <button
+            className="cst-copy-both"
+            onClick={() => {
+              navigator.clipboard.writeText(
+                `${nodeCopy("NÓ 1 — CST de ENTRADA", nodeIn)}\n\n${nodeCopy("NÓ FINAL — CST de SAÍDA", nodeOut)}`,
+              );
+            }}
+          >
+            <Icon name="copy" size={12} /> Copiar os 2 nós de uma vez
+          </button>
           <div className="cst-bridge">
             🌉 A <b>Saída do nó 1</b> = a <b>Entrada do nó final</b> (DaVinci Wide Gamut / Intermediate). Têm que casar.
           </div>

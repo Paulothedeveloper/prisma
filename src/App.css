@@ -1506,6 +1506,25 @@ body {
   color: var(--text-2);
   flex-shrink: 0;
 }
+.cst-copy-both {
+  width: 100%;
+  margin: 2px 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cst-copy-both:hover {
+  filter: brightness(1.08);
+}
 .cst-bridge {
   font-size: 10.5px;
   line-height: 1.5;
@@ -2983,6 +3002,45 @@ body {
 /* segundo pill (proxies) empilha acima do de IA pra não sobrepor */
 .ai-progress-pill.proxy-pill {
   bottom: 70px;
+}
+.ai-progress-pill.health-pill {
+  bottom: 118px;
+}
+
+/* selo de saúde no card (Briefing 6 — saúde da biblioteca) */
+.health-mark {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.health-mark.hm-red {
+  background: #ff453a;
+}
+.health-mark.hm-yellow {
+  background: #ff9f0a;
+}
+
+/* botão neutro da barra de lote (ex.: Consertar CFR) */
+.batch-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.batch-item:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ---------- Onboarding: dicas (coachmark) + boas-vindas ---------- */

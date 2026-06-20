@@ -1,6 +1,7 @@
 import { Icon } from "./Icons";
 import { useDismiss } from "./useDismiss";
 import { Logo } from "./Logo";
+import { t } from "./i18n";
 
 // Modal de boas-vindas (1ª vez que abre o app). Apresenta o PRISMA e libera as dicas
 // contextuais. Usa o overlay/animação padrão.
@@ -12,28 +13,28 @@ export function WelcomeModal({ onClose }: { onClose: () => void }) {
         <div className="welcome-logo">
           <Logo size={64} />
         </div>
-        <div className="welcome-title">Bem-vindo ao PRISMA</div>
-        <div className="welcome-sub">Sua biblioteca de mídia, feita pra quem edita vídeo.</div>
+        <div className="welcome-title">{t("welcome.title")}</div>
+        <div className="welcome-sub">{t("welcome.sub")}</div>
 
         <div className="welcome-points">
           <div className="welcome-point">
             <Icon name="folder" size={15} />
-            <span><b>Adicione uma pasta</b> — o PRISMA indexa no lugar, sem mover nem alterar seus arquivos.</span>
+            <span>{t("welcome.p1")}</span>
           </div>
           <div className="welcome-point">
             <Icon name="play" size={15} />
-            <span><b>Passe o mouse</b> pra pré-visualizar. Duplo-clique abre em tela cheia.</span>
+            <span>{t("welcome.p2")}</span>
           </div>
           <div className="welcome-point">
             <Icon name="sliders" size={15} />
-            <span><b>Leitor CST, Oficina e IA</b> te ajudam a preparar o material — tudo opcional e não destrutivo.</span>
+            <span>{t("welcome.p3")}</span>
           </div>
         </div>
 
         <div className="welcome-foot">
-          <span className="welcome-hint">Dicas vão aparecer conforme você usa cada recurso.</span>
+          <span className="welcome-hint">{t("welcome.hint")}</span>
           <button className="welcome-go" onClick={dismiss}>
-            Começar
+            {t("welcome.start")}
           </button>
         </div>
       </div>

@@ -14,22 +14,24 @@ import {
   vaultStatus,
   setVaultPath,
   reindexVault,
+  scanHealth,
 } from "./api";
 import { Icon, type IconName } from "./Icons";
 import { loadPrefs, savePrefs, ACCENTS, type Prefs } from "./prefs";
 import { fireTip, resetTips } from "./tips";
+import { t, LOCALES, getLocale, setLocale } from "./i18n";
 
 // Configurações em TÓPICOS (estilo Eagle, em português, design próprio do PRISMA).
 // Regra: nada de botão morto — cada controle aqui muda algo de verdade.
 type Tab = "geral" | "reproducao" | "importacao" | "ia" | "sync" | "sobre";
 
-const TABS: { id: Tab; label: string; icon: IconName }[] = [
-  { id: "geral", label: "Geral", icon: "sliders" },
-  { id: "reproducao", label: "Reprodução", icon: "play" },
-  { id: "importacao", label: "Importação", icon: "inbox" },
-  { id: "ia", label: "IA e busca", icon: "search" },
-  { id: "sync", label: "Sincronização", icon: "refresh" },
-  { id: "sobre", label: "Sobre", icon: "stack" },
+const TABS: { id: Tab; key: string; icon: IconName }[] = [
+  { id: "geral", key: "tab.general", icon: "sliders" },
+  { id: "reproducao", key: "tab.playback", icon: "play" },
+  { id: "importacao", key: "tab.import", icon: "inbox" },
+  { id: "ia", key: "tab.ai", icon: "search" },
+  { id: "sync", key: "tab.sync", icon: "refresh" },
+  { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
 const APP_VERSION = "0.4.0";
@@ -68,6 +70,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [proxyMsg, setProxyMsg] = useState("");
+  const [healthBusy, setHealthBusy] = useState(false);
+  const [healthMsg, setHealthMsg] = useState("");
 
   useEffect(() => {
     aiStatus().then((s) => {
@@ -159,7 +163,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
       <div ref={modalRef} className={`pref-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
-            <Icon name="sliders" size={16} /> Configurações
+            <Icon name="sliders" size={16} /> {t("settings.title")}
           </div>
           <button className="dup-x" onClick={close}>
             <Icon name="close" size={14} />
@@ -168,9 +172,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
         <div className="pref-body">
           <nav className="pref-nav">
-            {TABS.map((t) => (
-              <button key={t.id} className={`pref-nav-item ${tab === t.id ? "on" : ""}`} onClick={() => setTab(t.id)}>
-                <Icon name={t.icon} size={15} /> {t.label}
+            {TABS.map((tb) => (
+              <button key={tb.id} className={`pref-nav-item ${tab === tb.id ? "on" : ""}`} onClick={() => setTab(tb.id)}>
+                <Icon name={tb.icon} size={15} /> {t(tb.key)}
               </button>
             ))}
           </nav>
@@ -179,6 +183,22 @@ export function Settings({ onClose }: { onClose: () => void }) {
             {/* ---------- GERAL ---------- */}
             {tab === "geral" && (
               <>
+                <div className="pref-group">
+                  <div className="pref-label">{t("settings.language")}</div>
+                  <div className="pref-help">{t("settings.languageHelp")}</div>
+                  <div className="set-bulk-row">
+                    {LOCALES.map((l) => (
+                      <button
+                        key={l.id}
+                        className={`set-bulk-btn ${getLocale() === l.id ? "set-bulk-all" : ""}`}
+                        onClick={() => l.id !== getLocale() && setLocale(l.id)}
+                      >
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="pref-group">
                   <div className="pref-label">Cor de destaque</div>
                   <div className="pref-help">Define a cor de seleção, botões e detalhes do app.</div>
@@ -306,16 +326,53 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
             {/* ---------- IMPORTAÇÃO ---------- */}
             {tab === "importacao" && (
-              <Toggle
-                on={autotag}
-                onClick={() => {
-                  const v = !autotag;
-                  setAutotag(v);
-                  setAutotagImport(v);
-                }}
-                title="Auto-tag ao importar"
-                help="Cada item importado herda o nome da pasta de origem como tag."
-              />
+              <>
+                <Toggle
+                  on={autotag}
+                  onClick={() => {
+                    const v = !autotag;
+                    setAutotag(v);
+                    setAutotagImport(v);
+                  }}
+                  title="Auto-tag ao importar"
+                  help="Cada item importado herda o nome da pasta de origem como tag."
+                />
+                <div className="pref-group">
+                  <div className="pref-label">Escanear saúde da biblioteca</div>
+                  <div className="pref-help">
+                    Diagnostica todos os vídeos (VFR, banding, codec pesado…) e cria os atalhos "Saúde" na
+                    barra lateral. Roda em segundo plano, em paralelo. A saúde também é detectada sozinha
+                    quando você abre cada arquivo.
+                  </div>
+                  <button
+                    className="set-bulk-btn"
+                    disabled={healthBusy}
+                    onClick={async () => {
+                      setHealthBusy(true);
+                      setHealthMsg("");
+                      try {
+                        const n = await scanHealth(0);
+                        setHealthMsg(
+                          n > 0
+                            ? `Escaneando ${n.toLocaleString("pt-BR")} vídeos em segundo plano.`
+                            : "Tudo já diagnosticado.",
+                        );
+                      } catch (e) {
+                        setHealthMsg(`Erro: ${String(e)}`);
+                      } finally {
+                        setHealthBusy(false);
+                      }
+                    }}
+                  >
+                    <Icon name="refresh" size={13} /> Escanear saúde agora
+                  </button>
+                  {healthMsg && (
+                    <div className="set-status">
+                      <span className="set-dot on" /> {healthMsg}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
 
             {/* ---------- IA E BUSCA ---------- */}

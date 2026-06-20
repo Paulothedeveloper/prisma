@@ -149,6 +149,12 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
         )}
         {isAudio && playHover && <span className="audio-hover-ind"><Icon name="audio" size={20} /></span>}
 
+        {(asset.health_level === "red" || asset.health_level === "yellow") && (
+          <span
+            className={`health-mark hm-${asset.health_level}`}
+            title={asset.health_flags ? `Saúde: ${asset.health_flags}` : "Precisa de atenção"}
+          />
+        )}
         {dur && <span className="badge badge-dur">{dur}</span>}
         {asset.rating > 0 && (
           <span className="badge badge-rating">

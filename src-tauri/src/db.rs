@@ -24,6 +24,8 @@ pub struct Asset {
     pub color_bucket: Option<String>,
     pub thumbnail_path: Option<String>,
     pub proxy_path: Option<String>,
+    pub health_level: Option<String>,
+    pub health_flags: Option<String>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -78,6 +80,7 @@ pub struct Filter {
     pub warm: Option<String>,
     pub sat: Option<String>,
     pub orient: Option<String>, // portrait | landscape | square
+    pub health_flag: Option<String>, // filtra por flag de saúde: vfr|banding|proxy|8bitlog|mono...
     pub sort: Option<String>,
     #[serde(default)]
     pub limit: i64,
@@ -186,6 +189,8 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "trashed INTEGER NOT NULL DEFAULT 0", // Lixeira (soft-delete, estilo Eagle)
         "name TEXT", // nome de exibição (renomear sem tocar no arquivo, estilo Eagle)
         "phash INTEGER", // perceptual hash (dHash) pra "buscar por imagem" (similaridade)
+        "health_level TEXT", // diagnóstico em cache: red/yellow/green (Briefing 6, saúde da biblioteca)
+        "health_flags TEXT", // flags do diagnóstico: vfr,banding,proxy,8bitlog,mono... (CSV)
     ] {
         let _ = conn.execute(&format!("ALTER TABLE assets ADD COLUMN {col}"), []);
     }
@@ -277,6 +282,44 @@ pub fn search_vault(conn: &Connection, query: &str, limit: i64) -> rusqlite::Res
 /// Quantos chunks de vault estão indexados.
 pub fn vault_count(conn: &Connection) -> rusqlite::Result<i64> {
     conn.query_row("SELECT COUNT(*) FROM vault_chunks", [], |r| r.get(0))
+}
+
+/// Grava o diagnóstico em cache de um asset (saúde da biblioteca).
+pub fn set_health(conn: &Connection, path: &str, level: &str, flags: &str) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE assets SET health_level=?2, health_flags=?3 WHERE path=?1",
+        params![path, level, flags],
+    )?;
+    Ok(())
+}
+
+/// Vídeos ainda sem diagnóstico em cache (pro "Escanear saúde" em lote).
+pub fn assets_needing_health(conn: &Connection, limit: i64) -> rusqlite::Result<Vec<String>> {
+    let base = "SELECT path FROM assets WHERE type='video' AND health_level IS NULL AND trashed=0";
+    if limit <= 0 {
+        let mut stmt = conn.prepare(base)?;
+        let rows = stmt.query_map([], |r| r.get(0))?;
+        rows.collect()
+    } else {
+        let mut stmt = conn.prepare(&format!("{base} LIMIT ?1"))?;
+        let rows = stmt.query_map(params![limit], |r| r.get(0))?;
+        rows.collect()
+    }
+}
+
+/// Contagem por flag de saúde (pros atalhos inteligentes mostrarem o número).
+pub fn health_counts(conn: &Connection) -> rusqlite::Result<std::collections::HashMap<String, i64>> {
+    let mut stmt = conn.prepare(
+        "SELECT health_flags FROM assets WHERE health_flags IS NOT NULL AND health_flags<>'' AND trashed=0",
+    )?;
+    let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
+    let mut map = std::collections::HashMap::new();
+    for flags in rows.flatten() {
+        for f in flags.split(',').filter(|s| !s.is_empty()) {
+            *map.entry(f.to_string()).or_insert(0) += 1;
+        }
+    }
+    Ok(map)
 }
 
 pub fn upsert_folder(conn: &Connection, path: &str, added_at: i64) -> rusqlite::Result<i64> {
@@ -644,11 +687,14 @@ fn row_to_asset(r: &rusqlite::Row) -> rusqlite::Result<Asset> {
         color_bucket: r.get("color_bucket")?,
         thumbnail_path: r.get("thumbnail_path")?,
         proxy_path: r.get("proxy_path")?,
+        health_level: r.get("health_level")?,
+        health_flags: r.get("health_flags")?,
     })
 }
 
 const SELECT_COLS: &str = "id, path, filename, name, ext, type, size, modified_at, width, height,
-    duration, rating, notes, dominant_color, color_bucket, thumbnail_path, proxy_path";
+    duration, rating, notes, dominant_color, color_bucket, thumbnail_path, proxy_path,
+    health_level, health_flags";
 
 /// Busca/filtra com filtros combinados. Tudo via SQLite -> instantaneo.
 pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
@@ -702,6 +748,13 @@ pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     if let Some(t) = f.tag_id {
         sql.push_str(" AND EXISTS (SELECT 1 FROM asset_tags at WHERE at.asset_id=a.id AND at.tag_id=?)");
         args.push(Box::new(t));
+    }
+    if let Some(hf) = &f.health_flag {
+        if !hf.is_empty() {
+            // flags são CSV; casa o termo exato entre vírgulas
+            sql.push_str(" AND (',' || health_flags || ',') LIKE ?");
+            args.push(Box::new(format!("%,{hf},%")));
+        }
     }
     if let Some(folder) = &f.folder {
         if !folder.is_empty() {

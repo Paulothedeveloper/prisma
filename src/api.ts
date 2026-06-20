@@ -18,6 +18,8 @@ export interface Asset {
   color_bucket: string | null;
   thumbnail_path: string | null;
   proxy_path: string | null;
+  health_level: string | null; // red | yellow | green
+  health_flags: string | null; // CSV: vfr,banding,proxy...
 }
 
 export interface Tag {
@@ -77,6 +79,7 @@ export interface Filter {
   warm: string | null;
   sat: string | null;
   orient: string | null;
+  health_flag: string | null;
   sort: string | null;
   limit: number;
   offset: number;
@@ -389,6 +392,10 @@ export interface ColorPlanOut {
   note: string;
 }
 export const colorPlan = (path: string) => invoke<ColorPlanOut>("color_plan", { path });
+
+// ----- Saúde da biblioteca -----
+export const scanHealth = (limit: number) => invoke<number>("scan_health", { limit });
+export const healthCounts = () => invoke<Record<string, number>>("health_counts");
 
 // ----- Duplicados na importação -----
 export const resolveDup = (

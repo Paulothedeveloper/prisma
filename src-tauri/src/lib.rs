@@ -261,9 +261,18 @@ fn dedupe_keep_one(app: tauri::AppHandle) -> Result<i64, String> {
 }
 
 /// Lê metadados completos do arquivo (ffprobe) e recomenda o CST do DaVinci.
+/// Guarda o diagnóstico em cache (saúde da biblioteca) ao abrir o arquivo.
 #[tauri::command]
-fn probe_media(path: String) -> Result<mediainfo::MediaInfo, String> {
-    Ok(mediainfo::probe(std::path::Path::new(&path)))
+fn probe_media(app: tauri::AppHandle, path: String) -> Result<mediainfo::MediaInfo, String> {
+    let state = app.state::<AppState>();
+    let info = mediainfo::probe(std::path::Path::new(&path));
+    if info.video.is_some() {
+        let (level, flags) = mediainfo::health_summary(&info);
+        if let Ok(conn) = state.db.lock() {
+            let _ = db::set_health(&conn, &path, &level, &flags);
+        }
+    }
+    Ok(info)
 }
 
 /// OFICINA: dispara um job de conserto (VFR→CFR, transcode, proxy). Retorna o id do job.
@@ -1178,6 +1187,71 @@ REGRAS DE OURO: (1) NÃO invente nada — se não houver base nas notas pra algu
     }
 }
 
+// ---------- Saúde da biblioteca (diagnóstico em cache + lote) ----------
+
+/// Roda o diagnóstico (probe) de vários vídeos EM PARALELO e grava em cache.
+fn run_health_scan(app: tauri::AppHandle, db: Arc<Mutex<Connection>>, paths: Vec<String>) {
+    const WORKERS: usize = 6;
+    std::thread::spawn(move || {
+        let total = paths.len();
+        let paths = Arc::new(paths);
+        let next = Arc::new(AtomicUsize::new(0));
+        let done = Arc::new(AtomicUsize::new(0));
+        let n = WORKERS.min(total.max(1));
+        let mut handles = Vec::with_capacity(n);
+        for _ in 0..n {
+            let app = app.clone();
+            let db = db.clone();
+            let paths = paths.clone();
+            let next = next.clone();
+            let done = done.clone();
+            handles.push(std::thread::spawn(move || loop {
+                let i = next.fetch_add(1, Ordering::SeqCst);
+                if i >= paths.len() {
+                    break;
+                }
+                let path = &paths[i];
+                let info = mediainfo::probe(std::path::Path::new(path));
+                if info.video.is_some() {
+                    let (level, flags) = mediainfo::health_summary(&info);
+                    if let Ok(conn) = db.lock() {
+                        let _ = db::set_health(&conn, path, &level, &flags);
+                    }
+                }
+                let d = done.fetch_add(1, Ordering::SeqCst) + 1;
+                let _ = app.emit("health:progress", serde_json::json!({ "done": d, "total": total }));
+            }));
+        }
+        for h in handles {
+            let _ = h.join();
+        }
+        let _ = app.emit("health:done", ());
+    });
+}
+
+/// Escaneia a saúde dos vídeos ainda sem diagnóstico em cache. `limit<=0` = todos.
+#[tauri::command]
+fn scan_health(app: tauri::AppHandle, limit: i64) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let paths = {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        db::assets_needing_health(&conn, limit).map_err(|e| e.to_string())?
+    };
+    let n = paths.len();
+    if n > 0 {
+        run_health_scan(app.clone(), state.db.clone(), paths);
+    }
+    Ok(n)
+}
+
+/// Contagem por flag de saúde (pros atalhos inteligentes).
+#[tauri::command]
+fn health_counts(app: tauri::AppHandle) -> Result<std::collections::HashMap<String, i64>, String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    db::health_counts(&conn).map_err(|e| e.to_string())
+}
+
 /// Remove uma pasta da BIBLIOTECA (catálogo) — tira os assets dela e das subpastas do
 /// catálogo + metadados. NÃO apaga nada do disco. Para de monitorar a pasta também.
 #[tauri::command]
@@ -1373,6 +1447,8 @@ pub fn run() {
             reindex_vault,
             search_vault,
             color_plan,
+            scan_health,
+            health_counts,
             set_rating,
             set_notes,
             list_tags,

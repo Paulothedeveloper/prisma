@@ -418,6 +418,46 @@ fn indeterminado(motivo: &str) -> CstRec {
     }
 }
 
+/// Resume o diagnóstico num (nível, flags CSV) pra guardar em cache e filtrar a biblioteca.
+/// nível = pior achado (red > yellow > green). flags = tokens estáveis (vfr,banding,proxy,...).
+pub fn health_summary(info: &MediaInfo) -> (String, String) {
+    let mut level = "green";
+    let mut flags: Vec<String> = Vec::new();
+    for h in &info.health {
+        if h.level == "red" {
+            level = "red";
+        } else if h.level == "yellow" && level != "red" {
+            level = "yellow";
+        }
+        if let Some(fix) = &h.fix {
+            flags.push(fix.clone());
+        } else {
+            let l = h.label.to_lowercase();
+            let tok = if l.contains("8-bit") {
+                "8bitlog"
+            } else if l.contains("bt.2020") {
+                "bt2020notrc"
+            } else if l.contains("girado") {
+                "rotated"
+            } else if l.contains("mono") {
+                "mono"
+            } else if l.contains("sem áudio") {
+                "noaudio"
+            } else if l.contains("sample") {
+                "samplerate"
+            } else {
+                ""
+            };
+            if !tok.is_empty() {
+                flags.push(tok.to_string());
+            }
+        }
+    }
+    flags.sort();
+    flags.dedup();
+    (level.to_string(), flags.join(","))
+}
+
 /// Playbook por tipo de arquivo (Briefing 6 §5) — determinístico. Reconhece o tipo e
 /// resume conserto · CST · método. Complementa o plano da IA (que explica em detalhe).
 fn playbook(v: &VideoInfo, make: Option<&str>, cst: &CstRec, is_709: bool) -> Option<Playbook> {

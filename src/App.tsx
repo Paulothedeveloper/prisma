@@ -35,6 +35,7 @@ import {
   oficinaCancel,
   revealInExplorer,
   listSmart,
+  healthCounts,
   smartSearch,
   deleteSmart,
   aiAnalyzeMany,
@@ -66,6 +67,7 @@ import { extSuggestion } from "./extInfo";
 import { Coachmark } from "./Coachmark";
 import { WelcomeModal } from "./WelcomeModal";
 import { onTip, fireTip, isFirstLaunch, markWelcomed } from "./tips";
+import { t } from "./i18n";
 import { PopupButton } from "./Menu";
 import { TrafficLights } from "./TrafficLights";
 import "./App.css";
@@ -172,6 +174,7 @@ type View =
   | { t: "ext"; v: string; label: string }
   | { t: "collection"; v: number; label: string }
   | { t: "similar"; v: number; label: string }
+  | { t: "health"; v: string; label: string }
   | { t: "smart"; v: number; label: string };
 
 export default function App() {
@@ -211,6 +214,8 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [aiProgress, setAiProgress] = useState<{ done: number; total: number } | null>(null);
   const [proxyProgress, setProxyProgress] = useState<{ done: number; total: number; made: number } | null>(null);
+  const [hCounts, setHCounts] = useState<Record<string, number>>({});
+  const [healthProgress, setHealthProgress] = useState<{ done: number; total: number } | null>(null);
   const [tip, setTip] = useState<{ id: string; rect: DOMRect } | null>(null);
   const [welcome, setWelcome] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -272,6 +277,7 @@ export default function App() {
         warm: fWarm || null,
         sat: fSat || null,
         orient: fOrient || null,
+        health_flag: view.t === "health" ? view.v : null,
         sort,
         limit: PAGE,
         offset,
@@ -310,6 +316,7 @@ export default function App() {
     setFolders(await getFolders());
     setCollections(await listCollections());
     setSmartFolders(await listSmart());
+    healthCounts().then(setHCounts).catch(() => {});
   }, []);
 
   // Filtro/busca/ordenação: recarrega EM LUGAR (sem cascata — pra não reanimar enquanto digita).
@@ -439,6 +446,15 @@ export default function App() {
     ).then((u) => unl.push(u));
     listen("proxy:done", () => {
       setProxyProgress(null);
+      runSearch(true);
+    }).then((u) => unl.push(u));
+    // Escaneamento de saúde da biblioteca: progresso + fim → atualiza os atalhos "Saúde".
+    listen<{ done: number; total: number }>("health:progress", (e) => setHealthProgress(e.payload)).then((u) =>
+      unl.push(u),
+    );
+    listen("health:done", () => {
+      setHealthProgress(null);
+      refreshMeta();
       runSearch(true);
     }).then((u) => unl.push(u));
 
@@ -663,6 +679,17 @@ export default function App() {
     });
   }, [selectedIds, clearSelection, removeWithAnim]);
 
+  // Conserto VFR→CFR em lote (saúde da biblioteca). FPS é auto-detectado por arquivo no
+  // backend; já-feitos são pulados. Pesado → confirma antes pela quantidade.
+  const batchFixCfr = useCallback(() => {
+    const vids = assets.filter((a) => selectedIds.has(a.id) && a.type === "video");
+    if (vids.length === 0) return;
+    if (!window.confirm(`Converter ${vids.length} vídeo(s) pra CFR?\n\nCada um gera um arquivo novo em "PRONTOS CFR/" (original intacto). É pesado — acompanhe no painel de tarefas.`))
+      return;
+    vids.forEach((a) => oficinaRun("vfr_cfr", a.path, { codec: "h265", crf: 18 }));
+    clearSelection();
+  }, [assets, selectedIds, clearSelection]);
+
   const batchAddCollection = useCallback(
     async (cid: number) => {
       await addToCollection(cid, [...selectedIds]);
@@ -774,7 +801,7 @@ export default function App() {
           <input
             ref={searchRef}
             className="search"
-            placeholder="Buscar"
+            placeholder={t("toolbar.search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => fireTip("search", searchRef.current)}
@@ -935,7 +962,7 @@ export default function App() {
           </div>
 
           <div className="side-group">
-            <div className="side-title">Atalhos inteligentes</div>
+            <div className="side-title">{t("side.smartShortcuts")}</div>
             {SMART_PRESETS.map((p) => (
               <button
                 key={p.id}
@@ -950,9 +977,40 @@ export default function App() {
             ))}
           </div>
 
+          {(hCounts.vfr || hCounts.banding || hCounts.proxy) ? (
+            <div className="side-group">
+              <div className="side-title">{t("side.health")}</div>
+              {[
+                { flag: "vfr", label: "Precisam de CFR", icon: "refresh" as const },
+                { flag: "banding", label: "Risco de banding", icon: "image" as const },
+                { flag: "proxy", label: "Proxy recomendado", icon: "video" as const },
+              ]
+                .filter((s) => hCounts[s.flag])
+                .map((s) => (
+                  <button
+                    key={s.flag}
+                    className={`side-item ${isView({ t: "health", v: s.flag, label: s.label }) ? "active" : ""}`}
+                    onClick={() =>
+                      setView(
+                        isView({ t: "health", v: s.flag, label: s.label })
+                          ? { t: "all" }
+                          : { t: "health", v: s.flag, label: s.label }
+                      )
+                    }
+                  >
+                    <span className="side-ico">
+                      <Icon name={s.icon} size={16} />
+                    </span>
+                    <span className="side-label">{s.label}</span>
+                    <span className="count">{hCounts[s.flag]}</span>
+                  </button>
+                ))}
+            </div>
+          ) : null}
+
           <div className="side-group">
             <div className="side-title side-title-row">
-              Pastas inteligentes
+              {t("side.smartFolders")}
               <button className="side-add" title="Nova pasta inteligente" onClick={() => setSmartBuilder({ editing: null })}>
                 <Icon name="plus" size={13} />
               </button>
@@ -1092,7 +1150,7 @@ export default function App() {
           </div>
 
           <div className="side-group">
-            <div className="side-title">Tipos</div>
+            <div className="side-title">{t("side.kinds")}</div>
             {CATEGORY_ORDER.map((c) => {
               const n = countMap.get(c) ?? 0;
               if (!n) return null;
@@ -1148,7 +1206,7 @@ export default function App() {
 
           {counts.by_color.length > 0 && (
             <div className="side-group">
-              <div className="side-title">Cores</div>
+              <div className="side-title">{t("side.colors")}</div>
               <div className="palette">
                 {counts.by_color.map(([b, n]) => (
                   <button
@@ -1167,7 +1225,7 @@ export default function App() {
 
           {tags.length > 0 && (
             <div className="side-group">
-              <div className="side-title">Tags</div>
+              <div className="side-title">{t("side.tags")}</div>
               {tags.map((t) => (
                 <SideItem
                   key={t.id}
@@ -1408,6 +1466,13 @@ export default function App() {
         </div>
       )}
 
+      {healthProgress && (
+        <div className="ai-progress-pill health-pill">
+          <span className="ai-pill-dot" />
+          Escaneando saúde… {healthProgress.done}/{healthProgress.total}
+        </div>
+      )}
+
       {smartBuilder && (
         <SmartBuilder
           editing={smartBuilder.editing}
@@ -1472,6 +1537,9 @@ export default function App() {
             title="Gera tags + descrição de conteúdo (sua API Claude)"
           >
             <Icon name="sliders" size={13} /> Analisar com IA
+          </button>
+          <button className="batch-item" onClick={batchFixCfr} title="Converte os vídeos VFR selecionados pra CFR (arquivo novo, original intacto)">
+            <Icon name="refresh" size={13} /> Consertar (CFR)
           </button>
           <button className="batch-trash" onClick={batchTrash}>
             <Icon name="trash" size={13} /> Mover pra Lixeira
