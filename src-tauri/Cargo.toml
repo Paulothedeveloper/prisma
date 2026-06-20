@@ -31,7 +31,17 @@ dirs = "5"
 reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"], default-features = false }
 base64 = "0.22"
 notify = "6"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [profile.release]
+# Otimização de tamanho/perf — subconjunto SEGURO. NOTA: o binário (~95MB) é dominado
+# pelos executáveis embutidos (ffmpeg+gyroflow); estes flags encolhem só o código Rust
+# (ganho modesto) ao custo de build mais lento. `panic = "abort"` foi DELIBERADAMENTE
+# omitido: há `.unwrap()` em threads worker (ai/health/proxy) cujo panic hoje é
+# recuperável (mata só a thread) — com abort viraria crash do app inteiro. Religar só
+# depois de trocar esses unwrap por tratamento de erro (tarefa de hardening do Bloco 1).
+opt-level = "s"
+lto = true
+codegen-units = 1
 strip = true
-lto = "thin"

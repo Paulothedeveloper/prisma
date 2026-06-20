@@ -1,12 +1,15 @@
 mod ai;
 mod classify;
 mod db;
+mod features;
 mod indexer;
 mod mediainfo;
 mod oficina;
 mod thumbs;
 mod vault;
 mod watcher;
+
+use features::FeatureFlags;
 
 use rusqlite::Connection;
 use std::collections::HashMap;
@@ -51,6 +54,14 @@ fn ensure_drag_icon(data_dir: &std::path::Path) -> PathBuf {
 fn drag_icon(app: tauri::AppHandle) -> Result<String, String> {
     let state = app.state::<AppState>();
     Ok(state.drag_icon.to_string_lossy().to_string())
+}
+
+/// Flags de edição/licença (núcleo sempre livre; avançados gateáveis no futuro).
+/// O frontend lê isto uma vez no boot pra decidir o que mostrar.
+#[tauri::command]
+fn feature_flags(app: tauri::AppHandle) -> Result<FeatureFlags, String> {
+    let state = app.state::<AppState>();
+    Ok(FeatureFlags::resolve(&state.data_dir))
 }
 
 #[derive(serde::Serialize)]
@@ -872,9 +883,13 @@ fn rename_files(app: tauri::AppHandle, items: Vec<RenameItem>) -> Result<Vec<Ren
                 let dir = new_path.parent().map(|d| d.to_string_lossy().to_string()).unwrap_or_default();
                 let np = new_path.to_string_lossy().to_string();
                 let _ = db::set_path(&conn, it.id, &np, clean, &ext, &dir);
+                tracing::info!(id = it.id, from = %old, to = %np, "rename_files: arquivo renomeado");
                 out.push(RenameResult { id: it.id, old_path: old, new_path: np, ok: true, error: None });
             }
-            Err(e) => out.push(RenameResult { id: it.id, old_path: old.clone(), new_path: new_path.to_string_lossy().to_string(), ok: false, error: Some(e.to_string()) }),
+            Err(e) => {
+                tracing::warn!(id = it.id, from = %old, to = %new_path.display(), erro = %e, "rename_files: FALHA ao renomear");
+                out.push(RenameResult { id: it.id, old_path: old.clone(), new_path: new_path.to_string_lossy().to_string(), ok: false, error: Some(e.to_string()) });
+            }
         }
     }
     Ok(out)
@@ -1329,6 +1344,15 @@ fn reset_app(app: tauri::AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Logs estruturados. Controlável via env PRISMA_LOG (ex.: PRISMA_LOG=debug);
+    // padrão "info". `try_init` para não dar pânico se já inicializado.
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_env("PRISMA_LOG")
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .try_init();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -1435,6 +1459,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            feature_flags,
             index_path,
             search_assets,
             get_counts,
