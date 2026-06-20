@@ -1089,7 +1089,7 @@ pub struct ColorPlanOut {
 /// Plano de Color sob medida (Briefing 6 §4): metadados + diagnóstico + CST + RAG do vault → Haiku.
 /// O técnico (CST/diagnóstico) é determinístico e já vem nos cards; aqui a IA só MONTA/EXPLICA.
 #[tauri::command]
-fn color_plan(app: tauri::AppHandle, path: String) -> Result<ColorPlanOut, String> {
+fn color_plan(app: tauri::AppHandle, path: String, lang: Option<String>) -> Result<ColorPlanOut, String> {
     let state = app.state::<AppState>();
     let settings = ai::load_settings(&state.data_dir);
     let info = mediainfo::probe(std::path::Path::new(&path));
@@ -1166,17 +1166,22 @@ fn color_plan(app: tauri::AppHandle, path: String) -> Result<ColorPlanOut, Strin
         if v.map(|x| x.vfr).unwrap_or(false) { "VFR" } else { "CFR" },
     );
 
-    let system = "Você é o assistente de pós-produção do PRISMA, para um editor/colorista brasileiro. \
-Monte um PLANO DE COLOR conciso e prático em português, baseado APENAS no contexto técnico e nas NOTAS DO VAULT fornecidas. \
+    let resp_lang = match lang.as_deref() {
+        Some("en") => "Responda em INGLÊS.",
+        Some("es") => "Responda em ESPANHOL.",
+        _ => "Responda em PORTUGUÊS.",
+    };
+    let system = format!("Você é o assistente de pós-produção do PRISMA, para um editor/colorista. {resp_lang} \
+Monte um PLANO DE COLOR conciso e prático, baseado APENAS no contexto técnico e nas NOTAS DO VAULT fornecidas. \
 REGRAS DE OURO: (1) NÃO invente nada — se não houver base nas notas pra alguma recomendação, escreva 'sem regra no vault — confira manualmente'. \
 (2) O CST e o diagnóstico técnico são DETERMINÍSTICOS e já foram calculados; explique-os, não os contradiga. \
 (3) Cite a nota-fonte entre colchetes [Nota › Heading] sempre que usar uma regra do vault. \
-(4) Marque incerteza quando a origem/transfer for deduzida. Seja direto, em tópicos curtos.";
+(4) Marque incerteza quando a origem/transfer for deduzida. Seja direto, em tópicos curtos.");
     let user = format!(
         "METADADOS:\n{meta}\n\nDIAGNÓSTICO (selos):\n{diag}\n\nCST (determinístico):\n{cst_txt}\n\nNOTAS DO VAULT:\n{vault_text}\n\nCONTEXTO FIXO DO EDITOR: institucional (SEPAT) + clientes (Mentors); entrega Reels/web Rec.709; usa método de 2 nós + tempero La Creme.\n\nMonte o plano cobrindo: tipo detectado; precisa CFR?; método de nós; alvos de exposição; LUT de tempero e dosagem; avisos. Cite as notas usadas."
     );
 
-    match ai::ask_text(&key, &settings.model(), system, &user) {
+    match ai::ask_text(&key, &settings.model(), &system, &user) {
         Ok(plan) => Ok(ColorPlanOut { ok: true, plan, sources, note: String::new() }),
         Err(e) => Ok(ColorPlanOut {
             ok: false,

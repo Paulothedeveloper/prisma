@@ -11,6 +11,7 @@ import { FixConfirm } from "./FixConfirm";
 import { ColorPlanCard } from "./ColorPlanCard";
 import { useDismiss } from "./useDismiss";
 import { fireTip } from "./tips";
+import { t } from "./i18n";
 import { getProxy, renameAsset, duplicateAsset, refreshThumb, setCustomThumb } from "./api";
 
 // Codecs que o WebView decodifica. ProRes/DNxHR ficam de fora → prévia no player externo.
@@ -276,7 +277,7 @@ export function Inspector({
   return (
     <aside ref={asideRef} className={`inspector${closing ? " closing" : ""}`}>
       <div className="insp-head">
-        <span className="insp-title">Detalhes</span>
+        <span className="insp-title">{t("insp.details")}</span>
         <button className="icon-btn" onClick={dismiss}>
           <Icon name="close" size={14} />
         </button>
@@ -302,7 +303,7 @@ export function Inspector({
                 className="insp-openext"
                 onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
               >
-                <Icon name="play" size={14} /> Abrir no player
+                <Icon name="play" size={14} /> {t("insp.openPlayer")}
               </button>
               <span className="insp-codec">
                 {info?.video?.codec?.toUpperCase() ?? "Vídeo"} — gere um proxy na Oficina pra tocar aqui
@@ -353,21 +354,17 @@ export function Inspector({
       <Stars value={rating} onChange={changeRating} />
 
       <div className="insp-actions">
-        <button onClick={() => onPreview(asset)}>Visualizar</button>
-        <button onClick={() => revealInExplorer(asset.path)}>Explorer</button>
-        <button onClick={() => navigator.clipboard.writeText(asset.path)}>Copiar caminho</button>
-        <button onClick={() => navigator.clipboard.writeText(folderPath)}>Copiar pasta</button>
-        <button onClick={() => setRenaming(true)}>Renomear</button>
-        <button onClick={doDuplicate}>Duplicar</button>
-        <button onClick={doRefreshThumb} title="Regenerar a miniatura">Atualizar capa</button>
-        <button onClick={doCustomThumb} title="Escolher uma imagem como capa">Capa custom</button>
-        {aiAble && (
-          <button onClick={() => onFindSimilar(asset)} title="Achar imagens parecidas">
-            Buscar semelhantes
-          </button>
-        )}
+        <button onClick={() => onPreview(asset)}>{t("insp.view")}</button>
+        <button onClick={() => revealInExplorer(asset.path)}>{t("insp.explorer")}</button>
+        <button onClick={() => navigator.clipboard.writeText(asset.path)}>{t("insp.copyPath")}</button>
+        <button onClick={() => navigator.clipboard.writeText(folderPath)}>{t("insp.copyFolder")}</button>
+        <button onClick={() => setRenaming(true)}>{t("insp.rename")}</button>
+        <button onClick={doDuplicate}>{t("insp.duplicate")}</button>
+        <button onClick={doRefreshThumb}>{t("insp.updateThumb")}</button>
+        <button onClick={doCustomThumb}>{t("insp.customThumb")}</button>
+        {aiAble && <button onClick={() => onFindSimilar(asset)}>{t("insp.findSimilar")}</button>}
       </div>
-      <div className="insp-hint">Arraste o card direto pro DaVinci / Premiere</div>
+      <div className="insp-hint">{t("insp.dragHint")}</div>
 
       {/* Playbook: tipo reconhecido + caminho resumido (determinístico) */}
       {info?.ok && v && info.playbook && (
@@ -399,17 +396,17 @@ export function Inspector({
       {/* Vídeo */}
       {v && (
         <div className="insp-block">
-          <div className="insp-section-title">Vídeo</div>
+          <div className="insp-section-title">{t("insp.video")}</div>
           <Row k="Codec" v={[v.codec?.toUpperCase(), v.profile].filter(Boolean).join(" · ")} />
           <Row
-            k="Resolução"
+            k={t("insp.resolution")}
             v={
               v.width && v.height
                 ? (() => {
                     const rot = v.rotation === 90 || v.rotation === 270;
                     const w = rot ? v.height : v.width;
                     const h = rot ? v.width : v.height;
-                    return `${w} × ${h}${rot ? " (orientada)" : ""}`;
+                    return `${w} × ${h}${rot ? ` (${t("insp.oriented")})` : ""}`;
                   })()
                 : null
             }
@@ -425,7 +422,7 @@ export function Inspector({
       {/* Cor */}
       {v && (v.color_primaries || v.transfer || v.matrix || v.range) && (
         <div className="insp-block">
-          <div className="insp-section-title">Cor</div>
+          <div className="insp-section-title">{t("insp.color")}</div>
           <Row k="Primaries" v={v.color_primaries} />
           <Row k="Transfer" v={v.transfer} />
           <Row k="Matrix" v={v.matrix} />
@@ -436,7 +433,7 @@ export function Inspector({
       {/* Áudio */}
       {a && (
         <div className="insp-block">
-          <div className="insp-section-title">Áudio</div>
+          <div className="insp-section-title">{t("insp.audio")}</div>
           <Row k="Codec" v={a.codec?.toUpperCase()} />
           <Row k="Canais" v={a.channels ? `${a.channels}` : null} />
           <Row k="Sample rate" v={a.sample_rate ? `${(a.sample_rate / 1000).toFixed(1)} kHz` : null} />
@@ -470,11 +467,11 @@ export function Inspector({
 
       {/* Metadados básicos (sempre) */}
       <div className="insp-block">
-        <div className="insp-section-title">Arquivo</div>
-        <Row k="Tipo" v={asset.type} />
-        <Row k="Extensão" v={`.${asset.ext}`} />
-        <Row k="Tamanho" v={fmtSize(asset.size)} />
-        {!v && <Row k="Duração" v={fmtDur(asset.duration)} />}
+        <div className="insp-section-title">{t("insp.file")}</div>
+        <Row k={t("insp.type")} v={asset.type} />
+        <Row k={t("insp.ext")} v={`.${asset.ext}`} />
+        <Row k={t("insp.size")} v={fmtSize(asset.size)} />
+        {!v && <Row k={t("insp.duration")} v={fmtDur(asset.duration)} />}
         {asset.dominant_color && (
           <div className="meta-row">
             <span className="meta-k">Cor</span>
@@ -488,7 +485,7 @@ export function Inspector({
 
       {/* Tags */}
       <div className="insp-block">
-        <div className="insp-section-title">Tags</div>
+        <div className="insp-section-title">{t("insp.tags")}</div>
         <div className="tag-list">
           {tags.map((t) => (
             <span key={t.id} className="tag-chip">
@@ -498,11 +495,11 @@ export function Inspector({
               </button>
             </span>
           ))}
-          {tags.length === 0 && <span className="tag-empty">sem tags</span>}
+          {tags.length === 0 && <span className="tag-empty">{t("insp.notags")}</span>}
         </div>
         <input
           className="field"
-          placeholder="+ tag (Enter)"
+          placeholder={t("insp.addtag")}
           value={newTag}
           onChange={(e) => setNewTag(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && commitTag()}
@@ -510,7 +507,7 @@ export function Inspector({
         {aiAble && (
           <button className="ai-btn" onClick={analyzeAI} disabled={aiBusy}>
             <Icon name="sliders" size={12} />
-            {aiBusy ? "Analisando conteúdo…" : "Analisar conteúdo com IA"}
+            {aiBusy ? `${t("plan.busy")}` : t("insp.analyzeAI")}
           </button>
         )}
         {aiErr && <div className="ai-err">{aiErr}</div>}
@@ -518,7 +515,7 @@ export function Inspector({
 
       {/* Coleções */}
       <div className="insp-block">
-        <div className="insp-section-title">Coleções</div>
+        <div className="insp-section-title">{t("insp.collections")}</div>
         <div className="tag-list">
           {assetColls.map((cid) => (
             <span key={cid} className="tag-chip coll-chip">
@@ -552,7 +549,7 @@ export function Inspector({
 
       {/* Notas */}
       <div className="insp-block">
-        <div className="insp-section-title">Notas</div>
+        <div className="insp-section-title">{t("insp.notes")}</div>
         <textarea
           className="field notes"
           placeholder="Anotações…"

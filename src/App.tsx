@@ -1498,7 +1498,7 @@ export default function App() {
 
       {selectedIds.size > 1 && (
         <div className="batch-bar">
-          <span className="batch-count">{selectedIds.size} selecionados</span>
+          <span className="batch-count">{selectedIds.size} {t("batch.selected")}</span>
           <div className="batch-sep" />
           {collections.length > 0 && (
             <PopupButton
@@ -1536,16 +1536,16 @@ export default function App() {
             }}
             title="Gera tags + descrição de conteúdo (sua API Claude)"
           >
-            <Icon name="sliders" size={13} /> Analisar com IA
+            <Icon name="sliders" size={13} /> {t("batch.ai")}
           </button>
-          <button className="batch-item" onClick={batchFixCfr} title="Converte os vídeos VFR selecionados pra CFR (arquivo novo, original intacto)">
-            <Icon name="refresh" size={13} /> Consertar (CFR)
+          <button className="batch-item" onClick={batchFixCfr} title="VFR → CFR">
+            <Icon name="refresh" size={13} /> {t("batch.fixCfr")}
           </button>
           <button className="batch-trash" onClick={batchTrash}>
-            <Icon name="trash" size={13} /> Mover pra Lixeira
+            <Icon name="trash" size={13} /> {t("batch.trash")}
           </button>
           <button className="batch-clear" onClick={clearSelection}>
-            Limpar
+            {t("batch.clear")}
           </button>
         </div>
       )}

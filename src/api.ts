@@ -162,6 +162,8 @@ export interface HealthFinding {
   label: string;
   detail: string;
   fix: string | null; // "cfr" | "banding" | "proxy" | null
+  key: string; // token estável p/ traduzir (health.<key>.label/detail)
+  arg: string | null; // valor dinâmico ({x})
 }
 
 export interface Playbook {
@@ -391,7 +393,8 @@ export interface ColorPlanOut {
   sources: string[];
   note: string;
 }
-export const colorPlan = (path: string) => invoke<ColorPlanOut>("color_plan", { path });
+export const colorPlan = (path: string, lang = "pt") =>
+  invoke<ColorPlanOut>("color_plan", { path, lang });
 
 // ----- Saúde da biblioteca -----
 export const scanHealth = (limit: number) => invoke<number>("scan_health", { limit });

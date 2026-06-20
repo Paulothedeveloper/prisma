@@ -41,9 +41,11 @@ pub struct Playbook {
 #[derive(Serialize, Default, Clone)]
 pub struct HealthFinding {
     pub level: String,        // "red" | "yellow" | "green"
-    pub label: String,        // curto (vira o selo)
-    pub detail: String,       // explicação
+    pub label: String,        // curto, PT (fallback / uso no prompt da IA)
+    pub detail: String,       // explicação, PT (fallback / prompt)
     pub fix: Option<String>,  // op de auto-conserto: "cfr" | "banding" | "proxy" | null
+    pub key: String,          // token estável p/ traduzir no front (health.<key>.label/detail)
+    pub arg: Option<String>,  // valor dinâmico (graus de rotação, sample rate) → {x}
 }
 
 #[derive(Serialize, Default)]
@@ -528,16 +530,19 @@ fn diagnose(
     is_709: bool,
 ) -> Vec<HealthFinding> {
     let mut out = Vec::new();
-    let f = |level: &str, label: &str, detail: &str, fix: Option<&str>| HealthFinding {
+    let f = |level: &str, key: &str, label: &str, detail: &str, fix: Option<&str>| HealthFinding {
         level: level.into(),
         label: label.into(),
         detail: detail.into(),
         fix: fix.map(|s| s.into()),
+        key: key.into(),
+        arg: None,
     };
 
     if v.vfr {
         out.push(f(
             "red",
+            "vfr",
             "VFR",
             "Frame rate variável — desincroniza o áudio e trava o scrub no DaVinci. Converta pra CFR.",
             Some("cfr"),
@@ -546,6 +551,7 @@ fn diagnose(
     if v.bit_depth == Some(8) && needs_cst {
         out.push(f(
             "yellow",
+            "8bitlog",
             "8-bit Log",
             "Pouca margem de cor — mão leve no grade; cuidado com banding em céu/parede lisos.",
             None,
@@ -566,6 +572,7 @@ fn diagnose(
             if bpp < 0.07 {
                 out.push(f(
                     "yellow",
+                    "banding",
                     "Bitrate baixo",
                     "Log/HDR com bitrate apertado → risco de banding ao graduar. Reencode com mais bitrate (CRF 16).",
                     Some("banding"),
@@ -577,6 +584,7 @@ fn diagnose(
     if (prim.contains("bt2020") || prim.contains("2020")) && v.transfer.is_none() {
         out.push(f(
             "yellow",
+            "bt2020notrc",
             "BT.2020 sem transfer",
             "Provável HLG (o transcode perdeu a etiqueta). Confirme no ARQUIVO ORIGINAL da câmera.",
             None,
@@ -584,12 +592,15 @@ fn diagnose(
     }
     if let Some(r) = v.rotation {
         if r != 0 {
-            out.push(f(
+            let mut fd = f(
                 "yellow",
+                "rotated",
                 &format!("Girado {r}°"),
                 "A resolução pode aparecer trocada — o PRISMA já mostra orientada.",
                 None,
-            ));
+            );
+            fd.arg = Some(r.to_string());
+            out.push(fd);
         }
     }
     let codec = v.codec.as_deref().unwrap_or("").to_ascii_lowercase();
@@ -598,35 +609,39 @@ fn diagnose(
     if heavy && duration.unwrap_or(0.0) > 60.0 {
         out.push(f(
             "yellow",
+            "proxy",
             "Codec pesado",
             "Codec 10-bit longo pode travar o scrub em máquina fraca. Gere um proxy pra editar liso.",
             Some("proxy"),
         ));
     }
     match audio {
-        None => out.push(f("yellow", "Sem áudio", "O arquivo não tem trilha de áudio.", None)),
+        None => out.push(f("yellow", "noaudio", "Sem áudio", "O arquivo não tem trilha de áudio.", None)),
         Some(a) => {
             if a.channels == Some(1) {
-                out.push(f("yellow", "Áudio mono", "Áudio em 1 canal (mono) — confira antes de editar.", None));
+                out.push(f("yellow", "mono", "Áudio mono", "Áudio em 1 canal (mono) — confira antes de editar.", None));
             }
             if let Some(sr) = a.sample_rate {
                 let common = [32000, 44100, 48000, 88200, 96000, 176400, 192000];
                 if !common.contains(&sr) {
-                    out.push(f(
+                    let mut fd = f(
                         "yellow",
+                        "samplerate",
                         "Sample rate incomum",
                         &format!("Áudio a {sr} Hz — fora do comum (48k/44.1k); confira se sincroniza."),
                         None,
-                    ));
+                    );
+                    fd.arg = Some(sr.to_string());
+                    out.push(fd);
                 }
             }
         }
     }
     if is_709 && !v.vfr {
-        out.push(f("green", "Rec.709", "Material já normalizado — sem CST, grade direto.", None));
+        out.push(f("green", "rec709", "Rec.709", "Material já normalizado — sem CST, grade direto.", None));
     }
     if out.is_empty() {
-        out.push(f("green", "OK", "Nenhum problema técnico detectado.", None));
+        out.push(f("green", "ok", "OK", "Nenhum problema técnico detectado.", None));
     }
     out
 }
