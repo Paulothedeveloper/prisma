@@ -10,7 +10,7 @@
 
 <sub>Windows · Tauri 2 (Rust) + React/TypeScript + SQLite + ffmpeg</sub>
 
-[**⬇ Baixar / Download**](https://github.com/EllaeMyApp/prisma/releases/latest) · [Releases](https://github.com/EllaeMyApp/prisma/releases) · [Issues](https://github.com/EllaeMyApp/prisma/issues)
+[**⬇ Baixar / Download**](https://github.com/Paulothedeveloper/prisma/releases/latest) · [Releases](https://github.com/Paulothedeveloper/prisma/releases) · [Issues](https://github.com/Paulothedeveloper/prisma/issues)
 
 **🇧🇷 [Português](#-português) · 🇺🇸 [English](#-english)**
 
@@ -52,7 +52,7 @@ Além de catalogar, o PRISMA entende a parte **técnica** do vídeo: lê os meta
 
 ### Como instalar
 
-1. Vá em **[Releases](https://github.com/EllaeMyApp/prisma/releases/latest)**.
+1. Vá em **[Releases](https://github.com/Paulothedeveloper/prisma/releases/latest)**.
 2. Baixe **`PRISMA_x.y.z_x64-setup.exe`** (instalador em português).
 3. Rode, abra o PRISMA e adicione uma pasta. O instalador é autocontido (ffmpeg embutido).
 
@@ -92,7 +92,7 @@ Beyond cataloging, PRISMA understands the **technical** side of video: it reads 
 
 ### Install
 
-1. Go to **[Releases](https://github.com/EllaeMyApp/prisma/releases/latest)**.
+1. Go to **[Releases](https://github.com/Paulothedeveloper/prisma/releases/latest)**.
 2. Download **`PRISMA_x.y.z_x64-setup.exe`**.
 3. Run it, open PRISMA and add a folder. The installer is self-contained (ffmpeg bundled).
 
