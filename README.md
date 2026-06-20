@@ -124,3 +124,23 @@ Distribuído **gratuitamente** · Distributed **free of charge**.
 <div align="center">
 <sub>Feito com cuidado, por quem edita — para quem edita. · Made with care, by an editor — for editors.</sub>
 </div>
+
+
+---
+
+<div align="center">
+
+<img src="docs/paulo.jpg" alt="Paulo Adriel" width="130" style="border-radius:16px" />
+
+### 👤 Sobre o desenvolvedor · About the developer
+
+**Paulo Adriel** — produtor de vídeo & desenvolvedor indie · Porto Velho/RO, Brasil 🇧🇷
+Construo apps com Tauri, React, Flutter e Kotlin, sempre partindo de um problema real.
+*Video producer & indie developer. I build the tools I use myself.*
+
+[![Email](https://img.shields.io/badge/-paulothedeveloper@protonmail.com-8B5CF6?style=flat&logo=protonmail&logoColor=white)](mailto:paulothedeveloper@protonmail.com)
+[![Instagram](https://img.shields.io/badge/-Instagram-E4405F?style=flat&logo=instagram&logoColor=white)](https://instagram.com/)
+[![LinkedIn](https://img.shields.io/badge/-LinkedIn-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://linkedin.com/)
+[![GitHub](https://img.shields.io/badge/-Paulothedeveloper-181717?style=flat&logo=github&logoColor=white)](https://github.com/Paulothedeveloper)
+
+</div>
