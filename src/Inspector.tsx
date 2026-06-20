@@ -374,7 +374,7 @@ export function Inspector({
           </div>
           <ul className="playbook-steps">
             {info.playbook.steps.map((s, i) => (
-              <li key={i}>{s}</li>
+              <li key={i}>{t(s)}</li>
             ))}
           </ul>
         </div>

@@ -472,50 +472,51 @@ fn playbook(v: &VideoInfo, make: Option<&str>, cst: &CstRec, is_709: bool) -> Op
     let pq = trc.contains("smpte2084") || trc.contains("pq");
     let bt2020 = prim.contains("bt2020") || prim.contains("2020");
 
+    // steps agora são CHAVES de i18n (traduzidas no front: pb.*)
     let mut steps: Vec<String> = Vec::new();
     if v.vfr {
-        steps.push("Converter pra CFR primeiro (botão Consertar)".into());
+        steps.push("pb.cfr".into());
     }
 
     let kind = if make_l.contains("samsung") || (bt2020 && hlg && make_l.is_empty()) {
-        steps.push("CST 2 nós: Rec.2020 / Rec.2100 HLG → Rec.709 (Tone DaVinci + Compressão de Saturação no nó OUT)".into());
-        steps.push("Método de 2 nós + tempero La Creme (dose ~60-70%); alvos cinza ~53% / branco ~71%".into());
-        format!("Samsung/HLG Log {}-bit{}", depth, if vertical { " vertical (Reels)" } else { "" })
+        steps.push("pb.cst.samsung".into());
+        steps.push("pb.method.samsung".into());
+        format!("Samsung/HLG Log {}-bit{}", depth, if vertical { " (Reels)" } else { "" })
     } else if make_l.contains("sony") {
-        steps.push("CST 2 nós: S-Gamut3.Cine / S-Log3 → Rec.709".into());
+        steps.push("pb.cst.sony".into());
         if depth <= 8 {
-            steps.push("8-bit: mão leve, ETTR na captação; cuidado com banding".into());
+            steps.push("pb.8bit".into());
         }
         "Sony S-Log3".into()
     } else if make_l.contains("apple") {
-        steps.push("CST 2 nós: Rec.2020 / Apple Log → Rec.709".into());
+        steps.push("pb.cst.apple".into());
         "Apple Log (iPhone)".into()
     } else if make_l.contains("dji") {
-        steps.push("CST 2 nós: Rec.2020 / DJI D-Log → Rec.709".into());
+        steps.push("pb.cst.dji".into());
         "DJI D-Log".into()
     } else if make_l.contains("panasonic") || make_l.contains("lumix") {
-        steps.push("CST 2 nós: V-Gamut / V-Log → Rec.709".into());
+        steps.push("pb.cst.panasonic".into());
         "Panasonic V-Log".into()
     } else if make_l.contains("canon") {
-        steps.push("CST 2 nós: Cinema Gamut / Canon Log 3 → Rec.709".into());
+        steps.push("pb.cst.canon".into());
         "Canon C-Log3".into()
     } else if pq {
-        steps.push("CST 2 nós: Rec.2020 / ST2084 (PQ) → Rec.709 (mapear nits)".into());
+        steps.push("pb.cst.pq".into());
         "HDR PQ".into()
     } else if hlg {
-        steps.push("CST 2 nós: Rec.2020 / Rec.2100 HLG → Rec.709".into());
+        steps.push("pb.cst.hlg".into());
         "HDR HLG".into()
     } else if is_709 {
-        steps.push("Sem CST — material já em Rec.709, grade direto no look".into());
-        "Rec.709 / GoPro / pronto".into()
+        steps.push("pb.cst.none".into());
+        "Rec.709 / GoPro".into()
     } else if cst.needs_cst {
-        steps.push("CST 2 nós conforme a origem (confirme no arquivo ORIGINAL)".into());
-        "Log/Wide (a confirmar)".into()
+        steps.push("pb.cst.confirm".into());
+        "Log/Wide".into()
     } else {
         return None;
     };
-    if vertical && !steps.iter().any(|s| s.contains("vertical")) {
-        steps.push("Timeline/entrega vertical 1080×1920 (Reels)".into());
+    if vertical {
+        steps.push("pb.vertical".into());
     }
     Some(Playbook { kind, steps })
 }

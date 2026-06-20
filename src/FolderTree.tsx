@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icons";
 import { revealInExplorer, type FolderRow } from "./api";
+import { t } from "./i18n";
 
 interface Node {
   name: string;
@@ -183,35 +184,35 @@ function TreeNode({
                 <Icon name="folder" size={13} /> {display}
               </div>
               <button className="ctx-item" onClick={() => { setMenu(null); onSelect(node.path); }}>
-                <Icon name="folder" size={14} /> <span>Abrir pasta</span>
+                <Icon name="folder" size={14} /> <span>{t("fld.open")}</span>
               </button>
               {hasKids && (
                 <button className="ctx-item" onClick={() => { setOpen((o) => !o); setMenu(null); }}>
-                  <Icon name="chevronUpDown" size={14} /> <span>{open ? "Recolher" : "Expandir"}</span>
+                  <Icon name="chevronUpDown" size={14} /> <span>{open ? t("fld.collapse") : t("fld.expand")}</span>
                 </button>
               )}
               <div className="ctx-sep" />
               <button className="ctx-item" onClick={() => { setMenu(null); setEditing(true); }}>
-                <Icon name="pencil" size={14} /> <span>Renomear (apelido)</span>
+                <Icon name="pencil" size={14} /> <span>{t("fld.rename")}</span>
               </button>
               <button className="ctx-item" onClick={() => { setMenu(null); onAutotag(node.path); }}>
-                <Icon name="tag" size={14} /> <span>Auto-tag (nome da pasta)</span>
+                <Icon name="tag" size={14} /> <span>{t("fld.autotag")}</span>
               </button>
               <button className="ctx-item" onClick={() => { setMenu(null); onRescan(node.path); }}>
-                <Icon name="refresh" size={14} /> <span>Re-scan (novos / apagados)</span>
+                <Icon name="refresh" size={14} /> <span>{t("fld.rescan")}</span>
               </button>
               <div className="ctx-sep" />
               <button className="ctx-item" onClick={() => { setMenu(null); navigator.clipboard.writeText(node.path); }}>
-                <Icon name="copy" size={14} /> <span>Copiar caminho</span>
+                <Icon name="copy" size={14} /> <span>{t("fld.copyPath")}</span>
               </button>
               <button className="ctx-item" onClick={() => { setMenu(null); revealInExplorer(node.path); }}>
-                <Icon name="reveal" size={14} /> <span>Abrir no Explorer</span>
+                <Icon name="reveal" size={14} /> <span>{t("fld.explorer")}</span>
               </button>
               <button className="ctx-item" onClick={() => { setMenu(null); onHide(node.path, !hidden); }}>
-                <Icon name={hidden ? "eye" : "eyeOff"} size={14} /> <span>{hidden ? "Mostrar pasta" : "Ocultar pasta"}</span>
+                <Icon name={hidden ? "eye" : "eyeOff"} size={14} /> <span>{hidden ? t("fld.show") : t("fld.hide")}</span>
               </button>
               <div className="ctx-sep" />
-              <div className="ctx-colors-label">Cor da pasta</div>
+              <div className="ctx-colors-label">{t("fld.color")}</div>
               <div className="tree-colors">
                 <button
                   className="tree-color tree-color-none"
@@ -232,7 +233,7 @@ function TreeNode({
                 className="ctx-item danger"
                 onClick={() => { setMenu(null); onRemoveFolder(node.path); }}
               >
-                <Icon name="trash" size={14} /> <span>Remover da biblioteca</span>
+                <Icon name="trash" size={14} /> <span>{t("fld.remove")}</span>
               </button>
             </div>
           </>,

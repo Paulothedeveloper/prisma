@@ -642,27 +642,28 @@ export default function App() {
     const folder = a.path.replace(/\\[^\\]+$/, "");
     const ids = selectedIds.size > 1 && selectedIds.has(a.id) ? [...selectedIds] : [a.id];
     const many = ids.length > 1;
+    const n = many ? ` (${ids.length})` : "";
     return [
-      { label: many ? `Visualizar (${ids.length})` : "Visualizar", icon: "play", onClick: () => setPreviewAsset(a) },
-      { label: "Abrir em nova janela", icon: "fullscreen", onClick: () => openInWindow(a) },
-      { label: "Detalhes / renomear", icon: "pencil", onClick: () => setSelected(a) },
-      { label: "Abrir no Explorer", icon: "reveal", onClick: () => revealInExplorer(a.path) },
+      { label: `${t("insp.view")}${n}`, icon: "play", onClick: () => setPreviewAsset(a) },
+      { label: t("ctx.newWindow"), icon: "fullscreen", onClick: () => openInWindow(a) },
+      { label: t("ctx.details"), icon: "pencil", onClick: () => setSelected(a) },
+      { label: t("insp.explorer"), icon: "reveal", onClick: () => revealInExplorer(a.path) },
       { sep: true, label: "" },
-      { label: "Copiar caminho", icon: "copy", onClick: () => navigator.clipboard.writeText(a.path) },
-      { label: "Copiar pasta", icon: "folder", onClick: () => navigator.clipboard.writeText(folder) },
-      { label: many ? `Renomear ${ids.length} em lote` : "Duplicar", icon: many ? "pencil" : "copy", onClick: () => (many ? setBatchRename(true) : duplicateAsset(a.id).then(onMutate)) },
+      { label: t("insp.copyPath"), icon: "copy", onClick: () => navigator.clipboard.writeText(a.path) },
+      { label: t("insp.copyFolder"), icon: "folder", onClick: () => navigator.clipboard.writeText(folder) },
+      { label: many ? `${t("ctx.renameMany")}${n}` : t("ctx.duplicate"), icon: many ? "pencil" : "copy", onClick: () => (many ? setBatchRename(true) : duplicateAsset(a.id).then(onMutate)) },
       {
-        label: "Definir como capa da pasta",
+        label: t("ctx.setCover"),
         icon: "image",
         onClick: () => a.thumbnail_path && setFolderCover(folder, a.thumbnail_path).then(refreshMeta),
       },
       { sep: true, label: "" },
-      ...(a.type === "image" || a.type === "gif" ? [{ label: "Anotar (markup)", icon: "pencil" as const, onClick: () => setMarkup(a) }] : []),
-      { label: "Buscar semelhantes", icon: "search", onClick: () => setView({ t: "similar", v: a.id, label: a.name || a.filename }) },
-      { label: many ? `Analisar ${ids.length} com IA` : "Analisar com IA", icon: "sliders", onClick: () => aiAnalyzeMany(ids) },
+      ...(a.type === "image" || a.type === "gif" ? [{ label: t("ctx.markup"), icon: "pencil" as const, onClick: () => setMarkup(a) }] : []),
+      { label: t("ctx.findSimilar"), icon: "search", onClick: () => setView({ t: "similar", v: a.id, label: a.name || a.filename }) },
+      { label: `${t("batch.ai")}${n}`, icon: "sliders", onClick: () => aiAnalyzeMany(ids) },
       { sep: true, label: "" },
       {
-        label: many ? `Mover ${ids.length} pra Lixeira` : "Mover pra Lixeira",
+        label: `${t("ctx.trash")}${n}`,
         icon: "trash",
         danger: true,
         onClick: () => removeWithAnim(() => Promise.all(ids.map((id) => trashAsset(id, true))).then(clearSelection)),
@@ -684,8 +685,7 @@ export default function App() {
   const batchFixCfr = useCallback(() => {
     const vids = assets.filter((a) => selectedIds.has(a.id) && a.type === "video");
     if (vids.length === 0) return;
-    if (!window.confirm(`Converter ${vids.length} vídeo(s) pra CFR?\n\nCada um gera um arquivo novo em "PRONTOS CFR/" (original intacto). É pesado — acompanhe no painel de tarefas.`))
-      return;
+    if (!window.confirm(t("ctx.cfrConfirm").replace("{x}", String(vids.length)))) return;
     vids.forEach((a) => oficinaRun("vfr_cfr", a.path, { codec: "h265", crf: 18 }));
     clearSelection();
   }, [assets, selectedIds, clearSelection]);
@@ -1243,34 +1243,31 @@ export default function App() {
         <main className="grid-area">
           {view.t === "similar" && (
             <div className="trash-banner similar-banner">
-              <span>Imagens parecidas com <b>{view.label}</b> (busca por imagem, local)</span>
+              <span>{t("ban.similar")} <b>{view.label}</b></span>
               <button className="trash-empty similar-back" onClick={() => setView({ t: "all" })}>
-                <Icon name="chevronLeft" size={13} /> Voltar
+                <Icon name="chevronLeft" size={13} /> {t("ban.back")}
               </button>
             </div>
           )}
           {view.t === "dups" && assets.length > 0 && (
             <div className="trash-banner dups-banner">
-              <span>
-                {counts.dups} duplicados em {Math.max(0, counts.dups - assets.length)} grupos. "Manter só 1"
-                envia as cópias pra Lixeira (não apaga do disco; reversível).
-              </span>
+              <span>{t("ban.dups")}</span>
               <button
                 className="trash-empty dups-keep"
                 onClick={() => removeWithAnim(() => dedupeKeepOne().then(clearSelection))}
               >
-                <Icon name="dup" size={13} /> Manter só 1 de cada
+                <Icon name="dup" size={13} /> {t("ban.keepOne")}
               </button>
             </div>
           )}
           {view.t === "trash" && assets.length > 0 && (
             <div className="trash-banner">
-              <span>Itens na Lixeira não aparecem na biblioteca. Esvaziar remove do catálogo (não apaga do disco).</span>
+              <span>{t("ban.trash")}</span>
               <button
                 className="trash-empty"
                 onClick={() => removeWithAnim(() => emptyTrash().then(() => setSelected(null)))}
               >
-                <Icon name="trash" size={13} /> Esvaziar lixeira
+                <Icon name="trash" size={13} /> {t("ban.empty")}
               </button>
             </div>
           )}
@@ -1322,13 +1319,10 @@ export default function App() {
             ) : assets.length === 0 ? (
               <div className="empty">
                 <Logo size={54} />
-                <h2>Nada por aqui</h2>
-                <p>
-                  Clique em <b>Adicionar</b> para indexar seus assets. Nada é movido ou
-                  copiado — o PRISMA só lê e cataloga no lugar.
-                </p>
+                <h2>{t("empty.title")}</h2>
+                <p>{t("empty.sub")}</p>
                 <button className="btn-primary" onClick={addFolders}>
-                  Adicionar pasta
+                  {t("empty.add")}
                 </button>
               </div>
             ) : layout === "list" ? (
@@ -1503,19 +1497,19 @@ export default function App() {
           {collections.length > 0 && (
             <PopupButton
               value=""
-              options={[["", "Adicionar à coleção"], ...collections.map((c) => [String(c.id), c.name] as [string, string])]}
+              options={[["", t("batch.addCollection")], ...collections.map((c) => [String(c.id), c.name] as [string, string])]}
               onChange={(v) => v && batchAddCollection(Number(v))}
-              placeholder="Adicionar à coleção"
+              placeholder={t("batch.addCollection")}
             />
           )}
           <PopupButton
             value=""
-            options={[["", "Exportar como…"], ["png", "PNG"], ["jpg", "JPG"], ["webp", "WebP"], ["tiff", "TIFF"]]}
+            options={[["", t("batch.exportAs")], ["png", "PNG"], ["jpg", "JPG"], ["webp", "WebP"], ["tiff", "TIFF"]]}
             onChange={(fmt) => fmt && batchExport(fmt)}
-            placeholder="Exportar como…"
+            placeholder={t("batch.exportAs")}
           />
-          <button className="batch-clear" onClick={() => setBatchRename(true)} title="Renomear os arquivos selecionados em lote">
-            <Icon name="pencil" size={13} /> Renomear lote
+          <button className="batch-clear" onClick={() => setBatchRename(true)}>
+            <Icon name="pencil" size={13} /> {t("batch.rename")}
           </button>
           <button
             className="batch-clear"
@@ -1526,7 +1520,7 @@ export default function App() {
               clearSelection();
             }}
           >
-            <Icon name="layoutList" size={13} /> Juntar clipes
+            <Icon name="layoutList" size={13} /> {t("batch.join")}
           </button>
           <button
             className="batch-ai"

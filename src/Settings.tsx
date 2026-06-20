@@ -129,13 +129,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
     setAiMsg("");
     try {
       const c = await aiAnalyzeUntagged(n);
-      setAiMsg(
-        c > 0
-          ? `Iniciado — analisando ${c} ${c === 1 ? "imagem" : "imagens"} em segundo plano. O progresso aparece no canto inferior.`
-          : "Nenhuma imagem sem descrição encontrada — tudo já foi analisado.",
-      );
+      setAiMsg(c > 0 ? `${t("set.aiStarted")} (${c})` : t("set.aiNone"));
     } catch (e) {
-      setAiMsg(`Erro ao iniciar: ${String(e)}`);
+      setAiMsg(`${t("common.error")}: ${String(e)}`);
     } finally {
       setAiBusy(false);
     }
@@ -200,8 +196,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <div className="pref-group">
-                  <div className="pref-label">Cor de destaque</div>
-                  <div className="pref-help">Define a cor de seleção, botões e detalhes do app.</div>
+                  <div className="pref-label">{t("set.accent")}</div>
+                  <div className="pref-help">{t("set.accentHelp")}</div>
                   <div className="pref-swatches">
                     {ACCENTS.map((c) => (
                       <button
@@ -218,38 +214,31 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 <Toggle
                   on={prefs.reduceGlass}
                   onClick={() => setPref("reduceGlass", !prefs.reduceGlass)}
-                  title="Reduzir transparência e desfoque"
-                  help="Visual mais sólido e leve — ajuda em máquinas mais fracas."
+                  title={t("set.reduceGlass")}
+                  help={t("set.reduceGlassHelp")}
                 />
 
                 <div className="pref-group">
-                  <div className="pref-label">Recarregar o app</div>
-                  <div className="pref-help">
-                    Recarrega a interface (sem perder nada) — resolve travadinhas e bugs visuais sem precisar
-                    fechar e abrir o programa.
-                  </div>
+                  <div className="pref-label">{t("set.reloadApp")}</div>
+                  <div className="pref-help">{t("set.reloadAppHelp")}</div>
                   <button className="set-bulk-btn" onClick={() => window.location.reload()}>
-                    <Icon name="refresh" size={13} /> Recarregar agora
+                    <Icon name="refresh" size={13} /> {t("set.reloadNow")}
                   </button>
                 </div>
 
                 <div className="pref-group pref-danger">
-                  <div className="pref-label">Redefinir aplicativo</div>
-                  <div className="pref-help">
-                    Zera o PRISMA do zero: limpa o catálogo inteiro (suas pastas, tags, estrelas, notas,
-                    coleções), as miniaturas e os proxies. <b>Não apaga nenhum arquivo original do disco.</b>{" "}
-                    A chave da API é mantida. O app reinicia em seguida.
-                  </div>
+                  <div className="pref-label">{t("set.reset")}</div>
+                  <div className="pref-help">{t("set.resetHelp")}</div>
                   {!confirmReset ? (
                     <button className="pref-danger-btn" onClick={() => setConfirmReset(true)}>
-                      <Icon name="trash" size={13} /> Redefinir do zero…
+                      <Icon name="trash" size={13} /> {t("set.resetBtn")}
                     </button>
                   ) : (
                     <div className="pref-danger-confirm">
-                      <span>Tem certeza? Isso limpa toda a biblioteca (os arquivos no disco ficam intactos).</span>
+                      <span>{t("set.resetConfirm")}</span>
                       <div className="set-bulk-row">
                         <button className="set-bulk-btn" disabled={resetting} onClick={() => setConfirmReset(false)}>
-                          Cancelar
+                          {t("common.cancel")}
                         </button>
                         <button
                           className="pref-danger-btn"
@@ -259,7 +248,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                             resetApp().catch(() => setResetting(false));
                           }}
                         >
-                          {resetting ? "Redefinindo…" : "Sim, redefinir e reiniciar"}
+                          {resetting ? t("set.resetting") : t("set.resetYes")}
                         </button>
                       </div>
                     </div>
@@ -274,8 +263,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 <Toggle
                   on={prefs.hoverAutoplay}
                   onClick={() => setPref("hoverAutoplay", !prefs.hoverAutoplay)}
-                  title="Tocar ao passar o mouse"
-                  help="Vídeos e áudios reproduzem fluido quando você passa o mouse pela miniatura (como o Eagle)."
+                  title={t("set.hoverAutoplay")}
+                  help={t("set.hoverAutoplayHelp")}
                 />
                 <Toggle
                   on={autoProxy}
@@ -284,32 +273,25 @@ export function Settings({ onClose }: { onClose: () => void }) {
                     setAutoProxy(v);
                     setAutoProxyImport(v);
                   }}
-                  title="Gerar proxies ao importar"
-                  help="Ao anexar uma pasta, cria automaticamente um preview leve (H.264 720p) dos vídeos de codec profissional (ProRes, .mov, .m4v) pra eles tocarem no hover e no preview. Roda em segundo plano; os originais não são tocados."
+                  title={t("set.autoProxy")}
+                  help={t("set.autoProxyHelp")}
                 />
                 <div className="pref-group">
-                  <div className="pref-label">Recarregar proxies</div>
-                  <div className="pref-help">
-                    Gera de novo os proxies que faltam (caso algum tenha falhado). Roda em segundo plano e mostra
-                    o progresso no canto.
-                  </div>
+                  <div className="pref-label">{t("set.reloadProxy")}</div>
+                  <div className="pref-help">{t("set.reloadProxyHelp")}</div>
                   <button
                     className="set-bulk-btn"
                     onClick={async () => {
                       setProxyMsg("");
                       try {
                         const n = await regenProxies();
-                        setProxyMsg(
-                          n > 0
-                            ? `${n.toLocaleString("pt-BR")} ${n === 1 ? "vídeo entrou" : "vídeos entraram"} na fila de proxy.`
-                            : "Nenhum vídeo pendente — todos já têm proxy.",
-                        );
+                        setProxyMsg(n > 0 ? `${n.toLocaleString()} → proxy` : "OK");
                       } catch (e) {
-                        setProxyMsg(`Erro: ${String(e)}`);
+                        setProxyMsg(`${t("common.error")}: ${String(e)}`);
                       }
                     }}
                   >
-                    <Icon name="refresh" size={13} /> Recarregar proxies faltantes
+                    <Icon name="refresh" size={13} /> {t("set.reloadProxyBtn")}
                   </button>
                   {proxyMsg && (
                     <div className="set-status">
@@ -318,8 +300,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   )}
                 </div>
                 <div className="pref-help" style={{ marginTop: 14 }}>
-                  Dica: no preview em tela cheia o player do PRISMA tem scrub quadro-a-quadro, velocidade,
-                  loop e atalhos (espaço, J/K/L, F, M).
+                  {t("set.playerTip")}
                 </div>
               </>
             )}
@@ -334,16 +315,12 @@ export function Settings({ onClose }: { onClose: () => void }) {
                     setAutotag(v);
                     setAutotagImport(v);
                   }}
-                  title="Auto-tag ao importar"
-                  help="Cada item importado herda o nome da pasta de origem como tag."
+                  title={t("set.autotag")}
+                  help={t("set.autotagHelp")}
                 />
                 <div className="pref-group">
-                  <div className="pref-label">Escanear saúde da biblioteca</div>
-                  <div className="pref-help">
-                    Diagnostica todos os vídeos (VFR, banding, codec pesado…) e cria os atalhos "Saúde" na
-                    barra lateral. Roda em segundo plano, em paralelo. A saúde também é detectada sozinha
-                    quando você abre cada arquivo.
-                  </div>
+                  <div className="pref-label">{t("set.scanHealth")}</div>
+                  <div className="pref-help">{t("set.scanHealthHelp")}</div>
                   <button
                     className="set-bulk-btn"
                     disabled={healthBusy}
@@ -352,19 +329,15 @@ export function Settings({ onClose }: { onClose: () => void }) {
                       setHealthMsg("");
                       try {
                         const n = await scanHealth(0);
-                        setHealthMsg(
-                          n > 0
-                            ? `Escaneando ${n.toLocaleString("pt-BR")} vídeos em segundo plano.`
-                            : "Tudo já diagnosticado.",
-                        );
+                        setHealthMsg(n > 0 ? `${n.toLocaleString()} →` : "OK");
                       } catch (e) {
-                        setHealthMsg(`Erro: ${String(e)}`);
+                        setHealthMsg(`${t("common.error")}: ${String(e)}`);
                       } finally {
                         setHealthBusy(false);
                       }
                     }}
                   >
-                    <Icon name="refresh" size={13} /> Escanear saúde agora
+                    <Icon name="refresh" size={13} /> {t("set.scanHealthBtn")}
                   </button>
                   {healthMsg && (
                     <div className="set-status">
@@ -379,43 +352,39 @@ export function Settings({ onClose }: { onClose: () => void }) {
             {tab === "ia" && (
               <>
                 <div className="pref-group">
-                  <div className="pref-label">Busca por conteúdo com IA</div>
-                  <div className="pref-help">
-                    Cole sua chave da API Anthropic pra achar por "praia", "pessoa", "céu". A chave fica só
-                    neste PC (settings.json). Só a miniatura (512px) é enviada, e somente quando você clica em
-                    analisar — nunca automático.
-                  </div>
+                  <div className="pref-label">{t("set.aiSearch")}</div>
+                  <div className="pref-help">{t("set.aiSearchHelp")}</div>
                   <div className="set-row">
                     <input
                       className="field"
                       type="password"
-                      placeholder={hasKey ? "•••• chave salva — cole pra trocar" : "sk-ant-..."}
+                      placeholder={hasKey ? t("set.keySaved") : "sk-ant-..."}
                       value={key}
                       onChange={(e) => setKey(e.target.value)}
                     />
                     <button className="set-save" onClick={saveKey} disabled={!key.trim()}>
-                      {saved ? "Salvo" : "Salvar"}
+                      {saved ? t("common.saved") : t("common.save")}
                     </button>
                   </div>
                   <div className="set-status">
                     <span className={`set-dot ${hasKey ? "on" : ""}`} />
-                    {hasKey ? `Chave configurada · modelo ${model}` : "Sem chave — busca por conteúdo desligada"}
+                    {hasKey ? `${t("set.keyOk")} ${model}` : t("set.noKey")}
                   </div>
                 </div>
 
                 {hasKey && (
                   <div className="pref-group">
-                    <div className="pref-label">Analisar a biblioteca em lote</div>
+                    <div className="pref-label">{t("set.aiBatch")}</div>
                     <div className="pref-help">
-                      Gera tags + descrição pra busca por conteúdo (6 em paralelo). Comece com 100 pra ver o
-                      custo. {pending !== null && (
-                        <b>{pending.toLocaleString("pt-BR")} {pending === 1 ? "item ainda sem" : "itens ainda sem"} descrição.</b>
+                      {t("set.aiBatchHelp")}{" "}
+                      {pending !== null && (
+                        <b>{pending.toLocaleString()} {t("set.pending")}</b>
                       )}
                     </div>
                     <div className="set-bulk-row">
                       {[100, 500, 2000].map((n) => (
                         <button key={n} className="set-bulk-btn" disabled={aiBusy} onClick={() => runBulk(n)}>
-                          Analisar {n}
+                          {t("set.analyze")} {n}
                         </button>
                       ))}
                       <button
@@ -424,7 +393,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                         onClick={() => runBulk(0)}
                         title="Analisa TODAS as pendentes (limit 0 = sem teto)"
                       >
-                        Analisar todas{pending ? ` (${pending.toLocaleString("pt-BR")})` : ""}
+                        {t("set.analyzeAll")}{pending ? ` (${pending.toLocaleString()})` : ""}
                       </button>
                     </div>
                     {aiMsg && (
@@ -436,24 +405,21 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 )}
 
                 <div className="pref-group">
-                  <div className="pref-label">Base de conhecimento (vault Obsidian)</div>
-                  <div className="pref-help">
-                    O PRISMA lê suas notas <b>.md</b> e usa como base das recomendações de color (citando a
-                    nota-fonte). Aponte a pasta do seu vault do DaVinci.
-                  </div>
+                  <div className="pref-label">{t("set.vault")}</div>
+                  <div className="pref-help">{t("set.vaultHelp")}</div>
                   <div className="set-status">
                     <span className={`set-dot ${vault.path ? "on" : ""}`} />
                     {vault.path
-                      ? `${vault.count.toLocaleString("pt-BR")} trechos · ${vault.path}`
-                      : "Nenhum vault configurado"}
+                      ? `${vault.count.toLocaleString()} ${t("set.vaultChunks")} · ${vault.path}`
+                      : t("set.vaultNone")}
                   </div>
                   <div className="set-bulk-row">
                     <button className="set-bulk-btn" onClick={pickVault}>
-                      <Icon name="folder" size={13} /> Escolher pasta do vault…
+                      <Icon name="folder" size={13} /> {t("set.vaultPick")}
                     </button>
                     {vault.path && (
                       <button className="set-bulk-btn" onClick={doReindexVault}>
-                        <Icon name="refresh" size={13} /> Reindexar
+                        <Icon name="refresh" size={13} /> {t("set.vaultReindex")}
                       </button>
                     )}
                   </div>
@@ -469,15 +435,11 @@ export function Settings({ onClose }: { onClose: () => void }) {
             {/* ---------- SINCRONIZAÇÃO ---------- */}
             {tab === "sync" && (
               <div className="pref-group">
-                <div className="pref-label">Sincronizar notebook ↔ desktop</div>
-                <div className="pref-help">
-                  Exporta seus <b>metadados</b> (tags, estrelas, notas, descrição, coleções) e aplica na outra
-                  máquina <b>casando por conteúdo (hash)</b> — funciona mesmo se a letra do drive mudar (E:/F:/G:).
-                  Os arquivos não são copiados.
-                </div>
+                <div className="pref-label">{t("set.sync")}</div>
+                <div className="pref-help">{t("set.syncHelp")}</div>
                 <div className="set-bulk-row">
-                  <button className="set-bulk-btn" onClick={doExport}>Exportar catálogo…</button>
-                  <button className="set-bulk-btn" onClick={doImport}>Importar catálogo…</button>
+                  <button className="set-bulk-btn" onClick={doExport}>{t("set.export")}</button>
+                  <button className="set-bulk-btn" onClick={doImport}>{t("set.import")}</button>
                 </div>
                 {syncMsg && (
                   <div className="set-status">
@@ -491,11 +453,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
             {tab === "sobre" && (
               <div className="pref-about">
                 <div className="pref-about-name">PRISMA</div>
-                <div className="pref-about-ver">Versão {APP_VERSION}</div>
-                <div className="pref-help" style={{ marginTop: 12 }}>
-                  Gerenciador de mídia feito pra editores de vídeo. Leitor CST, Oficina (codificação) e
-                  MotionSilk (estabilização) embutidos. Seus arquivos originais nunca são movidos nem alterados.
-                </div>
+                <div className="pref-about-ver">{t("set.version")} {APP_VERSION}</div>
+                <div className="pref-help" style={{ marginTop: 12 }}>{t("set.aboutDesc")}</div>
                 <button
                   className="set-bulk-btn"
                   style={{ marginTop: 16 }}
@@ -504,7 +463,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                     window.location.reload();
                   }}
                 >
-                  <Icon name="play" size={13} /> Ver o tutorial de novo
+                  <Icon name="play" size={13} /> {t("set.replayTutorial")}
                 </button>
               </div>
             )}
