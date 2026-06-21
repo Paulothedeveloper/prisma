@@ -2,41 +2,23 @@
 // na feature em questão, e fica marcada no localStorage. Layout-safe: o popover é
 // portalizado e preso na viewport (mesmo padrão do menu de contexto).
 
+import { t } from "./i18n";
+
 export interface TipDef {
   title: string;
   text: string;
 }
 
-// Registro central das dicas (id → conteúdo). Em PT, curtinho e direto.
+// Registro central das dicas (id → conteúdo). Os textos vêm do dicionário i18n
+// (tip.<id>.title / .text), traduzidos PT/EN/ES. t() resolve no idioma atual.
 export const TIPS: Record<string, TipDef> = {
-  search: {
-    title: "Busca",
-    text: "Procure por nome ou tag. Com a IA ligada, dá pra achar por conteúdo: 'praia', 'pessoa', 'céu'.",
-  },
-  sidebar: {
-    title: "Atalhos e pastas",
-    text: "Atalhos inteligentes (Reels, 4K, Preto & Branco…) e as pastas que você indexou. Clique pra filtrar.",
-  },
-  folders: {
-    title: "Suas pastas",
-    text: "Botão direito numa pasta abre as opções: renomear, cor, re-scan, abrir no Explorer e mais.",
-  },
-  inspector: {
-    title: "Painel de Detalhes",
-    text: "Specs, tags, cor e a recomendação de CST do clipe pro DaVinci. Tudo sobre o arquivo selecionado.",
-  },
-  oficina: {
-    title: "Oficina",
-    text: "Converte, gera proxy e estabiliza (MotionSilk). Sempre em arquivo NOVO — nunca toca no original.",
-  },
-  settings: {
-    title: "Configurações",
-    text: "Cor do app, IA, proxies, importação, e manutenção (recarregar proxies / app / redefinir).",
-  },
-  preview: {
-    title: "Pré-visualização",
-    text: "Passe o mouse pra tocar. Duplo-clique abre em tela cheia com player próprio (scrub, velocidade, loop).",
-  },
+  search: { title: t("tip.search.title"), text: t("tip.search.text") },
+  sidebar: { title: t("tip.sidebar.title"), text: t("tip.sidebar.text") },
+  folders: { title: t("tip.folders.title"), text: t("tip.folders.text") },
+  inspector: { title: t("tip.inspector.title"), text: t("tip.inspector.text") },
+  oficina: { title: t("tip.oficina.title"), text: t("tip.oficina.text") },
+  settings: { title: t("tip.settings.title"), text: t("tip.settings.text") },
+  preview: { title: t("tip.preview.title"), text: t("tip.preview.text") },
 };
 
 const KEY = "prisma.tips.seen";

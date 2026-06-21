@@ -144,7 +144,7 @@ export function CstCard({ info }: { info: MediaInfo }) {
           >
             <Icon name="copy" size={12} /> {t("cst.copyBoth")}
           </button>
-          <div className="cst-bridge">🌉 {t("cst.bridge")}</div>
+          <div className="cst-bridge"><Icon name="chevronRight" size={12} /> {t("cst.bridge")}</div>
         </>
       ) : (
         <>

@@ -1,54 +1,18 @@
 // Sugestão do que cada extensão "desconhecida" provavelmente é / onde se usa.
 // Pro grupo "Outros": agrupar por extensão com uma dica pro editor/designer.
-const MAP: Record<string, string> = {
-  // After Effects
-  aep: "After Effects — projeto",
-  aepx: "After Effects — projeto (XML)",
-  ffx: "After Effects — preset de animação",
-  aet: "After Effects — template",
-  mogrt: "Motion Graphics Template (Premiere/AE)",
-  // Premiere / edição
-  prproj: "Premiere Pro — projeto",
-  proj: "Projeto de edição",
-  // DaVinci
-  drp: "DaVinci Resolve — projeto",
-  drt: "DaVinci Resolve — template de timeline",
-  dra: "DaVinci Resolve — arquivo de pacote",
-  // Color / LUT
-  cube: "LUT — tabela de cor (DaVinci/Premiere)",
-  "3dl": "LUT — tabela de cor 3D",
-  dat: "LUT / dados de cor",
-  look: "LUT/Look (DaVinci)",
-  xmp: "Metadados/preset de cor (Camera Raw)",
-  // Adobe imagem/vetor
-  psd: "Photoshop — documento em camadas",
-  psb: "Photoshop — documento grande",
-  ai: "Illustrator — vetor",
-  eps: "Vetor (Illustrator)",
-  indd: "InDesign — documento",
-  // Affinity
-  afdesign: "Affinity Designer — documento",
-  afphoto: "Affinity Photo — documento",
-  afpub: "Affinity Publisher — documento",
-  // 3D / motion
-  obj: "Modelo 3D",
-  fbx: "Modelo/animação 3D",
-  c4d: "Cinema 4D — projeto",
-  blend: "Blender — projeto",
-  gltf: "Modelo 3D (glTF)",
-  glb: "Modelo 3D (glTF binário)",
-  // pacotes / outros
-  zip: "Pacote compactado",
-  rar: "Pacote compactado",
-  "7z": "Pacote compactado",
-  sbsar: "Substance — material",
-  json: "Dados/configuração (Lottie? preset?)",
-  // fontes (caso caiam aqui)
-  fnt: "Fonte",
-  // áudio de projeto
-  sesx: "Audition — sessão",
-};
+// O texto vem do dicionário i18n (ext.<extensão>), traduzido PT/EN/ES.
+import { t } from "./i18n";
+
+// Extensões com descrição própria no dicionário (ext.<chave>). As que não estão aqui
+// caem em ext.unknown ("Tipo não reconhecido" / "Unrecognized type" / "Tipo no reconocido").
+const KNOWN = new Set([
+  "aep", "aepx", "ffx", "aet", "mogrt", "prproj", "proj", "drp", "drt", "dra",
+  "cube", "3dl", "dat", "look", "xmp", "psd", "psb", "ai", "eps", "indd",
+  "afdesign", "afphoto", "afpub", "obj", "fbx", "c4d", "blend", "gltf", "glb",
+  "zip", "rar", "7z", "sbsar", "json", "fnt", "sesx",
+]);
 
 export function extSuggestion(ext: string): string {
-  return MAP[ext.toLowerCase()] ?? "Tipo não reconhecido";
+  const e = ext.toLowerCase();
+  return KNOWN.has(e) ? t(`ext.${e}`) : t("ext.unknown");
 }
