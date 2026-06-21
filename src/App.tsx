@@ -616,6 +616,7 @@ export default function App() {
   const removeWithAnim = useCallback(
     (doRemoval: () => Promise<unknown> | void) => {
       setClearing(true);
+      sfx.trash(); // "thunk" macio acompanhando a animação de saída
       window.setTimeout(async () => {
         await Promise.resolve(doRemoval());
         cascadeOnNextLoad.current = true; // os que sobraram entram em cascata

@@ -5,6 +5,7 @@ import { VideoPlayer } from "./VideoPlayer";
 import { AudioPlayer } from "./AudioPlayer";
 import { probeMedia, revealInExplorer, openExternal, type Asset } from "./api";
 import { t } from "./i18n";
+import { sfx } from "./sfx";
 
 const WEB_VIDEO_CODECS = new Set(["h264", "vp8", "vp9", "av1", "avc1"]);
 
@@ -45,9 +46,15 @@ export function Preview({ asset, onClose, onNav }: Props) {
       ? `${rotated ? eh : ew} / ${rotated ? ew : eh}`
       : undefined;
 
+  // som de abertura do preview (entra em tela cheia) — montagem
+  useEffect(() => {
+    sfx.open();
+  }, []);
+
   // animação de saída: fecha com fade antes de desmontar
   const [closing, setClosing] = useState(false);
   const close = () => {
+    sfx.close();
     setClosing(true);
     setTimeout(onClose, 200);
   };
