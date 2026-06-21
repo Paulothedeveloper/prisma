@@ -25,10 +25,14 @@ fn concurrency() -> usize {
 /// Lixo de sistema operacional — nao sao assets, nao entram na biblioteca.
 /// (`._*` = AppleDouble do macOS; .DS_Store; Thumbs.db/desktop.ini do Windows.)
 fn is_junk(name: &str) -> bool {
-    name.starts_with("._")
-        || name.eq_ignore_ascii_case(".ds_store")
-        || name.eq_ignore_ascii_case("thumbs.db")
-        || name.eq_ignore_ascii_case("desktop.ini")
+    let lower = name.to_ascii_lowercase();
+    name.starts_with("._") // AppleDouble (._arquivo)
+        // .DS_Store E suas cópias renomeadas: "(2).DS_Store", "DS_Store(1)", "(4).DS_Store(2)"…
+        || lower.contains("ds_store")
+        || lower == "thumbs.db"
+        || lower == "desktop.ini"
+        || lower == ".localized"
+        || lower == "icon\r" // ícone custom do macOS
 }
 
 #[derive(Serialize, Clone)]
