@@ -1435,6 +1435,7 @@ export default function App() {
 
         {selected && selectedIds.size <= 1 && (
           <Inspector
+            key={selected.id}
             asset={selected}
             collections={collections}
             inCollection={inCollection}
