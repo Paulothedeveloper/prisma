@@ -1,11 +1,11 @@
 {
-    "version":  "0.5.6",
-    "notes":  "Inspetor (Detalhes) agora anima ao abrir e a cada troca de midia; linha de Subpastas com animacao de entrada. Auditoria de animacoes da interface.",
-    "pub_date":  "2026-06-21T05:18:09Z",
+    "version":  "0.5.7",
+    "notes":  "Inspetor (Detalhes) com animacao visivel ao abrir e a cada troca de midia; video toca de verdade na lateral (miniatura sempre como base + proxy por cima, sem caixa preta); auto-proxy agora cobre .mov h264.",
+    "pub_date":  "2026-06-21T14:23:50Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWS8rakZDclhmeGh1dit1c1gzalRScXl0bTIrUmwxbERiOGIweFlHV0l2UlFRZk01dExHc0E3R2NKRVhsSUpSM1VhSjFXZDkxK1ZEdnVXNlp6YkxVS1FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMDMzNDcxCWZpbGU6UFJJU01BXzAuNS42X3g2NC1zZXR1cC5leGUKcTk4Q2txa0hFV1J4WjZ0QzlrcUdoenoxVTRjbU5sSVl2OTRJRDB3QnJXWExmUU1vY255WFE3dHdiK0FjWFFKVkUwbmR0bWFrVDhRaG5Da1B1SU1CQ1E9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.5.6/PRISMA_0.5.6_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTVKQlhxc0kra1NPSi9SNzNneUZiTDN0Y3VlYy9Va0JHc3p4UzByRDA1RkV6cGlNZGZtWmhuUmhiMUJMK2p5UWFyM2VhSUpHNExWazM1N2drNXRUYndvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMDY2MTQ1CWZpbGU6UFJJU01BXzAuNS43X3g2NC1zZXR1cC5leGUKZnlWV1RwVWtRUjczaGRXanQzVisveERNWTB3OTJnOXFoM0FQZVc4VFpYUFBtTEEydERkdko3Q3QyYlJMMTJTcm9NT0dKcjRjOVFQR252cjRNRkMvRHc9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.5.7/PRISMA_0.5.7_x64-setup.exe"
                                          }
                   }
 }
