@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { save as saveDialog, open as openDialog } from "@tauri-apps/plugin-dialog";
+import { check as checkUpdate } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import {
   aiStatus,
   setAiKey,
@@ -72,6 +74,30 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [proxyMsg, setProxyMsg] = useState("");
   const [healthBusy, setHealthBusy] = useState(false);
   const [healthMsg, setHealthMsg] = useState("");
+  // atualização do software (botão manual; o popup automático no boot é o UpdateBanner)
+  const [updBusy, setUpdBusy] = useState(false);
+  const [updMsg, setUpdMsg] = useState("");
+
+  // Procura atualização no GitHub sob demanda. Se houver, baixa + instala + reinicia;
+  // senão, avisa que já está na última versão. (Mesmo motor do popup automático.)
+  const checkUpdates = async () => {
+    setUpdBusy(true);
+    setUpdMsg(t("set.checking"));
+    try {
+      const u = await checkUpdate();
+      if (!u) {
+        setUpdMsg(t("set.upToDate"));
+        setUpdBusy(false);
+        return;
+      }
+      setUpdMsg(t("set.updateFound").replace("{v}", u.version));
+      await u.downloadAndInstall();
+      await relaunch();
+    } catch (e) {
+      setUpdMsg(`${t("update.failed")}: ${String(e)}`);
+      setUpdBusy(false);
+    }
+  };
 
   useEffect(() => {
     aiStatus().then((s) => {
@@ -458,6 +484,19 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 <button
                   className="set-bulk-btn"
                   style={{ marginTop: 16 }}
+                  disabled={updBusy}
+                  onClick={checkUpdates}
+                >
+                  <Icon name="refresh" size={13} /> {t("set.checkUpdates")}
+                </button>
+                {updMsg && (
+                  <div className="set-status" style={{ marginTop: 8 }}>
+                    <span className="set-dot on" /> {updMsg}
+                  </div>
+                )}
+                <button
+                  className="set-bulk-btn"
+                  style={{ marginTop: 10 }}
                   onClick={() => {
                     resetTips();
                     window.location.reload();
