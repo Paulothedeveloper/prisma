@@ -85,6 +85,15 @@ pub fn generate(src: &Path, ext: &str, out_dir: &Path, id: i64) -> (Option<Strin
     let out = out_dir.join(format!("{id}.{}", if is_img { "png" } else { "jpg" }));
 
     if is_img {
+        // 0) SVG (vetor, designer) → renderiza com resvg (Rust puro, sem binário externo)
+        if ext.eq_ignore_ascii_case("svg") {
+            if let Some((w, h)) = svg_thumb(src, &out) {
+                meta.width = Some(w as i64);
+                meta.height = Some(h as i64);
+                return (Some(out.to_string_lossy().to_string()), meta);
+            }
+            return (None, meta);
+        }
         // 1) crate `image` com deteccao por CONTEUDO (pega .png que e jpeg, etc.)
         if let Ok((w, h)) = image_thumb(src, &out) {
             meta.width = Some(w as i64);
@@ -140,6 +149,27 @@ fn image_thumb(src: &Path, out: &Path) -> Result<(u32, u32), String> {
     let thumb = img.thumbnail(THUMB_MAX, THUMB_MAX);
     thumb.save(out).map_err(|e| e.to_string())?;
     Ok((w, h))
+}
+
+/// Renderiza um SVG (vetor) em PNG com alpha via resvg (Rust puro). Só LÊ o original.
+/// Texto sem fonte embarcada pode não renderizar — pro thumbnail é aceitável.
+fn svg_thumb(src: &Path, out: &Path) -> Option<(u32, u32)> {
+    let data = std::fs::read(src).ok()?;
+    let opt = resvg::usvg::Options::default();
+    let tree = resvg::usvg::Tree::from_data(&data, &opt).ok()?;
+    let size = tree.size();
+    let (w, h) = (size.width(), size.height());
+    if !(w > 0.0) || !(h > 0.0) {
+        return None;
+    }
+    let scale = (THUMB_MAX as f32 / w.max(h)).min(8.0);
+    let pw = ((w * scale).round() as u32).max(1);
+    let ph = ((h * scale).round() as u32).max(1);
+    let mut pixmap = resvg::tiny_skia::Pixmap::new(pw, ph)?;
+    let transform = resvg::tiny_skia::Transform::from_scale(scale, scale);
+    resvg::render(&tree, transform, &mut pixmap.as_mut());
+    pixmap.save_png(out).ok()?;
+    Some((w as u32, h as u32))
 }
 
 /// Fallback: deixa o ffmpeg decodificar a imagem (CMYK jpeg, formatos raros).

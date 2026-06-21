@@ -241,6 +241,76 @@ fn paste_image(app: tauri::AppHandle, data: Vec<u8>) -> Result<String, String> {
     Ok(out.to_string_lossy().to_string())
 }
 
+/// Coletor da web (designer): baixa um arquivo de uma URL pra pasta Inbox e cataloga.
+/// Não toca em nada existente — escreve um arquivo NOVO no Inbox do app.
+#[tauri::command]
+fn add_from_url(app: tauri::AppHandle, url: String) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let resp = reqwest::blocking::get(url.trim()).map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("HTTP {}", resp.status()));
+    }
+    let ext_from_ct = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .map(|ct| match ct.split(';').next().unwrap_or("").trim() {
+            "image/png" => "png",
+            "image/jpeg" => "jpg",
+            "image/gif" => "gif",
+            "image/webp" => "webp",
+            "image/svg+xml" => "svg",
+            "image/avif" => "avif",
+            "video/mp4" => "mp4",
+            _ => "bin",
+        })
+        .unwrap_or("bin")
+        .to_string();
+    let bytes = resp.bytes().map_err(|e| e.to_string())?;
+
+    let inbox = state.data_dir.join("Inbox");
+    std::fs::create_dir_all(&inbox).map_err(|e| e.to_string())?;
+    // nome: da própria URL (se tiver extensão) senão deriva do content-type
+    let from_url = url
+        .split('?')
+        .next()
+        .unwrap_or(&url)
+        .rsplit('/')
+        .next()
+        .unwrap_or("")
+        .to_string();
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let mut name: String = if from_url.contains('.') && from_url.len() > 1 {
+        from_url
+    } else {
+        format!("web_{ts}.{ext_from_ct}")
+    };
+    name = name
+        .chars()
+        .filter(|c| !matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|'))
+        .collect();
+    if name.is_empty() {
+        name = format!("web_{ts}.{ext_from_ct}");
+    }
+    let mut out = inbox.join(&name);
+    let mut n = 1;
+    while out.exists() {
+        let stem = std::path::Path::new(&name).file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+        let ext = std::path::Path::new(&name).extension().map(|s| s.to_string_lossy().to_string()).unwrap_or_else(|| ext_from_ct.clone());
+        out = inbox.join(format!("{stem}_{n}.{ext}"));
+        n += 1;
+    }
+    std::fs::write(&out, &bytes).map_err(|e| e.to_string())?;
+    let db = state.db.clone();
+    let thumbs_dir = state.thumbs_dir.clone();
+    indexer::index_one(&db, &thumbs_dir, &out).ok_or("falha ao catalogar")?;
+    tracing::info!(url = %url, dest = %out.display(), "add_from_url: coletado da web");
+    Ok(out.to_string_lossy().to_string())
+}
+
 /// Auto-tag: marca todos os assets da pasta com o nome dela (Briefing 4 #7).
 #[tauri::command]
 fn autotag_folder(app: tauri::AppHandle, dir: String) -> Result<i64, String> {
@@ -1600,6 +1670,7 @@ pub fn run() {
             subfolders,
             autotag_folder,
             paste_image,
+            add_from_url,
             save_annotated,
             set_autotag_import,
             set_auto_proxy_import,

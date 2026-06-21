@@ -1119,6 +1119,43 @@ body {
   color: var(--text-3);
   margin-bottom: 2px;
 }
+/* Paleta de cores (designer) — faixas estilo Coolors, clique copia o HEX */
+.insp-palette {
+  display: flex;
+  gap: 4px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.insp-swatch {
+  flex: 1 1 0;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+  transition: flex-grow 0.2s ease;
+}
+.insp-swatch:hover {
+  flex-grow: 1.6;
+}
+.insp-swatch-hex {
+  font-size: 9.5px;
+  font-weight: 600;
+  font-family: var(--mono, monospace);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 1px 5px;
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+.insp-swatch:hover .insp-swatch-hex {
+  opacity: 1;
+}
 .meta-row {
   display: flex;
   justify-content: space-between;

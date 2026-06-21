@@ -24,6 +24,7 @@ import {
   autotagFolder,
   removeFolderLib,
   pasteImage,
+  addFromUrl,
   duplicateAsset,
   emptyTrash,
   dedupeKeepOne,
@@ -591,6 +592,18 @@ export default function App() {
     const files = Array.isArray(sel) ? sel : sel ? [sel] : [];
     for (const f of files) await indexPath(f);
   };
+  // Coletor da web (designer): cola uma URL, baixa pro Inbox e cataloga.
+  const addFromWeb = async () => {
+    setAddMenu(false);
+    const url = window.prompt(t("app.addUrlPrompt"));
+    if (!url || !url.trim()) return;
+    try {
+      await addFromUrl(url.trim());
+      onMutate();
+    } catch (e) {
+      window.alert(`${t("common.error")}: ${String(e)}`);
+    }
+  };
 
   const countMap = useMemo(() => {
     const m = new Map<string, number>();
@@ -868,6 +881,9 @@ export default function App() {
                   <div className="add-menu" style={{ left: addPos.left, top: addPos.top }}>
                     <button onClick={addFolders}>
                       <Icon name="folder" size={15} /> {t("app.addFolders")} <span className="add-hint">{t("app.addFoldersHint")}</span>
+                    </button>
+                    <button onClick={addFromWeb}>
+                      <Icon name="search" size={15} /> {t("app.addUrl")} <span className="add-hint">{t("app.addUrlHint")}</span>
                     </button>
                     <button onClick={addFiles}>
                       <Icon name="image" size={15} /> {t("app.addFiles")} <span className="add-hint">{t("app.addFilesHint")}</span>

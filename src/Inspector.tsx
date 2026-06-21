@@ -11,6 +11,7 @@ import { FixConfirm } from "./FixConfirm";
 import { ColorPlanCard } from "./ColorPlanCard";
 import { useDismiss } from "./useDismiss";
 import { fireTip } from "./tips";
+import { extractPalette, type Swatch } from "./palette";
 import { t } from "./i18n";
 import { getProxy, renameAsset, duplicateAsset, refreshThumb, setCustomThumb } from "./api";
 
@@ -129,6 +130,8 @@ export function Inspector({
   const [info, setInfo] = useState<MediaInfo | null>(null);
   const [loadingInfo, setLoadingInfo] = useState(false);
   const [localProxy, setLocalProxy] = useState<string | null>(null);
+  const [palette, setPalette] = useState<Swatch[]>([]);
+  const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const [assetColls, setAssetColls] = useState<number[]>([]);
   const [addingColl, setAddingColl] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -284,6 +287,20 @@ export function Inspector({
     return () => uns.forEach((u) => u());
   }, [asset.path]);
 
+  // Paleta de cores automática (designer) — extraída da MINIATURA no front, não-destrutivo.
+  useEffect(() => {
+    if (!previewUrl) {
+      setPalette([]);
+      return;
+    }
+    extractPalette(previewUrl, 6).then(setPalette);
+  }, [previewUrl]);
+  const copyHex = (hex: string) => {
+    navigator.clipboard.writeText(hex);
+    setCopiedHex(hex);
+    window.setTimeout(() => setCopiedHex((c) => (c === hex ? null : c)), 1100);
+  };
+
   return (
     <aside ref={asideRef} className={`inspector${closing ? " closing" : ""}`}>
       <div className="insp-head">
@@ -388,6 +405,26 @@ export function Inspector({
         {aiAble && <button onClick={() => onFindSimilar(asset)}>{t("insp.findSimilar")}</button>}
       </div>
       <div className="insp-hint">{t("insp.dragHint")}</div>
+
+      {/* Paleta de cores (designer) — clique numa cor pra copiar o HEX */}
+      {palette.length > 0 && (
+        <div className="insp-block">
+          <div className="insp-section-title">{t("insp.palette")}</div>
+          <div className="insp-palette">
+            {palette.map((s) => (
+              <button
+                key={s.hex}
+                className="insp-swatch"
+                style={{ background: s.hex }}
+                title={s.hex}
+                onClick={() => copyHex(s.hex)}
+              >
+                <span className="insp-swatch-hex">{copiedHex === s.hex ? t("common.copied") : s.hex}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Playbook: tipo reconhecido + caminho resumido (determinístico) */}
       {info?.ok && v && info.playbook && (

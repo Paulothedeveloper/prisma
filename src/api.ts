@@ -224,6 +224,7 @@ export const setFolderColor = (dir: string, color: string | null) =>
 export const subfolders = (parent: string) => invoke<SubCard[]>("subfolders", { parent });
 export const autotagFolder = (dir: string) => invoke<number>("autotag_folder", { dir });
 export const pasteImage = (data: number[]) => invoke<string>("paste_image", { data });
+export const addFromUrl = (url: string) => invoke<string>("add_from_url", { url });
 export const saveAnnotated = (nearPath: string, data: number[]) =>
   invoke<string>("save_annotated", { nearPath, data });
 

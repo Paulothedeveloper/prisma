@@ -7,7 +7,7 @@ pub fn categorize(ext: &str) -> &'static str {
     match ext.to_ascii_lowercase().as_str() {
         // Imagens (com e sem alpha tratadas igual na grade; alpha vira flag visual depois)
         "jpg" | "jpeg" | "png" | "tiff" | "tif" | "webp" | "heic" | "heif" | "bmp" | "tga"
-        | "jfif" | "avif" | "exr" | "dpx" => "image",
+        | "jfif" | "avif" | "exr" | "dpx" | "svg" => "image",
         // GIF / animacao
         "gif" | "apng" => "gif",
         // Video
