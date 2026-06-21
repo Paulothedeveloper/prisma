@@ -1,11 +1,11 @@
 {
-    "version":  "0.5.4",
-    "notes":  "Sons proprios da interface (estilo Apple), idioma 100% PT/EN/ES, fim da piscada ao trocar de aba, nao trava mais o PC com muitos arquivos, ignora lixo do macOS (.DS_Store) e botao manual de atualizacao.",
-    "pub_date":  "2026-06-21T02:17:50Z",
+    "version":  "0.5.5",
+    "notes":  "Busca instantanea (FTS5), estimativa de custo da IA antes do lote, backup/restauracao do catalogo em 1 clique, e mais sons (abrir/fechar preview + lixeira).",
+    "pub_date":  "2026-06-21T02:56:55Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTlnSEdxb2xvaEhQeEp0U1dSU0FtTDJ0eGNQTW9Ec2t6d1J5c3pRNTA2RjJZRmNxMVFhd2pyRlYra2RuMWcxSzcxODljMnNVMnBmZkI0cXhvNTY4dndnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMDIyMzI1CWZpbGU6UFJJU01BXzAuNS40X3g2NC1zZXR1cC5leGUKSjVuT0VhN3BhZFoxTHU3MUJzaXNRS1AyeGg5Skp2WDUrOWVuTU5DdjVWZENpSHlPaDltWlQ4UHRHZVoyWkpTZ1ZCNmQvSnhady9LUUFiTWVQeXowQ2c9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.5.4/PRISMA_0.5.4_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXpSY2p4Z2lya3Nib3R5Sjk3WnZHd0k4eUJhUFUyNllNMmUzVWRMd1NHQ2k3UldnWm02TU9FZ3lZeXNORDBQcmIvRHZwMHNsVFFHOXU4K0g2TUU2U1E0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMDI0OTg4CWZpbGU6UFJJU01BXzAuNS41X3g2NC1zZXR1cC5leGUKT2ZGY0ZLdktFZGppRXNTczNFdlppSGJRY1c0aC9TbFNYWFpzWERZTTRyUjZuMnpsOVF2Y014WFkxMG0vTG5yVER0UkI3TUtYU1liaWVCVnBnOFdMQ1E9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.5.5/PRISMA_0.5.5_x64-setup.exe"
                                          }
                   }
 }
