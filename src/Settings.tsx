@@ -38,6 +38,14 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
 
 const APP_VERSION = "0.5.4";
 
+// Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
+// curto ≈ US$ 0,001/imagem). É só pra dar noção antes de rodar — não é cobrança exata.
+function aiCost(n: number): string {
+  const usd = n * 0.001;
+  if (usd < 0.01) return "< US$ 0,01";
+  return "~ US$ " + usd.toFixed(2).replace(".", ",");
+}
+
 export function Settings({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("geral");
   const modalRef = useRef<HTMLDivElement>(null);
@@ -62,6 +70,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [aiMsg, setAiMsg] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [pending, setPending] = useState<number | null>(null);
+  const [confirmN, setConfirmN] = useState<number | null>(null); // lote aguardando confirmação de custo
   const [vault, setVault] = useState<{ path: string | null; count: number }>({ path: null, count: 0 });
   const [vaultMsg, setVaultMsg] = useState("");
 
@@ -415,19 +424,49 @@ export function Settings({ onClose }: { onClose: () => void }) {
                     </div>
                     <div className="set-bulk-row">
                       {[100, 500, 2000].map((n) => (
-                        <button key={n} className="set-bulk-btn" disabled={aiBusy} onClick={() => runBulk(n)}>
+                        <button key={n} className="set-bulk-btn" disabled={aiBusy} onClick={() => setConfirmN(n)}>
                           {t("set.analyze")} {n}
                         </button>
                       ))}
                       <button
                         className="set-bulk-btn set-bulk-all"
                         disabled={aiBusy || pending === 0}
-                        onClick={() => runBulk(0)}
+                        onClick={() => setConfirmN(0)}
                         title={t("set.analyzeAllTitle")}
                       >
                         {t("set.analyzeAll")}{pending ? ` (${pending.toLocaleString()})` : ""}
                       </button>
                     </div>
+                    {confirmN !== null &&
+                      (() => {
+                        const count =
+                          confirmN <= 0 ? pending ?? 0 : Math.min(confirmN, pending ?? confirmN);
+                        return (
+                          <div className="set-confirm">
+                            <div className="set-confirm-txt">
+                              {t("set.aiConfirm")
+                                .replace("{n}", count.toLocaleString())
+                                .replace("{c}", aiCost(count))}
+                            </div>
+                            <div className="set-bulk-row">
+                              <button className="set-bulk-btn" onClick={() => setConfirmN(null)}>
+                                {t("common.cancel")}
+                              </button>
+                              <button
+                                className="set-bulk-btn set-bulk-all"
+                                disabled={count === 0}
+                                onClick={() => {
+                                  const n = confirmN;
+                                  setConfirmN(null);
+                                  runBulk(n);
+                                }}
+                              >
+                                {t("set.analyze")}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     {aiMsg && (
                       <div className="set-status">
                         <span className="set-dot on" /> {aiMsg}

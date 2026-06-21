@@ -4150,6 +4150,22 @@ body {
   font-size: 12px;
   color: var(--text-2);
 }
+/* confirmação de custo da IA antes do lote */
+.set-confirm {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: popIn 0.18s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.set-confirm-txt {
+  font-size: 13px;
+  color: var(--text-1);
+}
 .set-dot {
   width: 8px;
   height: 8px;

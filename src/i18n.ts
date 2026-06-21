@@ -276,6 +276,7 @@ const PT: Dict = {
   "update.installing": "Baixando atualização…",
   "update.restart": "O app reinicia ao terminar.",
   "update.failed": "Falha ao atualizar",
+  "set.aiConfirm": "Analisar {n} imagens · custo estimado {c}. Confirmar?",
   "set.sfx": "Efeitos sonoros",
   "set.sfxHelp": "Sons curtos e discretos da interface (seleção, concluir tarefa, abrir painel) — estilo Apple. Pode desligar a qualquer hora.",
   // ---- App (toolbar / filtros / sidebar / jobs) ----
@@ -945,6 +946,7 @@ const EN: Dict = {
   "update.installing": "Downloading update…",
   "update.restart": "The app restarts when it finishes.",
   "update.failed": "Update failed",
+  "set.aiConfirm": "Analyze {n} images · estimated cost {c}. Confirm?",
   "set.sfx": "Sound effects",
   "set.sfxHelp": "Short, subtle interface sounds (selection, task done, panel open) — Apple-style. Turn off anytime.",
   "app.settings": "Settings",
@@ -1595,6 +1597,7 @@ const ES: Dict = {
   "update.installing": "Descargando actualización…",
   "update.restart": "La app se reinicia al terminar.",
   "update.failed": "Error al actualizar",
+  "set.aiConfirm": "Analizar {n} imágenes · costo estimado {c}. ¿Confirmar?",
   "set.sfx": "Efectos de sonido",
   "set.sfxHelp": "Sonidos cortos y discretos de la interfaz (selección, tarea lista, abrir panel) — estilo Apple. Puedes apagarlos cuando quieras.",
   "app.settings": "Configuración",
