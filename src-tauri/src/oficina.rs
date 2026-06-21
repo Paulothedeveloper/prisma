@@ -17,6 +17,11 @@ use tauri_plugin_opener::OpenerExt;
 use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+/// Prioridade abaixo do normal. Processos PESADOS de fundo (ffmpeg/gyroflow render)
+/// rodam com isto pra o SO manter a UI e o resto do PC responsivos — sem isto, um
+/// transcode satura todos os núcleos e CONGELA a máquina inteira.
+const BELOW_NORMAL_PRIORITY_CLASS: u32 = 0x0000_4000;
+const BG_HEAVY: u32 = CREATE_NO_WINDOW | BELOW_NORMAL_PRIORITY_CLASS;
 
 #[derive(serde::Deserialize, Default, Clone)]
 pub struct JobOpts {
@@ -221,7 +226,7 @@ pub fn run_proxy_batch(
             ]);
             cmd.arg(out.to_string_lossy().to_string());
             #[cfg(windows)]
-            cmd.creation_flags(CREATE_NO_WINDOW);
+            cmd.creation_flags(BG_HEAVY);
             let ok = cmd
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
@@ -515,7 +520,7 @@ pub fn run_concat(
         .stderr(Stdio::null())
         .stdin(Stdio::null());
     #[cfg(windows)]
-    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd.creation_flags(BG_HEAVY);
     let ok = cmd.status().map(|s| s.success()).unwrap_or(false) && output.exists();
     let _ = std::fs::remove_file(&list);
     if !ok {
@@ -562,7 +567,7 @@ fn run_ffmpeg_job(
     cmd.arg(&output);
     cmd.stdout(Stdio::piped()).stderr(Stdio::null()).stdin(Stdio::null());
     #[cfg(windows)]
-    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd.creation_flags(BG_HEAVY);
 
     let mut child = match cmd.spawn() {
         Ok(c) => c,
@@ -652,7 +657,7 @@ pub fn run_with_opts(
     cmd.arg(&output);
     cmd.stdout(Stdio::piped()).stderr(Stdio::null()).stdin(Stdio::null());
     #[cfg(windows)]
-    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd.creation_flags(BG_HEAVY);
 
     let mut child = match cmd.spawn() {
         Ok(c) => c,
@@ -767,7 +772,7 @@ pub fn run_gyroflow(
 
     cmd.stdout(Stdio::piped()).stderr(Stdio::null()).stdin(Stdio::null());
     #[cfg(windows)]
-    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd.creation_flags(BG_HEAVY);
 
     let mut child = match cmd.spawn() {
         Ok(c) => c,
@@ -899,7 +904,7 @@ pub fn run_convert(
             .stderr(Stdio::null())
             .stdin(Stdio::null());
         #[cfg(windows)]
-        cmd.creation_flags(CREATE_NO_WINDOW);
+        cmd.creation_flags(BG_HEAVY);
         ok = cmd.status().map(|s| s.success()).unwrap_or(false) && output.exists();
     }
 
@@ -981,7 +986,7 @@ pub fn open_in_gyroflow(app: &AppHandle, path: &str) -> Result<(), String> {
         let mut cmd = Command::new(c);
         cmd.arg(path);
         #[cfg(windows)]
-        cmd.creation_flags(CREATE_NO_WINDOW);
+        cmd.creation_flags(CREATE_NO_WINDOW); // launcher da GUI: prioridade normal
         if cmd.spawn().is_ok() {
             return Ok(());
         }

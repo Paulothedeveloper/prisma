@@ -12,6 +12,10 @@ use std::process::Command;
 use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+/// ffprobe do scan de saúde roda em lote (vários workers) — prioridade abaixo do normal
+/// pra não congelar o PC.
+#[cfg(windows)]
+const BELOW_NORMAL_PRIORITY_CLASS: u32 = 0x0000_4000;
 
 #[derive(Serialize, Default)]
 pub struct MediaInfo {
@@ -103,7 +107,7 @@ pub struct CstRec {
 fn cmd(path: std::path::PathBuf) -> Command {
     let mut c = Command::new(path);
     #[cfg(windows)]
-    c.creation_flags(CREATE_NO_WINDOW);
+    c.creation_flags(CREATE_NO_WINDOW | BELOW_NORMAL_PRIORITY_CLASS);
     c
 }
 

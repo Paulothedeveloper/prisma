@@ -11,6 +11,10 @@ use std::process::Command;
 use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+/// Prioridade abaixo do normal: thumbs/ffprobe de fundo não congelam o PC durante a
+/// indexação de bibliotecas grandes (a UI e o SO continuam responsivos).
+#[cfg(windows)]
+const BELOW_NORMAL_PRIORITY_CLASS: u32 = 0x0000_4000;
 
 const THUMB_MAX: u32 = 512;
 
@@ -63,7 +67,7 @@ fn ffprobe() -> PathBuf {
 fn cmd(path: PathBuf) -> Command {
     let mut c = Command::new(path);
     #[cfg(windows)]
-    c.creation_flags(CREATE_NO_WINDOW);
+    c.creation_flags(CREATE_NO_WINDOW | BELOW_NORMAL_PRIORITY_CLASS);
     c
 }
 

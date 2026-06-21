@@ -13,7 +13,14 @@ use walkdir::WalkDir;
 
 /// Quantos arquivos processar em paralelo na geracao de thumb.
 /// Limitado de proposito: o Eagle do Paulo crashou importando 3871 de uma vez.
-const CONCURRENCY: usize = 4;
+/// Agora é ADAPTATIVO: deixa pelo menos 2 núcleos livres pro SO/UI (cada thumb de vídeo
+/// chama ffmpeg, que sozinho já usa vários núcleos) — junto com a prioridade reduzida do
+/// ffmpeg, evita congelar o PC em bibliotecas grandes. Teto 4 (igual antes).
+fn concurrency() -> usize {
+    std::thread::available_parallelism()
+        .map(|n| n.get().saturating_sub(2).clamp(1, 4))
+        .unwrap_or(2)
+}
 
 /// Lixo de sistema operacional — nao sao assets, nao entram na biblioteca.
 /// (`._*` = AppleDouble do macOS; .DS_Store; Thumbs.db/desktop.ini do Windows.)
@@ -376,7 +383,7 @@ fn run_thumb_queue(
     let queue = Arc::new(Mutex::new(pending.into_iter()));
     let mut handles = Vec::new();
 
-    for _ in 0..CONCURRENCY {
+    for _ in 0..concurrency() {
         let app = app.clone();
         let db = db.clone();
         let thumbs_dir = thumbs_dir.to_path_buf();
