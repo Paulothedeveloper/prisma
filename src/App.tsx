@@ -362,8 +362,9 @@ export default function App() {
     }
   }, [booted, welcome]);
 
-  // Troca de view (aba/pasta/atalho): carrega os dados novos e SÓ ENTÃO cascateia —
-  // determinístico, sem animar com dados antigos nem "piscar". Também limpa seleção e scroll.
+  // Troca de view (aba/pasta/atalho): troca INSTANTÂNEA dos dados, SEM animação na grade.
+  // Animar a troca (mesmo só com transform) era percebido como "piscada"; o conteúdo
+  // novo entra direto, sem fade nem cascata. Também limpa seleção e volta o scroll ao topo.
   useEffect(() => {
     setSelectedIds(new Set());
     anchorRef.current = null;
@@ -371,15 +372,12 @@ export default function App() {
     // subpastas como cards-capa (só na visão de pasta)
     if (view.t === "folder") subfolders(view.v).then(setSubCards).catch(() => setSubCards([]));
     else setSubCards([]);
-    // pede cascata na carga que vem (a animação dispara quando os dados novos montam)
-    cascadeOnNextLoad.current = true;
     runSearch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  // Trocar de layout (grade/lista/waterfall) também cascateia (sem remmontar nada).
+  // Trocar de layout (grade/lista/waterfall): também instantâneo, sem animar a grade.
   useEffect(() => {
-    cascadeOnNextLoad.current = true;
     runSearch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout]);
