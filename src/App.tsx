@@ -70,6 +70,7 @@ import { WelcomeModal } from "./WelcomeModal";
 import { UpdateBanner } from "./UpdateBanner";
 import { onTip, fireTip, isFirstLaunch, markWelcomed } from "./tips";
 import { t } from "./i18n";
+import { sfx } from "./sfx";
 import { PopupButton } from "./Menu";
 import { TrafficLights } from "./TrafficLights";
 import "./App.css";
@@ -437,6 +438,7 @@ export default function App() {
       setProgress((p) => ({ ...p, active: false }));
       runSearch(true);
       refreshMeta();
+      sfx.success(); // chime ao terminar de catalogar
     }).then((u) => unl.push(u));
     // Duplicados achados na importação → abre o modal de decisão.
     listen<DupPair[]>("index:dups", (e) => {
@@ -491,11 +493,13 @@ export default function App() {
       runSearch(true);
       refreshMeta();
       drop(job, 12000);
+      sfx.success(); // chime ao concluir um job da Oficina
     }).then((u) => unl.push(u));
     listen<{ job: number; label: string; message: string }>("oficina:error", (e) => {
       const { job, label, message } = e.payload;
       setJobs((j) => ({ ...j, [job]: { label, pct: 0, status: "error", message } }));
       drop(job, 6000);
+      sfx.error(); // som discreto de falha
     }).then((u) => unl.push(u));
     listen("oficina:reindexed", () => {
       runSearch(true);
@@ -625,6 +629,7 @@ export default function App() {
   // Clique no card: simples = seleção única; Ctrl = alterna; Shift = intervalo (multi-seleção).
   const handleCardClick = useCallback(
     (asset: Asset, e: React.MouseEvent, index: number) => {
+      sfx.select(); // clique discreto na seleção
       if (e.shiftKey && anchorRef.current !== null) {
         const a = Math.min(anchorRef.current, index);
         const b = Math.max(anchorRef.current, index);

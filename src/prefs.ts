@@ -1,11 +1,13 @@
 // Preferências de aparência/comportamento que vivem só no front (localStorage).
 // São aplicadas ao vivo via variáveis CSS / classes no <html> — nada de botão morto:
 // tudo aqui muda o app na hora. Settings de backend (chave IA, auto-tag) ficam no settings.json.
+import { setSfxEnabled } from "./sfx";
 
 export interface Prefs {
   accent: string; // cor de destaque (hex)
   reduceGlass: boolean; // menos desfoque/transparência (melhor desempenho)
   hoverAutoplay: boolean; // vídeo/áudio tocam ao passar o mouse no card
+  sfx: boolean; // efeitos sonoros discretos da interface (estilo Apple)
 }
 
 export const ACCENTS = ["#0a84ff", "#30d158", "#ff375f", "#ff9f0a", "#bf5af2", "#64d2ff", "#ffd60a"];
@@ -14,6 +16,7 @@ const DEFAULTS: Prefs = {
   accent: "#0a84ff",
   reduceGlass: false,
   hoverAutoplay: true,
+  sfx: true,
 };
 
 const KEY = "prisma.prefs";
@@ -53,6 +56,7 @@ export function applyPrefs(p: Prefs) {
   root.style.setProperty("--accent-soft", hexToRgba(p.accent, 0.18));
   root.classList.toggle("reduce-glass", p.reduceGlass);
   root.dataset.hoverAutoplay = p.hoverAutoplay ? "1" : "0";
+  setSfxEnabled(p.sfx);
 }
 
 // Leitura rápida usada por componentes fora do React state (ex.: AssetCard no hover).
