@@ -230,6 +230,7 @@ export default function App() {
   const [switching, setSwitching] = useState(true); // janela em que os cards entram em cascata
   const cascadeOnNextLoad = useRef(true); // pede cascata na PRÓXIMA carga (nav/layout); animação sem remount
   const cascadeTimer = useRef<number | null>(null);
+  const navReady = useRef(false); // pula o som de navegação no 1º render (boot)
   const [subCards, setSubCards] = useState<SubCard[]>([]);
   const [booted, setBooted] = useState(false);
   const [thumbSize, setThumbSize] = useState(190);
@@ -373,6 +374,9 @@ export default function App() {
     // subpastas como cards-capa (só na visão de pasta)
     if (view.t === "folder") subfolders(view.v).then(setSubCards).catch(() => setSubCards([]));
     else setSubCards([]);
+    // som discreto de navegação (troca de aba/categoria/pasta) — pula o 1º render (boot)
+    if (navReady.current) sfx.nav();
+    else navReady.current = true;
     runSearch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
@@ -438,7 +442,7 @@ export default function App() {
       setProgress((p) => ({ ...p, active: false }));
       runSearch(true);
       refreshMeta();
-      sfx.success(); // chime ao terminar de catalogar
+      sfx.notify(); // notificação ao terminar de catalogar
     }).then((u) => unl.push(u));
     // Duplicados achados na importação → abre o modal de decisão.
     listen<DupPair[]>("index:dups", (e) => {
@@ -493,7 +497,7 @@ export default function App() {
       runSearch(true);
       refreshMeta();
       drop(job, 12000);
-      sfx.success(); // chime ao concluir um job da Oficina
+      sfx.notify(); // notificação ao concluir um job da Oficina
     }).then((u) => unl.push(u));
     listen<{ job: number; label: string; message: string }>("oficina:error", (e) => {
       const { job, label, message } = e.payload;
@@ -629,7 +633,6 @@ export default function App() {
   // Clique no card: simples = seleção única; Ctrl = alterna; Shift = intervalo (multi-seleção).
   const handleCardClick = useCallback(
     (asset: Asset, e: React.MouseEvent, index: number) => {
-      sfx.select(); // clique discreto na seleção
       if (e.shiftKey && anchorRef.current !== null) {
         const a = Math.min(anchorRef.current, index);
         const b = Math.max(anchorRef.current, index);

@@ -5,6 +5,7 @@ import { Icon } from "./Icons";
 import { Logo } from "./Logo";
 import { useDismiss } from "./useDismiss";
 import { t } from "./i18n";
+import { sfx } from "./sfx";
 
 // Atualizador in-app (igual ao Ludex): checa o GitHub no boot, mostra um popup, e
 // baixa+instala+reinicia por botão — sem o usuário baixar nada manualmente.
@@ -20,7 +21,10 @@ export function UpdateBanner() {
     const id = window.setTimeout(() => {
       check()
         .then((u) => {
-          if (u) setUpdate(u);
+          if (u) {
+            setUpdate(u);
+            sfx.notify(); // notificação quando há atualização disponível
+          }
         })
         .catch((e) => console.warn("update check", e));
     }, 2500);

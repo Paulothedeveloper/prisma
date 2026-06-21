@@ -60,7 +60,14 @@ function tone(
 
 // Paleta coesa. Tons em intervalos agradáveis (quintas/oitavas), tudo curto e baixo.
 export const sfx = {
-  // clique/seleção — blip bem curtinho
+  // navegação (trocar de aba/categoria/pasta) — tick macio e curtíssimo, bem discreto
+  nav: () => tone(523.25, 0.045, { type: "sine", gain: 0.32 }),
+  // notificação (algo pronto/chegou) — sininho gentil de 2 notas (G5 → C6, quarta)
+  notify: () => {
+    tone(783.99, 0.12, { gain: 0.42 });
+    tone(1046.5, 0.2, { gain: 0.36, delay: 0.1 });
+  },
+  // clique/seleção — blip bem curtinho (uso pontual)
   select: () => tone(660, 0.055, { type: "triangle", gain: 0.45 }),
   // adicionar/confirmar — "pop" de duas notas subindo (quinta)
   pop: () => {
