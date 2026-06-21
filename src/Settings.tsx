@@ -87,24 +87,24 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const pickVault = async () => {
     const p = await openDialog({ directory: true });
     if (typeof p === "string") {
-      setVaultMsg("Indexando…");
+      setVaultMsg(t("set.indexing"));
       try {
         const n = await setVaultPath(p);
         setVault({ path: p, count: n });
-        setVaultMsg(`${n.toLocaleString("pt-BR")} trechos indexados.`);
+        setVaultMsg(t("set.chunksIndexed").replace("{n}", n.toLocaleString("pt-BR")));
       } catch (e) {
-        setVaultMsg(`Erro: ${String(e)}`);
+        setVaultMsg(`${t("common.error")}: ${String(e)}`);
       }
     }
   };
   const doReindexVault = async () => {
-    setVaultMsg("Reindexando…");
+    setVaultMsg(t("set.reindexing"));
     try {
       const n = await reindexVault();
       setVault((v) => ({ ...v, count: n }));
-      setVaultMsg(`${n.toLocaleString("pt-BR")} trechos reindexados.`);
+      setVaultMsg(t("set.chunksReindexed").replace("{n}", n.toLocaleString("pt-BR")));
     } catch (e) {
-      setVaultMsg(`Erro: ${String(e)}`);
+      setVaultMsg(`${t("common.error")}: ${String(e)}`);
     }
   };
 
@@ -140,17 +140,17 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const doExport = async () => {
     try {
       const p = await saveDialog({ defaultPath: "prisma-catalogo.json", filters: [{ name: "JSON", extensions: ["json"] }] });
-      if (typeof p === "string") setSyncMsg(`Exportados ${await exportCatalog(p)} itens com metadados.`);
+      if (typeof p === "string") setSyncMsg(t("set.exported").replace("{n}", String(await exportCatalog(p))));
     } catch (e) {
-      setSyncMsg(`Erro ao exportar: ${String(e)}`);
+      setSyncMsg(t("set.exportError").replace("{e}", String(e)));
     }
   };
   const doImport = async () => {
     try {
       const p = await openDialog({ multiple: false, filters: [{ name: "JSON", extensions: ["json"] }] });
-      if (typeof p === "string") setSyncMsg(`Aplicado em ${await importCatalog(p)} itens desta biblioteca (casados por conteúdo).`);
+      if (typeof p === "string") setSyncMsg(t("set.applied").replace("{n}", String(await importCatalog(p))));
     } catch (e) {
-      setSyncMsg(`Erro ao importar: ${String(e)}`);
+      setSyncMsg(t("set.importError").replace("{e}", String(e)));
     }
   };
 
@@ -285,7 +285,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                       setProxyMsg("");
                       try {
                         const n = await regenProxies();
-                        setProxyMsg(n > 0 ? `${n.toLocaleString()} → proxy` : "OK");
+                        setProxyMsg(n > 0 ? `${n.toLocaleString()} ${t("set.statusProxy")}` : t("set.statusOk"));
                       } catch (e) {
                         setProxyMsg(`${t("common.error")}: ${String(e)}`);
                       }
@@ -329,7 +329,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                       setHealthMsg("");
                       try {
                         const n = await scanHealth(0);
-                        setHealthMsg(n > 0 ? `${n.toLocaleString()} →` : "OK");
+                        setHealthMsg(n > 0 ? `${n.toLocaleString()} →` : t("set.statusOk"));
                       } catch (e) {
                         setHealthMsg(`${t("common.error")}: ${String(e)}`);
                       } finally {
@@ -391,7 +391,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
                         className="set-bulk-btn set-bulk-all"
                         disabled={aiBusy || pending === 0}
                         onClick={() => runBulk(0)}
-                        title="Analisa TODAS as pendentes (limit 0 = sem teto)"
+                        title={t("set.analyzeAllTitle")}
                       >
                         {t("set.analyzeAll")}{pending ? ` (${pending.toLocaleString()})` : ""}
                       </button>

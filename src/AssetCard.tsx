@@ -4,6 +4,7 @@ import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import { Icon, type IconName } from "./Icons";
 import { dragIcon, type Asset } from "./api";
 import { hoverAutoplayOn } from "./prefs";
+import { t } from "./i18n";
 
 // Caminho do ícone de fallback de arrasto, carregado uma vez.
 let FALLBACK_ICON = "";
@@ -103,7 +104,7 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
             data-grip="1"
             draggable
             onDragStart={onGripDragStart}
-            title="Arraste para reordenar"
+            title={t("card.dragReorder")}
           >
             <Icon name="grip" size={14} />
           </span>
@@ -152,7 +153,7 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
         {(asset.health_level === "red" || asset.health_level === "yellow") && (
           <span
             className={`health-mark hm-${asset.health_level}`}
-            title={asset.health_flags ? `Saúde: ${asset.health_flags}` : "Precisa de atenção"}
+            title={asset.health_flags ? t("card.health").replace("{flags}", asset.health_flags) : t("card.needsAttention")}
           />
         )}
         {dur && <span className="badge badge-dur">{dur}</span>}

@@ -6,10 +6,10 @@ import type { MediaInfo } from "./api";
 
 // Destinos de entrega — definem a SAÍDA do nó OUT (Briefing 5 §2).
 const TARGETS: { id: string; label: string; space: string; gamma: string; sdr: boolean }[] = [
-  { id: "rec709", label: "Rec.709 (Web / Reels / SDR)", space: "Rec.709", gamma: "Gamma 2.4", sdr: true },
-  { id: "hlg", label: "HDR HLG", space: "Rec.2100 HLG", gamma: "Rec.2100 HLG", sdr: false },
-  { id: "pq", label: "HDR PQ", space: "Rec.2100 ST2084 (PQ)", gamma: "ST.2084 (PQ)", sdr: false },
-  { id: "dcip3", label: "Cinema DCP (DCI-P3)", space: "DCI-P3", gamma: "Gamma 2.6", sdr: false },
+  { id: "rec709", label: t("cst.target.rec709"), space: "Rec.709", gamma: "Gamma 2.4", sdr: true },
+  { id: "hlg", label: t("cst.target.hlg"), space: "Rec.2100 HLG", gamma: "Rec.2100 HLG", sdr: false },
+  { id: "pq", label: t("cst.target.pq"), space: "Rec.2100 ST2084 (PQ)", gamma: "ST.2084 (PQ)", sdr: false },
+  { id: "dcip3", label: t("cst.target.dcip3"), space: "DCI-P3", gamma: "Gamma 2.6", sdr: false },
 ];
 
 const NONE = () => t("cst.tone.none");

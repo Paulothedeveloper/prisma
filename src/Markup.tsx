@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { Icon } from "./Icons";
 import { saveAnnotated, type Asset } from "./api";
 import { useDismiss } from "./useDismiss";
+import { t } from "./i18n";
 
 // Markup/anotação (Briefing 4 #9): rabisca/marca em cima da imagem e salva uma cópia anotada.
 const COLORS = ["#FF3B30", "#FFD60A", "#30D158", "#0A84FF", "#FFFFFF", "#000000"];
@@ -73,7 +74,7 @@ export function Markup({ asset, onClose, onSaved }: { asset: Asset; onClose: () 
       <div className={`mk-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
-            <Icon name="pencil" size={16} /> Anotar — {asset.name || asset.filename}
+            <Icon name="pencil" size={16} /> {t("mk.title")} {asset.name || asset.filename}
           </div>
           <button className="dup-x" onClick={dismiss}>
             <Icon name="close" size={14} />
@@ -90,7 +91,7 @@ export function Markup({ asset, onClose, onSaved }: { asset: Asset; onClose: () 
           ))}
           <span className="mk-sep" />
           <input className="mk-width" type="range" min={2} max={24} value={width} onChange={(e) => setWidth(Number(e.target.value))} />
-          <span className="enc-adv-hint">espessura {width}px</span>
+          <span className="enc-adv-hint">{t("mk.thickness").replace("{width}", String(width))}</span>
         </div>
         <div className="mk-stage">
           <canvas
@@ -103,8 +104,8 @@ export function Markup({ asset, onClose, onSaved }: { asset: Asset; onClose: () 
           />
         </div>
         <div className="dup-foot">
-          <button className="dup-cancel" onClick={dismiss} disabled={busy}>Cancelar</button>
-          <button className="dup-apply" onClick={save} disabled={busy}>{busy ? "Salvando…" : "Salvar anotação"}</button>
+          <button className="dup-cancel" onClick={dismiss} disabled={busy}>{t("mk.cancel")}</button>
+          <button className="dup-apply" onClick={save} disabled={busy}>{busy ? t("mk.saving") : t("mk.save")}</button>
         </div>
       </div>
     </div>

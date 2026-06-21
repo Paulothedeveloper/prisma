@@ -3,13 +3,14 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { resolveDup, type DupPair } from "./api";
 import { Icon } from "./Icons";
 import { useDismiss } from "./useDismiss";
+import { t } from "./i18n";
 
 type Action = "exclude" | "replace" | "ignore";
 
 const ACTION_LABEL: Record<Action, string> = {
-  ignore: "Manter os dois",
-  exclude: "Remover o novo",
-  replace: "Substituir o antigo",
+  ignore: t("dup.keepBoth"),
+  exclude: t("dup.removeNew"),
+  replace: t("dup.replaceOld"),
 };
 
 function thumb(path: string | null) {
@@ -56,22 +57,21 @@ export function DupModal({ pairs, onDone }: { pairs: DupPair[]; onDone: () => vo
         <div className="dup-head">
           <div className="dup-title">
             <Icon name="dup" size={17} />
-            {pairs.length} {pairs.length === 1 ? "duplicado encontrado" : "duplicados encontrados"}
+            {pairs.length} {pairs.length === 1 ? t("dup.foundOne") : t("dup.foundMany")}
           </div>
-          <button className="dup-x" onClick={dismiss} title="Decidir depois">
+          <button className="dup-x" onClick={dismiss} title={t("dup.decideLater")}>
             <Icon name="close" size={14} />
           </button>
         </div>
         <div className="dup-sub">
-          Arquivos com conteúdo idêntico ao que já está na biblioteca. Nada é apagado do disco —
-          as opções só mudam o que aparece no PRISMA.
+          {t("dup.explain")}
         </div>
 
         <div className="dup-bulk">
-          <span>Aplicar a todos:</span>
-          <button onClick={() => setAll("ignore")}>Manter os dois</button>
-          <button onClick={() => setAll("exclude")}>Remover os novos</button>
-          <button onClick={() => setAll("replace")}>Substituir os antigos</button>
+          <span>{t("dup.applyAll")}</span>
+          <button onClick={() => setAll("ignore")}>{t("dup.keepBoth")}</button>
+          <button onClick={() => setAll("exclude")}>{t("dup.removeNews")}</button>
+          <button onClick={() => setAll("replace")}>{t("dup.replaceOlds")}</button>
         </div>
 
         <div className="dup-list">
@@ -80,9 +80,9 @@ export function DupModal({ pairs, onDone }: { pairs: DupPair[]; onDone: () => vo
             return (
               <div className="dup-row" key={p.incoming.id}>
                 <div className="dup-pair">
-                  <DupSide label="Já na biblioteca" a={p.existing} />
+                  <DupSide label={t("dup.inLibrary")} a={p.existing} />
                   <span className="dup-eq">=</span>
-                  <DupSide label="Recém-importado" a={p.incoming} highlight />
+                  <DupSide label={t("dup.justImported")} a={p.incoming} highlight />
                 </div>
                 <div className="dup-actions">
                   {(["ignore", "exclude", "replace"] as Action[]).map((a) => (
@@ -102,10 +102,10 @@ export function DupModal({ pairs, onDone }: { pairs: DupPair[]; onDone: () => vo
 
         <div className="dup-foot">
           <button className="dup-cancel" onClick={dismiss} disabled={busy}>
-            Decidir depois
+            {t("dup.decideLater")}
           </button>
           <button className="dup-apply" onClick={apply} disabled={busy}>
-            {busy ? "Aplicando…" : "Aplicar"}
+            {busy ? t("dup.applying") : t("dup.apply")}
           </button>
         </div>
       </div>

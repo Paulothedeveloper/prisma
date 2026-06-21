@@ -4,6 +4,7 @@ import { Encoder } from "./Encoder";
 import { PopupButton } from "./Menu";
 import { oficinaRun, type Asset, type MediaInfo, type JobOpts } from "./api";
 import { fireTip } from "./tips";
+import { t } from "./i18n";
 
 // OFICINA: os botões de conserto aparecem SÓ quando fazem sentido pro que o leitor detectou.
 const IMG_FORMATS: [string, string][] = [
@@ -44,12 +45,12 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
   return (
     <div className="oficina" ref={rootRef}>
       <div className="insp-section-title oficina-title">
-        <Icon name="sliders" size={13} /> Oficina
+        <Icon name="sliders" size={13} /> {t("ofi.title")}
       </div>
 
       {isVideo && (
         <button className="of-btn of-wide of-encoder" disabled={!!busy} onClick={() => setEncoder(true)}>
-          <Icon name="sliders" size={13} /> Codificar avançado (codec, resolução, FPS, áudio, filtros…)
+          <Icon name="sliders" size={13} /> {t("ofi.encodeAdvanced")}
         </button>
       )}
       {encoder && <Encoder asset={asset} onClose={() => setEncoder(false)} />}
@@ -57,13 +58,13 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
       {v?.vfr && (
         <div className="oficina-alert">
           <div className="oficina-alert-msg">
-            <b>VFR</b> — frame rate variável vai dessincronizar o áudio no DaVinci.
+            <b>VFR</b> — {t("ofi.vfrMsg")}
           </div>
           <div className="oficina-row">
             <button className="of-btn of-fix" disabled={!!busy} onClick={() => run("vfr_cfr")}>
-              Consertar pra CFR (H.265 10-bit)
+              {t("ofi.fixCfr")}
             </button>
-            <button className="of-btn" disabled={!!busy} onClick={() => run("vfr_cfr", { codec: "prores" })} title="Qualidade máxima pra grade">
+            <button className="of-btn" disabled={!!busy} onClick={() => run("vfr_cfr", { codec: "prores" })} title={t("ofi.proresMaxQuality")}>
               ProRes
             </button>
           </div>
@@ -72,7 +73,7 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
 
       {isVideo && (
         <div className="oficina-group">
-          <div className="oficina-label">Transcodificar — pra editar/gradar</div>
+          <div className="oficina-label">{t("ofi.transcode")}</div>
           <div className="oficina-row">
             <button className="of-btn" disabled={!!busy} onClick={() => run("prores")}>
               ProRes 422 HQ
@@ -86,13 +87,13 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
 
       {isVideo && (
         <div className="oficina-group">
-          <div className="oficina-label">Pra entregar</div>
+          <div className="oficina-label">{t("ofi.deliver")}</div>
           <div className="oficina-row">
             <button className="of-btn" disabled={!!busy} onClick={() => run("h265")}>
               H.265 10-bit
             </button>
             <button className="of-btn" disabled={!!busy} onClick={() => run("reels")}>
-              Reels 1080×1920
+              {t("ofi.reels")}
             </button>
           </div>
         </div>
@@ -100,13 +101,13 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
 
       {isVideo && !asset.proxy_path && (
         <button className="of-btn of-wide" disabled={!!busy} onClick={() => run("proxy")}>
-          <Icon name="play" size={13} /> Gerar proxy (preview leve / scrub liso)
+          <Icon name="play" size={13} /> {t("ofi.genProxy")}
         </button>
       )}
 
       {isImage && (
         <div className="oficina-group">
-          <div className="oficina-label">Converter imagem — salva em CONVERTIDO/</div>
+          <div className="oficina-label">{t("ofi.convertImage")}</div>
           <div className="oficina-row">
             {IMG_FORMATS.map(([fmt, lbl]) =>
               asset.ext.toLowerCase() === fmt ? null : (
@@ -127,36 +128,36 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
       {info.has_gyro && (
         <div className="oficina-group">
           <div className="oficina-alert-msg of-motionsilk">
-            <Icon name="motionsilk" size={15} /> Giroscópio detectado — estabilização <b>MotionSilk</b> (embutida).
+            <Icon name="motionsilk" size={15} /> {t("ofi.gyroDetected")} <b>MotionSilk</b> {t("ofi.gyroEmbedded")}
           </div>
           <label className="of-slider">
-            <span>Suavidade</span>
+            <span>{t("ofi.smoothness")}</span>
             <input type="range" min={0} max={100} value={smooth} onChange={(e) => setSmooth(Number(e.target.value))} />
             <span className="of-slider-val">{smooth}%</span>
           </label>
 
           <button className="of-gyro-adv" onClick={() => setGyroAdv((a) => !a)}>
-            {gyroAdv ? "▾" : "▸"} Avançado (FOV, horizonte, lente, codec)
+            {gyroAdv ? "▾" : "▸"} {t("ofi.advanced")}
           </button>
           {gyroAdv && (
             <div className="of-gyro-panel">
               <label className="of-slider">
-                <span>Zoom/FOV</span>
+                <span>{t("ofi.zoomFov")}</span>
                 <input type="range" min={50} max={150} value={fov} onChange={(e) => setFov(Number(e.target.value))} />
                 <span className="of-slider-val">{(fov / 100).toFixed(2)}×</span>
               </label>
               <label className="of-slider">
-                <span>Travar horizonte</span>
+                <span>{t("ofi.lockHorizon")}</span>
                 <input type="range" min={0} max={100} value={horizon} onChange={(e) => setHorizon(Number(e.target.value))} />
                 <span className="of-slider-val">{horizon}%</span>
               </label>
               <label className="of-slider">
-                <span>Correção da lente</span>
+                <span>{t("ofi.lensCorrection")}</span>
                 <input type="range" min={0} max={100} value={lens} onChange={(e) => setLens(Number(e.target.value))} />
                 <span className="of-slider-val">{lens}%</span>
               </label>
               <div className="of-gyro-codec">
-                <span>Codec do render</span>
+                <span>{t("ofi.renderCodec")}</span>
                 <PopupButton
                   value={gcodec}
                   options={[["h265", "H.265 10-bit"], ["h264", "H.264"], ["prores", "ProRes"]]}
@@ -179,7 +180,7 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
               })
             }
           >
-            <Icon name="motionsilk" size={14} /> Estabilizar (MotionSilk)
+            <Icon name="motionsilk" size={14} /> {t("ofi.stabilize")}
           </button>
         </div>
       )}

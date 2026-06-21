@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "./Icons";
 import { renameFiles, type Asset } from "./api";
 import { useDismiss } from "./useDismiss";
+import { t } from "./i18n";
 
 // Batch Rename (Briefing 4 #4): renomeia os ARQUIVOS no disco por padrão + tokens.
 // ⚠️ mexe no arquivo real — avisa e guarda os nomes antigos pra desfazer.
@@ -71,7 +72,7 @@ export function BatchRename({ assets, onClose, onDone }: { assets: Asset[]; onCl
       <div className={`br-modal${closing ? " closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
-            <Icon name="pencil" size={16} /> Renomear em lote — {assets.length} arquivos
+            <Icon name="pencil" size={16} /> {t("br.title").replace("{n}", String(assets.length))}
           </div>
           <button className="dup-x" onClick={dismiss}>
             <Icon name="close" size={14} />
@@ -80,23 +81,23 @@ export function BatchRename({ assets, onClose, onDone }: { assets: Asset[]; onCl
 
         <div className="br-body">
           <div className="br-warn">
-            ⚠️ Isso renomeia o <b>arquivo real no disco</b> (não é só rótulo). Dá pra <b>desfazer</b> logo após.
+            ⚠️ <span dangerouslySetInnerHTML={{ __html: t("br.warn") }} />
           </div>
 
           <label className="enc-field">
-            <span className="enc-field-label">Padrão</span>
-            <input className="field" value={pattern} onChange={(e) => setPattern(e.target.value)} placeholder="{nome}_{###}" />
+            <span className="enc-field-label">{t("br.pattern")}</span>
+            <input className="field" value={pattern} onChange={(e) => setPattern(e.target.value)} placeholder={t("br.patternPlaceholder")} />
           </label>
           <div className="br-tokens">
-            Tokens: <code>{"{nome}"}</code> <code>{"{###}"}</code> (contador) <code>{"{ext}"}</code> <code>{"{res}"}</code> <code>{"{date}"}</code>
+            {t("br.tokens")} <code>{"{nome}"}</code> <code>{"{###}"}</code> {t("br.tokensCounter")} <code>{"{ext}"}</code> <code>{"{res}"}</code> <code>{"{date}"}</code>
           </div>
           <div className="br-find">
             <label className="enc-field">
-              <span className="enc-field-label">Localizar</span>
+              <span className="enc-field-label">{t("br.find")}</span>
               <input className="field" value={find} onChange={(e) => setFind(e.target.value)} />
             </label>
             <label className="enc-field">
-              <span className="enc-field-label">Substituir por</span>
+              <span className="enc-field-label">{t("br.replace")}</span>
               <input className="field" value={replace} onChange={(e) => setReplace(e.target.value)} />
             </label>
           </div>
@@ -114,12 +115,12 @@ export function BatchRename({ assets, onClose, onDone }: { assets: Asset[]; onCl
 
         <div className="dup-foot">
           {undo ? (
-            <button className="dup-cancel" onClick={doUndo} disabled={busy}>Desfazer</button>
+            <button className="dup-cancel" onClick={doUndo} disabled={busy}>{t("br.undo")}</button>
           ) : (
-            <button className="dup-cancel" onClick={dismiss} disabled={busy}>Cancelar</button>
+            <button className="dup-cancel" onClick={dismiss} disabled={busy}>{t("br.cancel")}</button>
           )}
           <button className="dup-apply" onClick={apply} disabled={busy}>
-            {busy ? "Renomeando…" : undo ? "Renomear de novo" : "Renomear"}
+            {busy ? t("br.renaming") : undo ? t("br.renameAgain") : t("br.rename")}
           </button>
         </div>
       </div>

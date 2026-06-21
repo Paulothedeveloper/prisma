@@ -4,6 +4,7 @@ import { Icon } from "./Icons";
 import { VideoPlayer } from "./VideoPlayer";
 import { AudioPlayer } from "./AudioPlayer";
 import { probeMedia, revealInExplorer, openExternal, type Asset } from "./api";
+import { t } from "./i18n";
 
 const WEB_VIDEO_CODECS = new Set(["h264", "vp8", "vp9", "av1", "avc1"]);
 
@@ -84,7 +85,7 @@ export function Preview({ asset, onClose, onNav }: Props) {
                   className="preview-openext"
                   onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
                 >
-                  <Icon name="play" size={16} /> Abrir no player externo
+                  <Icon name="play" size={16} /> {t("prev.openExternal")}
                 </button>
               )}
             </div>
@@ -100,7 +101,7 @@ export function Preview({ asset, onClose, onNav }: Props) {
         ) : (
           <div className="preview-noprev">
             <div className="preview-ext">{asset.ext.toUpperCase()}</div>
-            <div>Sem visualização para este tipo</div>
+            <div>{t("prev.noPreview")}</div>
           </div>
         )}
         <div className="preview-name">{asset.filename}</div>

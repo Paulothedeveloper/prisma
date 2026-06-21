@@ -1,6 +1,7 @@
 import { createPortal } from "react-dom";
 import { Icon } from "./Icons";
 import { TIPS, markTipSeen, disableTips } from "./tips";
+import { t } from "./i18n";
 
 // Dica de primeira-vez ancorada num elemento. Portalizada e presa na viewport — não
 // empurra nem quebra o layout (mesmo padrão do menu de contexto).
@@ -31,10 +32,10 @@ export function Coachmark({ id, rect, onClose }: { id: string; rect: DOMRect; on
         <div className="coach-text">{def.text}</div>
         <div className="coach-actions">
           <button className="coach-skip" onClick={() => close(true)}>
-            Não mostrar dicas
+            {t("coach.skip")}
           </button>
           <button className="coach-ok" onClick={() => close()}>
-            Entendi
+            {t("coach.ok")}
           </button>
         </div>
       </div>

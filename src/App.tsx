@@ -77,14 +77,14 @@ import "./App.css";
 const PAGE = 200;
 
 const CATEGORY_LABELS: Record<string, string> = {
-  image: "Imagens",
-  video: "Vídeos",
-  gif: "GIFs",
-  audio: "Áudio",
-  lut: "LUTs",
-  font: "Fontes",
-  document: "Documentos",
-  unknown: "Outros",
+  image: t("cat.image"),
+  video: t("cat.video"),
+  gif: t("cat.gif"),
+  audio: t("cat.audio"),
+  lut: t("cat.lut"),
+  font: t("cat.font"),
+  document: t("cat.document"),
+  unknown: t("cat.unknown"),
 };
 const CATEGORY_ORDER = ["image", "video", "gif", "audio", "lut", "font", "document", "unknown"];
 
@@ -103,46 +103,46 @@ const COLOR_HEX: Record<string, string> = {
 };
 
 const RES_OPTS: [string, string][] = [
-  ["", "Resolução"],
-  ["uhd", "4K e acima"],
-  ["fhd", "Full HD"],
-  ["hd", "HD"],
-  ["sd", "SD"],
+  ["", t("filter.res")],
+  ["uhd", t("filter.res.uhd")],
+  ["fhd", t("filter.res.fhd")],
+  ["hd", t("filter.res.hd")],
+  ["sd", t("filter.res.sd")],
 ];
 const DUR_OPTS: [string, string][] = [
-  ["", "Duração"],
-  ["short", "Até 10s"],
-  ["mid", "10–60s"],
-  ["long", "Acima de 60s"],
+  ["", t("filter.dur")],
+  ["short", t("filter.dur.short")],
+  ["mid", t("filter.dur.mid")],
+  ["long", t("filter.dur.long")],
 ];
 // Características visuais (busca por como o asset SE PARECE, não pelo nome).
 const BRIGHT_OPTS: [string, string][] = [
-  ["", "Tom"],
-  ["claro", "Claro"],
-  ["medio", "Médio"],
-  ["escuro", "Escuro"],
+  ["", t("filter.bright")],
+  ["claro", t("filter.bright.claro")],
+  ["medio", t("filter.bright.medio")],
+  ["escuro", t("filter.bright.escuro")],
 ];
 const WARM_OPTS: [string, string][] = [
-  ["", "Temperatura"],
-  ["quente", "Quente"],
-  ["neutro", "Neutra"],
-  ["frio", "Fria"],
+  ["", t("filter.warm")],
+  ["quente", t("filter.warm.quente")],
+  ["neutro", t("filter.warm.neutro")],
+  ["frio", t("filter.warm.frio")],
 ];
 const SAT_OPTS: [string, string][] = [
-  ["", "Saturação"],
-  ["vivido", "Vívida"],
-  ["suave", "Suave"],
-  ["pb", "P&B / cinza"],
+  ["", t("filter.sat")],
+  ["vivido", t("filter.sat.vivido")],
+  ["suave", t("filter.sat.suave")],
+  ["pb", t("filter.sat.pb")],
 ];
 const SORT_OPTS: [string, string][] = [
-  ["name", "Nome A–Z"],
-  ["name_desc", "Nome Z–A"],
-  ["recent", "Mais recentes"],
-  ["oldest", "Mais antigos"],
-  ["size_desc", "Maiores"],
-  ["size_asc", "Menores"],
-  ["rating_desc", "Mais avaliados"],
-  ["duration_desc", "Mais longos"],
+  ["name", t("filter.sort.nameAsc")],
+  ["name_desc", t("filter.sort.nameDesc")],
+  ["recent", t("filter.sort.recent")],
+  ["oldest", t("filter.sort.oldest")],
+  ["size_desc", t("filter.sort.sizeDesc")],
+  ["size_asc", t("filter.sort.sizeAsc")],
+  ["rating_desc", t("filter.sort.ratingDesc")],
+  ["duration_desc", t("filter.sort.durationDesc")],
 ];
 
 // Coleções inteligentes: presets que combinam características já extraídas (local, instantâneo).
@@ -153,13 +153,13 @@ type SmartPreset = {
   f: { kind?: string; res?: string; bright?: string; warm?: string; sat?: string; orient?: string };
 };
 const SMART_PRESETS: SmartPreset[] = [
-  { id: "reels", label: "Reels / Verticais", icon: "video", f: { kind: "video", orient: "portrait" } },
-  { id: "uhd", label: "4K e acima", icon: "sparkles", f: { res: "uhd" } },
-  { id: "pb", label: "Preto & Branco", icon: "contrast", f: { sat: "pb" } },
-  { id: "moody", label: "Escuros / Moody", icon: "moon", f: { bright: "escuro" } },
-  { id: "clean", label: "Claros / Clean", icon: "sun", f: { bright: "claro" } },
-  { id: "quente", label: "Tons quentes", icon: "flame", f: { warm: "quente" } },
-  { id: "frio", label: "Tons frios", icon: "snowflake", f: { warm: "frio" } },
+  { id: "reels", label: t("smart.reels"), icon: "video", f: { kind: "video", orient: "portrait" } },
+  { id: "uhd", label: t("smart.uhd"), icon: "sparkles", f: { res: "uhd" } },
+  { id: "pb", label: t("smart.pb"), icon: "contrast", f: { sat: "pb" } },
+  { id: "moody", label: t("smart.moody"), icon: "moon", f: { bright: "escuro" } },
+  { id: "clean", label: t("smart.clean"), icon: "sun", f: { bright: "claro" } },
+  { id: "quente", label: t("smart.quente"), icon: "flame", f: { warm: "quente" } },
+  { id: "frio", label: t("smart.frio"), icon: "snowflake", f: { warm: "frio" } },
 ];
 
 type View =
@@ -584,7 +584,7 @@ export default function App() {
 
   const extOpts = useMemo<[string, string][]>(
     () => [
-      ["", "Extensão"],
+      ["", t("filter.ext")],
       ...counts.by_ext.map(([e, n]) => [e, `.${e} · ${n}`] as [string, string]),
     ],
     [counts.by_ext]
@@ -771,7 +771,7 @@ export default function App() {
   }, []);
 
   const addCollection = useCallback(async () => {
-    const id = await createCollection("Nova coleção");
+    const id = await createCollection(t("app.newCollection"));
     await refreshMeta();
     setEditingColl(id);
   }, [refreshMeta]);
@@ -805,7 +805,7 @@ export default function App() {
         <div className="splash-bar">
           <div className="splash-bar-fill" />
         </div>
-        <div className="splash-tag">Biblioteca de assets · Leitor CST · Oficina · MotionSilk</div>
+        <div className="splash-tag">{t("app.splashTag")}</div>
       </div>
       <header className="toolbar" data-tauri-drag-region>
         <div className="tb-left" data-tauri-drag-region>
@@ -834,13 +834,13 @@ export default function App() {
           )}
         </div>
         <div className="tb-right" data-tauri-drag-region>
-          <button className="icon-btn tb-gear" onClick={() => setShowSettings(true)} title="Configurações">
+          <button className="icon-btn tb-gear" onClick={() => setShowSettings(true)} title={t("app.settings")}>
             <Icon name="sliders" size={16} />
           </button>
           <div className="add-wrap">
             <button ref={addBtnRef} className="btn-primary btn-add" onClick={() => setAddMenu((o) => !o)}>
               <Icon name="plus" size={15} />
-              Adicionar
+              {t("app.add")}
               <Icon name="chevronUpDown" size={13} />
             </button>
             {addMenu &&
@@ -850,10 +850,10 @@ export default function App() {
                   <div className="add-backdrop" onClick={() => setAddMenu(false)} />
                   <div className="add-menu" style={{ left: addPos.left, top: addPos.top }}>
                     <button onClick={addFolders}>
-                      <Icon name="folder" size={15} /> Pastas… <span className="add-hint">(várias)</span>
+                      <Icon name="folder" size={15} /> {t("app.addFolders")} <span className="add-hint">{t("app.addFoldersHint")}</span>
                     </button>
                     <button onClick={addFiles}>
-                      <Icon name="image" size={15} /> Arquivos… <span className="add-hint">(vários)</span>
+                      <Icon name="image" size={15} /> {t("app.addFiles")} <span className="add-hint">{t("app.addFilesHint")}</span>
                     </button>
                   </div>
                 </>,
@@ -868,13 +868,13 @@ export default function App() {
           <Icon name="sliders" size={15} />
         </span>
         <PopupButton value={sort} options={SORT_OPTS} onChange={setSort} />
-        <PopupButton value={fRes} options={RES_OPTS} onChange={setFRes} placeholder="Resolução" />
-        <PopupButton value={fDur} options={DUR_OPTS} onChange={setFDur} placeholder="Duração" />
-        <PopupButton value={fBright} options={BRIGHT_OPTS} onChange={setFBright} placeholder="Tom" />
-        <PopupButton value={fWarm} options={WARM_OPTS} onChange={setFWarm} placeholder="Temperatura" />
-        <PopupButton value={fSat} options={SAT_OPTS} onChange={setFSat} placeholder="Saturação" />
-        <PopupButton value={fExt} options={extOpts} onChange={setFExt} placeholder="Extensão" />
-        <div className="rating-filter" title="Avaliação mínima">
+        <PopupButton value={fRes} options={RES_OPTS} onChange={setFRes} placeholder={t("filter.res")} />
+        <PopupButton value={fDur} options={DUR_OPTS} onChange={setFDur} placeholder={t("filter.dur")} />
+        <PopupButton value={fBright} options={BRIGHT_OPTS} onChange={setFBright} placeholder={t("filter.bright")} />
+        <PopupButton value={fWarm} options={WARM_OPTS} onChange={setFWarm} placeholder={t("filter.warm")} />
+        <PopupButton value={fSat} options={SAT_OPTS} onChange={setFSat} placeholder={t("filter.sat")} />
+        <PopupButton value={fExt} options={extOpts} onChange={setFExt} placeholder={t("filter.ext")} />
+        <div className="rating-filter" title={t("app.minRating")}>
           {[1, 2, 3, 4, 5].map((n) => (
             <span
               key={n}
@@ -887,23 +887,23 @@ export default function App() {
         </div>
         {anyFilter ? (
           <button className="clear-filters" onClick={clearFilters}>
-            Limpar
+            {t("app.clearFilters")}
           </button>
         ) : null}
-        <div className="result-count">{assets.length} itens</div>
+        <div className="result-count">{assets.length} {t("app.items")}</div>
         <div className="layout-toggle">
           {(["grid", "list", "waterfall"] as const).map((l) => (
             <button
               key={l}
               className={`layout-btn ${layout === l ? "on" : ""}`}
-              title={l === "grid" ? "Grade" : l === "list" ? "Lista" : "Waterfall"}
+              title={l === "grid" ? t("app.layoutGrid") : l === "list" ? t("app.layoutList") : t("app.layoutWaterfall")}
               onClick={() => setLayout(l)}
             >
               <Icon name={l === "grid" ? "layoutGrid" : l === "list" ? "layoutList" : "layoutWaterfall"} size={15} />
             </button>
           ))}
         </div>
-        <div className="size-control" title="Tamanho das miniaturas">
+        <div className="size-control" title={t("app.thumbSize")}>
           <button className="size-ico" onClick={() => setThumbSize(130)}>
             <Icon name="image" size={13} />
           </button>
@@ -931,7 +931,7 @@ export default function App() {
             <div className="progress-shimmer" />
           </div>
           <span className="progress-label">
-            Catalogando {progress.done.toLocaleString("pt-BR")}/{progress.total.toLocaleString("pt-BR")} · {pct}%
+            {t("app.cataloging")} {progress.done.toLocaleString("pt-BR")}/{progress.total.toLocaleString("pt-BR")} · {pct}%
           </span>
         </div>
       )}
@@ -941,28 +941,28 @@ export default function App() {
           <div className="side-group">
             <SideItem
               icon="all"
-              label="Tudo"
+              label={t("app.all")}
               count={counts.total}
               active={isView({ t: "all" })}
               onClick={() => setView({ t: "all" })}
             />
             <SideItem
               icon="tagSlash"
-              label="Sem tags"
+              label={t("app.untagged")}
               count={counts.untagged}
               active={isView({ t: "untagged" })}
               onClick={() => setView({ t: "untagged" })}
             />
             <SideItem
               icon="inbox"
-              label="Fora de coleção"
+              label={t("app.uncollected")}
               count={counts.uncollected}
               active={isView({ t: "uncollected" })}
               onClick={() => setView({ t: "uncollected" })}
             />
             <SideItem
               icon="shuffle"
-              label="Aleatório"
+              label={t("app.random")}
               count={counts.total}
               active={isView({ t: "random" })}
               onClick={() => setView({ t: "random" })}
@@ -970,7 +970,7 @@ export default function App() {
             {counts.dups > 0 && (
               <SideItem
                 icon="dup"
-                label="Duplicados"
+                label={t("app.dups")}
                 count={counts.dups}
                 active={isView({ t: "dups" })}
                 onClick={() => setView({ t: "dups" })}
@@ -978,7 +978,7 @@ export default function App() {
             )}
             <SideItem
               icon="trash"
-              label="Lixeira"
+              label={t("app.trash")}
               count={counts.trash}
               active={isView({ t: "trash" })}
               onClick={() => setView({ t: "trash" })}
@@ -1005,9 +1005,9 @@ export default function App() {
             <div className="side-group">
               <div className="side-title">{t("side.health")}</div>
               {[
-                { flag: "vfr", label: "Precisam de CFR", icon: "refresh" as const },
-                { flag: "banding", label: "Risco de banding", icon: "image" as const },
-                { flag: "proxy", label: "Proxy recomendado", icon: "video" as const },
+                { flag: "vfr", label: t("app.healthVfr"), icon: "refresh" as const },
+                { flag: "banding", label: t("app.healthBanding"), icon: "image" as const },
+                { flag: "proxy", label: t("app.healthProxy"), icon: "video" as const },
               ]
                 .filter((s) => hCounts[s.flag])
                 .map((s) => (
@@ -1035,12 +1035,12 @@ export default function App() {
           <div className="side-group">
             <div className="side-title side-title-row">
               {t("side.smartFolders")}
-              <button className="side-add" title="Nova pasta inteligente" onClick={() => setSmartBuilder({ editing: null })}>
+              <button className="side-add" title={t("app.newSmart")} onClick={() => setSmartBuilder({ editing: null })}>
                 <Icon name="plus" size={13} />
               </button>
             </div>
             {smartFolders.length === 0 && (
-              <div className="side-hint">Crie pastas por regra (ex: vídeos .mov 5★ com tag "overlay").</div>
+              <div className="side-hint">{t("app.smartHint")}</div>
             )}
             {smartFolders.map((sf) => (
               <div
@@ -1057,7 +1057,7 @@ export default function App() {
                 <span className="count">{sf.count}</span>
                 <button
                   className="coll-del"
-                  title="Excluir"
+                  title={t("app.delete")}
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteSmart(sf.id).then(() => {
@@ -1075,10 +1075,10 @@ export default function App() {
           {folders.length > 0 && (
             <div className="side-group">
               <div className="side-title side-title-row">
-                Pastas
+                {t("app.folders")}
                 <button
                   className="side-add"
-                  title={showHidden ? "Esconder pastas ocultas" : "Mostrar pastas ocultas"}
+                  title={showHidden ? t("app.hideHidden") : t("app.showHidden")}
                   onClick={() => setShowHidden((h) => !h)}
                 >
                   <Icon name={showHidden ? "eye" : "eyeOff"} size={13} />
@@ -1097,7 +1097,7 @@ export default function App() {
                 onColor={(dir, color) => setFolderColor(dir, color).then(refreshMeta)}
                 onAutotag={(dir) => autotagFolder(dir).then(() => { runSearch(true); refreshMeta(); })}
                 onRemoveFolder={(dir) => {
-                  if (!window.confirm(`Remover esta pasta da biblioteca?\n\n${dir}\n\nOs assets dela saem do catálogo do PRISMA. NENHUM arquivo é apagado do disco.`))
+                  if (!window.confirm(t("app.removeFolderConfirm").replace("{x}", dir)))
                     return;
                   removeFolderLib(dir).then(() => {
                     if (folderSel === dir || (view.t === "folder" && view.v === dir)) setView({ t: "all" });
@@ -1111,13 +1111,13 @@ export default function App() {
 
           <div className="side-group">
             <div className="side-title side-title-row">
-              Coleções
-              <button className="side-add" onClick={addCollection} title="Nova coleção">
+              {t("app.collections")}
+              <button className="side-add" onClick={addCollection} title={t("app.newCollection")}>
                 <Icon name="plus" size={13} />
               </button>
             </div>
             {collections.length === 0 && (
-              <div className="side-hint">Crie coleções e arraste seus assets pra organizar à vontade.</div>
+              <div className="side-hint">{t("app.collectionsHint")}</div>
             )}
             {collections.map((c) => (
               <div
@@ -1158,7 +1158,7 @@ export default function App() {
                 <span className="count">{c.count}</span>
                 <button
                   className="coll-del"
-                  title="Excluir coleção"
+                  title={t("app.deleteCollection")}
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteCollection(c.id).then(() => {
@@ -1297,7 +1297,7 @@ export default function App() {
           )}
           {view.t === "folder" && subCards.length > 0 && (
             <div className="subfolders">
-              <div className="subfolders-title">Subpastas ({subCards.length})</div>
+              <div className="subfolders-title">{t("app.subfolders")} ({subCards.length})</div>
               <div className="subfolders-row">
                 {subCards.map((s) => {
                   const cover = s.cover ? convertFileSrc(s.cover) : null;
@@ -1327,7 +1327,7 @@ export default function App() {
                   <span className="il-rays" />
                   <Logo size={68} />
                 </div>
-                <div className="il-title">Catalogando seus assets…</div>
+                <div className="il-title">{t("app.catalogingAssets")}</div>
                 <div className="il-count">
                   {progress.done.toLocaleString("pt-BR")} / {progress.total.toLocaleString("pt-BR")} · {pct}%
                 </div>
@@ -1335,7 +1335,7 @@ export default function App() {
                   <div className="il-fill" style={{ width: `${pct}%` }} />
                   <div className="il-shimmer" />
                 </div>
-                <div className="il-sub">Nada é movido ou copiado — o PRISMA só lê e cataloga no lugar.</div>
+                <div className="il-sub">{t("app.catalogingNote")}</div>
               </div>
             ) : assets.length === 0 ? (
               <div className="empty">
@@ -1471,21 +1471,21 @@ export default function App() {
       {aiProgress && (
         <div className="ai-progress-pill">
           <span className="ai-pill-dot" />
-          Analisando com IA… {aiProgress.done}/{aiProgress.total}
+          {t("app.aiAnalyzing")} {aiProgress.done}/{aiProgress.total}
         </div>
       )}
 
       {proxyProgress && (
         <div className="ai-progress-pill proxy-pill">
           <span className="ai-pill-dot" />
-          Gerando proxies… {proxyProgress.done}/{proxyProgress.total}
+          {t("app.proxyGenerating")} {proxyProgress.done}/{proxyProgress.total}
         </div>
       )}
 
       {healthProgress && (
         <div className="ai-progress-pill health-pill">
           <span className="ai-pill-dot" />
-          Escaneando saúde… {healthProgress.done}/{healthProgress.total}
+          {t("app.healthScanning")} {healthProgress.done}/{healthProgress.total}
         </div>
       )}
 
@@ -1535,7 +1535,7 @@ export default function App() {
           </button>
           <button
             className="batch-clear"
-            title="Juntar os vídeos selecionados num só (mesmo codec)"
+            title={t("app.join")}
             onClick={() => {
               const paths = assets.filter((a) => selectedIds.has(a.id) && a.type === "video").map((a) => a.path);
               if (paths.length > 1) concatRun(paths);
@@ -1550,11 +1550,11 @@ export default function App() {
               aiAnalyzeMany([...selectedIds]);
               clearSelection();
             }}
-            title="Gera tags + descrição de conteúdo (sua API Claude)"
+            title={t("app.aiHint")}
           >
             <Icon name="sliders" size={13} /> {t("batch.ai")}
           </button>
-          <button className="batch-item" onClick={batchFixCfr} title="VFR → CFR">
+          <button className="batch-item" onClick={batchFixCfr} title={t("app.vfrCfr")}>
             <Icon name="refresh" size={13} /> {t("batch.fixCfr")}
           </button>
           <button className="batch-trash" onClick={batchTrash}>
@@ -1568,7 +1568,7 @@ export default function App() {
 
       {Object.keys(jobs).length > 0 && (
         <div className="jobs-panel">
-          <div className="jobs-title">Oficina</div>
+          <div className="jobs-title">{t("app.jobs")}</div>
           {Object.entries(jobs).map(([id, j]) => (
             <div key={id} className={`job job-${j.status}`}>
               <div className="job-head">
@@ -1584,14 +1584,14 @@ export default function App() {
               </div>
               <div className="job-status">
                 {j.status === "done"
-                  ? "Concluído"
+                  ? t("app.jobDone")
                   : j.status === "error"
-                  ? j.message || "Erro"
+                  ? j.message || t("app.jobError")
                   : `${Math.round(j.pct)}%`}
               </div>
               {j.status === "done" && j.output && (
                 <button className="job-open" onClick={() => revealInExplorer(j.output!)}>
-                  <Icon name="reveal" size={12} /> Abrir pasta — {j.output.split("\\").pop()}
+                  <Icon name="reveal" size={12} /> {t("app.openFolder")} {j.output.split("\\").pop()}
                 </button>
               )}
             </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { VideoPlayer } from "./VideoPlayer";
 import { probeMedia } from "./api";
+import { t } from "./i18n";
 import "./App.css";
 
 const WEB_VIDEO = new Set(["h264", "vp8", "vp9", "av1", "avc1"]);
@@ -40,11 +41,11 @@ export function PreviewWindow() {
     <div className="pwin">
       {type === "video" ? (
         playable === false ? (
-          <div className="pwin-msg">Codec não suportado no player — gere um proxy na Oficina.</div>
+          <div className="pwin-msg">{t("prev.codecUnsupported")}</div>
         ) : playable ? (
           <VideoPlayer src={url} fps={fps} aspect={aspect} />
         ) : (
-          <div className="pwin-msg">Carregando…</div>
+          <div className="pwin-msg">{t("prev.loading")}</div>
         )
       ) : type === "audio" ? (
         <audio src={url} controls autoPlay />

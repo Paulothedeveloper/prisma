@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icons";
+import { t } from "./i18n";
 
 // Player de áudio do PRISMA — feito do ZERO (sem o <audio controls> nativo).
 function fmt(t: number): string {
@@ -64,7 +65,7 @@ export function AudioPlayer({ src, waveform, autoPlay = true }: { src: string; w
       <audio ref={ref} src={src} autoPlay={autoPlay} />
       {waveform && <img className="ap-wave" src={waveform} alt="" />}
       <div className="ap-controls">
-        <button className="ap-btn ap-play" onClick={toggle} title="Reproduzir/Pausar">
+        <button className="ap-btn ap-play" onClick={toggle} title={t("player.playPause")}>
           <Icon name={playing ? "pause" : "play"} size={16} />
         </button>
         <span className="ap-time">{fmt(cur)}</span>
@@ -74,7 +75,7 @@ export function AudioPlayer({ src, waveform, autoPlay = true }: { src: string; w
           </div>
         </div>
         <span className="ap-time">{fmt(dur)}</span>
-        <button className="ap-btn" onClick={() => setMuted((m) => !m)} title="Mudo">
+        <button className="ap-btn" onClick={() => setMuted((m) => !m)} title={t("player.mute")}>
           <Icon name={muted || vol === 0 ? "volumeOff" : "volume"} size={15} />
         </button>
         <input

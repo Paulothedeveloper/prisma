@@ -143,14 +143,14 @@ function TreeNode({
           <span className="tree-name">{display}</span>
         )}
         {hidden && (
-          <span className="tree-hidden-badge" title="Pasta oculta">
+          <span className="tree-hidden-badge" title={t("tree.hiddenBadge")}>
             <Icon name="eyeOff" size={12} />
           </span>
         )}
         <span className="count">{node.total}</span>
         <button
           className="tree-more"
-          title="Opções da pasta"
+          title={t("tree.options")}
           onClick={(e) => {
             e.stopPropagation();
             const r = e.currentTarget.getBoundingClientRect();
@@ -216,7 +216,7 @@ function TreeNode({
               <div className="tree-colors">
                 <button
                   className="tree-color tree-color-none"
-                  title="Sem cor"
+                  title={t("tree.noColor")}
                   onClick={() => { onColor(node.path, null); setMenu(null); }}
                 />
                 {FOLDER_COLORS.map((c) => (

@@ -191,7 +191,7 @@ export function Inspector({
     setAssetColls(await collectionsForAsset(asset.id));
     onMutate();
   };
-  const collName = (id: number) => collections.find((c) => c.id === id)?.name ?? "coleção";
+  const collName = (id: number) => collections.find((c) => c.id === id)?.name ?? t("insp.collFallback");
   const available = collections.filter((c) => !assetColls.includes(c.id));
   const analyzeAI = async () => {
     setAiBusy(true);
@@ -292,7 +292,7 @@ export function Inspector({
             previewUrl ? (
               <img src={previewUrl} alt="" />
             ) : (
-              <div className="insp-noprev">vídeo</div>
+              <div className="insp-noprev">{t("insp.videoFallback")}</div>
             )
           ) : playSrc ? (
             <video src={playSrc} controls autoPlay muted loop playsInline />
@@ -306,7 +306,7 @@ export function Inspector({
                 <Icon name="play" size={14} /> {t("insp.openPlayer")}
               </button>
               <span className="insp-codec">
-                {info?.video?.codec?.toUpperCase() ?? "Vídeo"} — gere um proxy na Oficina pra tocar aqui
+                {t("insp.needProxy").replace("{codec}", info?.video?.codec?.toUpperCase() ?? t("insp.videoGeneric"))}
               </span>
             </div>
           )
@@ -322,7 +322,7 @@ export function Inspector({
         <button
           className="insp-expand"
           onClick={() => onPreview(asset)}
-          title="Tela cheia (espaço)"
+          title={t("insp.fullscreen")}
         >
           <Icon name="play" size={13} />
         </button>
@@ -346,7 +346,7 @@ export function Inspector({
           }}
         />
       ) : (
-        <div className="insp-name" title="Clique pra renomear" onClick={() => setRenaming(true)}>
+        <div className="insp-name" title={t("insp.renameHint")} onClick={() => setRenaming(true)}>
           {displayName}
         </div>
       )}
@@ -388,7 +388,7 @@ export function Inspector({
       {info?.ok && v && <CstCard info={info} />}
       {/* Plano de Color sob medida (IA + vault) — sob demanda */}
       {info?.ok && v && <ColorPlanCard path={asset.path} />}
-      {loadingInfo && <div className="insp-loading">Lendo metadados…</div>}
+      {loadingInfo && <div className="insp-loading">{t("insp.readingMeta")}</div>}
 
       {/* OFICINA: botões de conserto contextuais */}
       {info?.ok && <Oficina asset={asset} info={info} />}
@@ -397,7 +397,7 @@ export function Inspector({
       {v && (
         <div className="insp-block">
           <div className="insp-section-title">{t("insp.video")}</div>
-          <Row k="Codec" v={[v.codec?.toUpperCase(), v.profile].filter(Boolean).join(" · ")} />
+          <Row k={t("insp.k.codec")} v={[v.codec?.toUpperCase(), v.profile].filter(Boolean).join(" · ")} />
           <Row
             k={t("insp.resolution")}
             v={
@@ -411,11 +411,11 @@ export function Inspector({
                 : null
             }
           />
-          <Row k="FPS" v={v.fps ? `${v.fps}` : null} />
-          <Row k="Bit depth" v={v.bit_depth ? `${v.bit_depth}-bit` : null} />
-          <Row k="Chroma" v={v.chroma} />
-          <Row k="Bitrate" v={fmtBitrate(v.bitrate)} />
-          {v.rotation ? <Row k="Rotação" v={`${v.rotation}°`} /> : null}
+          <Row k={t("insp.k.fps")} v={v.fps ? `${v.fps}` : null} />
+          <Row k={t("insp.k.bitDepth")} v={v.bit_depth ? `${v.bit_depth}-bit` : null} />
+          <Row k={t("insp.k.chroma")} v={v.chroma} />
+          <Row k={t("insp.k.bitrate")} v={fmtBitrate(v.bitrate)} />
+          {v.rotation ? <Row k={t("insp.k.rotation")} v={`${v.rotation}°`} /> : null}
         </div>
       )}
 
@@ -423,10 +423,10 @@ export function Inspector({
       {v && (v.color_primaries || v.transfer || v.matrix || v.range) && (
         <div className="insp-block">
           <div className="insp-section-title">{t("insp.color")}</div>
-          <Row k="Primaries" v={v.color_primaries} />
-          <Row k="Transfer" v={v.transfer} />
-          <Row k="Matrix" v={v.matrix} />
-          <Row k="Range" v={v.range} />
+          <Row k={t("insp.k.primaries")} v={v.color_primaries} />
+          <Row k={t("insp.k.transfer")} v={v.transfer} />
+          <Row k={t("insp.k.matrix")} v={v.matrix} />
+          <Row k={t("insp.k.range")} v={v.range} />
         </div>
       )}
 
@@ -434,28 +434,28 @@ export function Inspector({
       {a && (
         <div className="insp-block">
           <div className="insp-section-title">{t("insp.audio")}</div>
-          <Row k="Codec" v={a.codec?.toUpperCase()} />
-          <Row k="Canais" v={a.channels ? `${a.channels}` : null} />
-          <Row k="Sample rate" v={a.sample_rate ? `${(a.sample_rate / 1000).toFixed(1)} kHz` : null} />
-          <Row k="Bit depth" v={a.bit_depth ? `${a.bit_depth}-bit` : null} />
+          <Row k={t("insp.k.codec")} v={a.codec?.toUpperCase()} />
+          <Row k={t("insp.k.channels")} v={a.channels ? `${a.channels}` : null} />
+          <Row k={t("insp.k.sampleRate")} v={a.sample_rate ? `${(a.sample_rate / 1000).toFixed(1)} kHz` : null} />
+          <Row k={t("insp.k.bitDepth")} v={a.bit_depth ? `${a.bit_depth}-bit` : null} />
         </div>
       )}
 
       {v && (
         <div className="insp-block">
-          <div className="insp-section-title">Câmera</div>
+          <div className="insp-section-title">{t("insp.camera")}</div>
           <Row
-            k="Câmera"
+            k={t("insp.k.camera")}
             v={[info?.camera?.make, info?.camera?.model].filter(Boolean).join(" ") || null}
           />
-          <Row k="Lente" v={info?.camera?.lens} />
-          <Row k="ISO" v={info?.camera?.iso} />
-          <Row k="Abertura" v={info?.camera?.fnumber} />
-          <Row k="Obturador" v={info?.camera?.shutter} />
-          <Row k="WB" v={info?.camera?.white_balance} />
-          <Row k="Foco" v={info?.camera?.focus} />
-          <Row k="Giroscópio" v={info?.has_gyro ? "Sim" : "Não"} />
-          <Row k="Data" v={info?.camera?.date} />
+          <Row k={t("insp.k.lens")} v={info?.camera?.lens} />
+          <Row k={t("insp.k.iso")} v={info?.camera?.iso} />
+          <Row k={t("insp.k.aperture")} v={info?.camera?.fnumber} />
+          <Row k={t("insp.k.shutter")} v={info?.camera?.shutter} />
+          <Row k={t("insp.k.wb")} v={info?.camera?.white_balance} />
+          <Row k={t("insp.k.focus")} v={info?.camera?.focus} />
+          <Row k={t("insp.k.gyro")} v={info?.has_gyro ? t("insp.yes") : t("insp.no")} />
+          <Row k={t("insp.k.date")} v={info?.camera?.date} />
         </div>
       )}
 
@@ -474,7 +474,7 @@ export function Inspector({
         {!v && <Row k={t("insp.duration")} v={fmtDur(asset.duration)} />}
         {asset.dominant_color && (
           <div className="meta-row">
-            <span className="meta-k">Cor</span>
+            <span className="meta-k">{t("insp.colorLabel")}</span>
             <span className="meta-v color-v mono">
               <span className="color-dot" style={{ background: asset.dominant_color }} />
               {asset.dominant_color}
@@ -526,7 +526,7 @@ export function Inspector({
               </button>
             </span>
           ))}
-          {assetColls.length === 0 && <span className="tag-empty">em nenhuma</span>}
+          {assetColls.length === 0 && <span className="tag-empty">{t("insp.noCollection")}</span>}
         </div>
         {addingColl ? (
           available.length ? (
@@ -538,11 +538,11 @@ export function Inspector({
               ))}
             </div>
           ) : (
-            <div className="tag-empty">crie uma coleção na barra lateral</div>
+            <div className="tag-empty">{t("insp.createCollHint")}</div>
           )
         ) : (
           <button className="coll-add-btn" onClick={() => setAddingColl(true)}>
-            <Icon name="plus" size={12} /> Adicionar a uma coleção
+            <Icon name="plus" size={12} /> {t("insp.addToCollection")}
           </button>
         )}
       </div>
@@ -552,7 +552,7 @@ export function Inspector({
         <div className="insp-section-title">{t("insp.notes")}</div>
         <textarea
           className="field notes"
-          placeholder="Anotações…"
+          placeholder={t("insp.notesPlaceholder")}
           value={notes}
           onChange={(e) => setNotesState(e.target.value)}
           onBlur={saveNotes}
@@ -573,14 +573,14 @@ export function Inspector({
               dismiss();
             }}
           >
-            <Icon name="inbox" size={13} /> Restaurar da Lixeira
+            <Icon name="inbox" size={13} /> {t("insp.restore")}
           </button>
         ) : confirmRemove ? (
           <>
-            <span className="insp-remove-q">Mover pra Lixeira? (não apaga do disco — dá pra restaurar)</span>
+            <span className="insp-remove-q">{t("insp.trashConfirm")}</span>
             <div className="insp-remove-row">
               <button className="insp-remove-cancel" onClick={() => setConfirmRemove(false)}>
-                Cancelar
+                {t("common.cancel")}
               </button>
               <button
                 className="insp-remove-go"
@@ -590,13 +590,13 @@ export function Inspector({
                   dismiss();
                 }}
               >
-                Mover pra Lixeira
+                {t("insp.toTrash")}
               </button>
             </div>
           </>
         ) : (
           <button className="insp-remove-btn" onClick={() => setConfirmRemove(true)}>
-            <Icon name="trash" size={13} /> Mover pra Lixeira
+            <Icon name="trash" size={13} /> {t("insp.toTrash")}
           </button>
         )}
       </div>

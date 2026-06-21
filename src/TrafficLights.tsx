@@ -1,4 +1,5 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { t } from "./i18n";
 
 // Semáforos do macOS: fechar (vermelho), minimizar (amarelo), zoom (verde).
 // Glifos aparecem só no hover do grupo, como no macOS.
@@ -8,7 +9,7 @@ export function TrafficLights() {
     <div className="traffic">
       <button
         className="tl tl-close"
-        aria-label="Fechar"
+        aria-label={t("win.close")}
         onClick={() => win.close()}
       >
         <svg viewBox="0 0 12 12" className="tl-glyph">
@@ -17,7 +18,7 @@ export function TrafficLights() {
       </button>
       <button
         className="tl tl-min"
-        aria-label="Minimizar"
+        aria-label={t("win.minimize")}
         onClick={() => win.minimize()}
       >
         <svg viewBox="0 0 12 12" className="tl-glyph">
@@ -26,7 +27,7 @@ export function TrafficLights() {
       </button>
       <button
         className="tl tl-zoom"
-        aria-label="Zoom"
+        aria-label={t("win.zoom")}
         onClick={() => win.toggleMaximize()}
       >
         <svg viewBox="0 0 12 12" className="tl-glyph">

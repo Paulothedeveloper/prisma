@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "./Icons";
+import { t } from "./i18n";
 
 // Player de vídeo do PRISMA — feito do ZERO (sem os controles nativos).
 // Pensado pra editor: scrub, tempo, frame-step, velocidade, volume, loop, tela cheia, atalhos.
@@ -186,7 +187,7 @@ export function VideoPlayer({ src, fps = 30, aspect }: { src: string; fps?: numb
       />
 
       {!playing && (
-        <button className="vp-bigplay" onClick={toggle} aria-label="Reproduzir">
+        <button className="vp-bigplay" onClick={toggle} aria-label={t("player.play")}>
           <Icon name="play" size={34} />
         </button>
       )}
@@ -199,13 +200,13 @@ export function VideoPlayer({ src, fps = 30, aspect }: { src: string; fps?: numb
           </div>
         </div>
         <div className="vp-row">
-          <button className="vp-btn" onClick={toggle} title="Reproduzir/Pausar (espaço)">
+          <button className="vp-btn" onClick={toggle} title={t("player.playPauseSpace")}>
             <Icon name={playing ? "pause" : "play"} size={16} />
           </button>
-          <button className="vp-btn" onClick={() => step(-1)} title="Frame anterior (,)">
+          <button className="vp-btn" onClick={() => step(-1)} title={t("player.prevFrame")}>
             <Icon name="frameBack" size={16} />
           </button>
-          <button className="vp-btn" onClick={() => step(1)} title="Próximo frame (.)">
+          <button className="vp-btn" onClick={() => step(1)} title={t("player.nextFrame")}>
             <Icon name="frameFwd" size={16} />
           </button>
           <span className="vp-time">
@@ -217,13 +218,13 @@ export function VideoPlayer({ src, fps = 30, aspect }: { src: string; fps?: numb
           <button
             className={`vp-btn ${loop ? "on" : ""}`}
             onClick={() => setLoop((x) => !x)}
-            title="Loop (Shift+L)"
+            title={t("player.loop")}
           >
             <Icon name="loop" size={16} />
           </button>
 
           <div className="vp-speed">
-            <button className="vp-btn vp-speed-btn" onClick={() => setShowSpeed((s) => !s)} title="Velocidade">
+            <button className="vp-btn vp-speed-btn" onClick={() => setShowSpeed((s) => !s)} title={t("player.speed")}>
               {speed}×
             </button>
             {showSpeed && (
@@ -241,7 +242,7 @@ export function VideoPlayer({ src, fps = 30, aspect }: { src: string; fps?: numb
             )}
           </div>
 
-          <button className="vp-btn" onClick={() => setMuted((x) => !x)} title="Mudo (M)">
+          <button className="vp-btn" onClick={() => setMuted((x) => !x)} title={t("player.muteM")}>
             <Icon name={muted || vol === 0 ? "volumeOff" : "volume"} size={16} />
           </button>
           <input
@@ -256,7 +257,7 @@ export function VideoPlayer({ src, fps = 30, aspect }: { src: string; fps?: numb
               setMuted(false);
             }}
           />
-          <button className="vp-btn" onClick={toggleFullscreen} title="Tela cheia (F)">
+          <button className="vp-btn" onClick={toggleFullscreen} title={t("player.fullscreen")}>
             <Icon name="fullscreen" size={16} />
           </button>
         </div>
