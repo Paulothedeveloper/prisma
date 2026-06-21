@@ -862,7 +862,7 @@ body {
   box-shadow: var(--glass-hi);
   padding: 14px 16px 22px;
   overflow-y: auto;
-  animation: inspIn 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation: inspIn 0.34s cubic-bezier(0.22, 0.61, 0.36, 1);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -909,6 +909,8 @@ body {
 .insp-preview {
   position: relative;
   width: 100%;
+  /* o preview entra com um fade-up próprio a cada troca de mídia (reforça a animação) */
+  animation: inspContentIn 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   /* o box se AJUSTA à proporção real do vídeo/imagem (aspect-ratio vem inline);
      fallback p/ áudio/doc sem dimensões */
   min-height: 150px;
@@ -931,6 +933,30 @@ body {
   max-height: 70vh;
   object-fit: contain;
   display: block;
+}
+/* miniatura de BASE + vídeo/ações por cima (igual ao card) — nunca caixa preta */
+.insp-base {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.insp-video-over {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #000;
+}
+.insp-unsupported-over {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 55%);
 }
 .insp-audio {
   width: 100%;
@@ -3585,7 +3611,19 @@ body {
 @keyframes inspIn {
   from {
     opacity: 0;
-    transform: translateX(14px);
+    transform: translateX(42px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* conteúdo entra com um fade-up por cima do slide do painel — deixa a troca de
+   mídia CLARAMENTE animada (não só um flash sutil). */
+@keyframes inspContentIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;

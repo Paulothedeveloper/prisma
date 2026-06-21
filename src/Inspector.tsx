@@ -16,6 +16,9 @@ import { getProxy, renameAsset, duplicateAsset, refreshThumb, setCustomThumb } f
 
 // Codecs que o WebView decodifica. ProRes/DNxHR ficam de fora → prévia no player externo.
 const WEB_VIDEO_CODECS = new Set(["h264", "vp8", "vp9", "av1", "avc1"]);
+// O WebView (Chromium) só toca codec web E container web. .mov/.avi/.mkv etc. NÃO tocam
+// nem com h264 → precisam de proxy (.mp4). Sem isto, o preview virava caixa preta vazia.
+const WEB_CONTAINERS = new Set(["mp4", "webm", "m4v", "ogv", "ogg"]);
 import {
   setRating,
   setNotes,
@@ -243,7 +246,10 @@ export function Inspector({
   const dispH = rotated ? ew : eh;
   const hasDims = !!(asset.width && asset.height);
   const aspect = hasDims ? `${dispW} / ${dispH}` : undefined;
-  const videoPlayable = !!v?.codec && WEB_VIDEO_CODECS.has(v.codec.toLowerCase());
+  const videoPlayable =
+    !!v?.codec &&
+    WEB_VIDEO_CODECS.has(v.codec.toLowerCase()) &&
+    WEB_CONTAINERS.has(asset.ext.toLowerCase());
   // toca o original se web-compatível, senão o proxy (existente ou recém-gerado)
   const proxiedSrc = proxyUrl ?? localProxy;
   const playSrc = videoPlayable ? origUrl : proxiedSrc;
@@ -261,17 +267,21 @@ export function Inspector({
     setLocalProxy(null);
   }, [asset.id, asset.path]);
 
-  // Quando um job termina, busca o proxy deste asset e passa a tocar.
+  // Quando um job da Oficina OU um proxy automático termina, busca o proxy deste asset
+  // e passa a tocar (vídeos de codec/container que o WebView não decodifica — ex.: .mov).
   useEffect(() => {
-    let un: (() => void) | null = null;
-    listen("oficina:done", () => {
+    const uns: Array<() => void> = [];
+    const refresh = () => {
       getProxy(asset.path).then((p) => {
         if (p) setLocalProxy(convertFileSrc(p));
       });
-    }).then((u) => (un = u));
-    return () => {
-      if (un) un();
     };
+    // já tenta na montagem (o proxy pode já existir do import)
+    refresh();
+    listen("oficina:done", refresh).then((u) => uns.push(u));
+    listen("proxy:made", refresh).then((u) => uns.push(u));
+    listen("proxy:done", refresh).then((u) => uns.push(u));
+    return () => uns.forEach((u) => u());
   }, [asset.path]);
 
   return (
@@ -288,28 +298,41 @@ export function Inspector({
         style={useAspect ? { aspectRatio: aspect } : undefined}
       >
         {asset.type === "video" ? (
-          loadingInfo || !info ? (
-            previewUrl ? (
-              <img src={previewUrl} alt="" />
+          <>
+            {/* miniatura SEMPRE como base — nunca fica caixa preta */}
+            {previewUrl ? (
+              <img src={previewUrl} className="insp-base" alt="" />
             ) : (
               <div className="insp-noprev">{t("insp.videoFallback")}</div>
-            )
-          ) : playSrc ? (
-            <video src={playSrc} controls autoPlay muted loop playsInline />
-          ) : (
-            <div className="insp-unsupported">
-              {previewUrl && <img src={previewUrl} alt="" />}
-              <button
-                className="insp-openext"
-                onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
-              >
-                <Icon name="play" size={14} /> {t("insp.openPlayer")}
-              </button>
-              <span className="insp-codec">
-                {t("insp.needProxy").replace("{codec}", info?.video?.codec?.toUpperCase() ?? t("insp.videoGeneric"))}
-              </span>
-            </div>
-          )
+            )}
+            {/* vídeo por cima quando há fonte tocável (original web, ou proxy .mp4) */}
+            {playSrc && (
+              <video
+                key={playSrc}
+                className="insp-video-over"
+                src={playSrc}
+                controls
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            )}
+            {/* sem fonte tocável (ex.: .mov/HEVC sem proxy ainda) → ações sobre a miniatura */}
+            {!playSrc && !loadingInfo && info && (
+              <div className="insp-unsupported-over">
+                <button
+                  className="insp-openext"
+                  onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
+                >
+                  <Icon name="play" size={14} /> {t("insp.openPlayer")}
+                </button>
+                <span className="insp-codec">
+                  {t("insp.needProxy").replace("{codec}", info?.video?.codec?.toUpperCase() ?? t("insp.videoGeneric"))}
+                </span>
+              </div>
+            )}
+          </>
         ) : asset.type === "audio" ? (
           <AudioPlayer src={origUrl} waveform={previewUrl} autoPlay={false} />
         ) : asset.type === "image" || asset.type === "gif" ? (

@@ -196,7 +196,8 @@ pub fn run_proxy_batch(
                     continue;
                 }
             }
-            // codec web-compatível não precisa de proxy
+            // Só pula se o WebView consegue tocar de verdade: codec web E container web.
+            // h264 num .mov/.avi NÃO toca no WebView → precisa de proxy mesmo sendo h264.
             let info = mediainfo::probe(in_path);
             let codec = info
                 .video
@@ -204,7 +205,13 @@ pub fn run_proxy_batch(
                 .and_then(|v| v.codec.clone())
                 .unwrap_or_default()
                 .to_ascii_lowercase();
-            if codec.is_empty() || WEB_CODECS.iter().any(|c| codec.contains(c)) {
+            let ext = in_path
+                .extension()
+                .map(|s| s.to_string_lossy().to_ascii_lowercase())
+                .unwrap_or_default();
+            let web_container = matches!(ext.as_str(), "mp4" | "webm" | "m4v" | "ogv" | "ogg");
+            let web_codec = WEB_CODECS.iter().any(|c| codec.contains(c));
+            if codec.is_empty() || (web_codec && web_container) {
                 continue;
             }
             let out = proxy_dir.join(format!("{}.mp4", proxy_stem(&input)));
