@@ -230,7 +230,6 @@ export default function App() {
   const [switching, setSwitching] = useState(true); // janela em que os cards entram em cascata
   const cascadeOnNextLoad = useRef(true); // pede cascata na PRÓXIMA carga (nav/layout); animação sem remount
   const cascadeTimer = useRef<number | null>(null);
-  const navReady = useRef(false); // pula o som de navegação no 1º render (boot)
   const [subCards, setSubCards] = useState<SubCard[]>([]);
   const [booted, setBooted] = useState(false);
   const [thumbSize, setThumbSize] = useState(190);
@@ -374,9 +373,6 @@ export default function App() {
     // subpastas como cards-capa (só na visão de pasta)
     if (view.t === "folder") subfolders(view.v).then(setSubCards).catch(() => setSubCards([]));
     else setSubCards([]);
-    // som discreto de navegação (troca de aba/categoria/pasta) — pula o 1º render (boot)
-    if (navReady.current) sfx.nav();
-    else navReady.current = true;
     runSearch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
@@ -386,6 +382,20 @@ export default function App() {
     runSearch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout]);
+
+  // SFX "de software": um tap discreto em QUALQUER botão/controle (listener global, em
+  // captura). Ignora a seleção de mídia (.card) e os controles do player ([data-sfx-skip])
+  // pra não atrapalhar a reprodução. Notificações (concluir job/atualização) tocam à parte.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (!el || !el.closest("button, .tree-row")) return;
+      if (el.closest(".card, [data-sfx-skip]")) return;
+      sfx.tap();
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
 
   // Navegar pra uma pasta/categoria LIMPA os filtros do topo (resolução/tom/etc),
   // senão um preset tipo "4K e acima" fica grudado e some com vídeos LOG/720p e Documentos.

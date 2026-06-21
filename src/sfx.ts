@@ -60,6 +60,8 @@ function tone(
 
 // Paleta coesa. Tons em intervalos agradáveis (quintas/oitavas), tudo curto e baixo.
 export const sfx = {
+  // tap GERAL de qualquer botão/controle (clique) — discreto, "som de software"
+  tap: () => tone(560, 0.035, { type: "sine", gain: 0.25 }),
   // navegação (trocar de aba/categoria/pasta) — tick macio e curtíssimo, bem discreto
   nav: () => tone(523.25, 0.045, { type: "sine", gain: 0.32 }),
   // notificação (algo pronto/chegou) — sininho gentil de 2 notas (G5 → C6, quarta)

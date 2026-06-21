@@ -20,7 +20,6 @@ import {
 } from "./api";
 import { Icon, type IconName } from "./Icons";
 import { loadPrefs, savePrefs, ACCENTS, type Prefs } from "./prefs";
-import { sfx } from "./sfx";
 import { fireTip, resetTips } from "./tips";
 import { t, LOCALES, getLocale, setLocale } from "./i18n";
 
@@ -37,7 +36,7 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.5.3";
+const APP_VERSION = "0.5.4";
 
 export function Settings({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("geral");
@@ -520,18 +519,12 @@ export function Settings({ onClose }: { onClose: () => void }) {
   );
 }
 
-// Botão de alternância reaproveitável (knob deslizante). Toca o SFX em todo clique
-// (depois do onClick, pra respeitar o estado novo — ao DESLIGAR o SFX não soa).
+// Botão de alternância reaproveitável (knob deslizante). O som de clique vem do listener
+// global de SFX (App.tsx) — aqui não precisa tocar nada.
 function Toggle({ on, onClick, title, help }: { on: boolean; onClick: () => void; title: string; help: string }) {
   return (
     <div className="pref-group">
-      <button
-        className={`set-toggle ${on ? "on" : ""}`}
-        onClick={() => {
-          onClick();
-          sfx.toggle();
-        }}
-      >
+      <button className={`set-toggle ${on ? "on" : ""}`} onClick={onClick}>
         <span className="set-toggle-knob" />
         <span className="pref-toggle-text">
           <span className="pref-toggle-title">{title}</span>

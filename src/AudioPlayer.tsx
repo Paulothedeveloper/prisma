@@ -61,7 +61,7 @@ export function AudioPlayer({ src, waveform, autoPlay = true }: { src: string; w
   const pct = dur > 0 ? (cur / dur) * 100 : 0;
 
   return (
-    <div className="ap">
+    <div className="ap" data-sfx-skip>
       <audio ref={ref} src={src} autoPlay={autoPlay} />
       {waveform && <img className="ap-wave" src={waveform} alt="" />}
       <div className="ap-controls">

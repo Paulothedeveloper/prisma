@@ -171,6 +171,7 @@ export function VideoPlayer({ src, fps = 30, aspect }: { src: string; fps?: numb
   return (
     <div
       ref={wrapRef}
+      data-sfx-skip
       className={`vp ${uiVisible || !playing ? "vp-ui" : ""}`}
       style={aspect ? { aspectRatio: aspect } : undefined}
       onMouseMove={wakeUi}
