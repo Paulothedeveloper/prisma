@@ -9,6 +9,8 @@ import {
   aiPendingCount,
   exportCatalog,
   importCatalog,
+  backupCatalog,
+  restoreCatalog,
   setAutotagImport,
   setAutoProxyImport,
   resetApp,
@@ -78,6 +80,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [autotag, setAutotag] = useState(false);
   const [autoProxy, setAutoProxy] = useState(true);
   const [syncMsg, setSyncMsg] = useState("");
+  const [backupMsg, setBackupMsg] = useState("");
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [proxyMsg, setProxyMsg] = useState("");
@@ -186,6 +189,30 @@ export function Settings({ onClose }: { onClose: () => void }) {
       if (typeof p === "string") setSyncMsg(t("set.applied").replace("{n}", String(await importCatalog(p))));
     } catch (e) {
       setSyncMsg(t("set.importError").replace("{e}", String(e)));
+    }
+  };
+
+  const doBackup = async () => {
+    try {
+      const p = await saveDialog({ defaultPath: "prisma-backup.db", filters: [{ name: "PRISMA backup", extensions: ["db"] }] });
+      if (typeof p === "string") {
+        await backupCatalog(p);
+        setBackupMsg(t("set.backupOk"));
+      }
+    } catch (e) {
+      setBackupMsg(`${t("common.error")}: ${String(e)}`);
+    }
+  };
+  const doRestore = async () => {
+    try {
+      const p = await openDialog({ multiple: false, filters: [{ name: "PRISMA backup", extensions: ["db"] }] });
+      if (typeof p === "string") {
+        if (!window.confirm(t("set.restoreConfirm"))) return;
+        setBackupMsg(t("set.restoring"));
+        await restoreCatalog(p); // reinicia o app aplicando o backup
+      }
+    } catch (e) {
+      setBackupMsg(`${t("common.error")}: ${String(e)}`);
     }
   };
 
@@ -505,19 +532,35 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
             {/* ---------- SINCRONIZAÇÃO ---------- */}
             {tab === "sync" && (
-              <div className="pref-group">
-                <div className="pref-label">{t("set.sync")}</div>
-                <div className="pref-help">{t("set.syncHelp")}</div>
-                <div className="set-bulk-row">
-                  <button className="set-bulk-btn" onClick={doExport}>{t("set.export")}</button>
-                  <button className="set-bulk-btn" onClick={doImport}>{t("set.import")}</button>
-                </div>
-                {syncMsg && (
-                  <div className="set-status">
-                    <span className="set-dot on" /> {syncMsg}
+              <>
+                <div className="pref-group">
+                  <div className="pref-label">{t("set.sync")}</div>
+                  <div className="pref-help">{t("set.syncHelp")}</div>
+                  <div className="set-bulk-row">
+                    <button className="set-bulk-btn" onClick={doExport}>{t("set.export")}</button>
+                    <button className="set-bulk-btn" onClick={doImport}>{t("set.import")}</button>
                   </div>
-                )}
-              </div>
+                  {syncMsg && (
+                    <div className="set-status">
+                      <span className="set-dot on" /> {syncMsg}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pref-group">
+                  <div className="pref-label">{t("set.backup")}</div>
+                  <div className="pref-help">{t("set.backupHelp")}</div>
+                  <div className="set-bulk-row">
+                    <button className="set-bulk-btn" onClick={doBackup}>{t("set.backupBtn")}</button>
+                    <button className="set-bulk-btn" onClick={doRestore}>{t("set.restoreBtn")}</button>
+                  </div>
+                  {backupMsg && (
+                    <div className="set-status">
+                      <span className="set-dot on" /> {backupMsg}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
 
             {/* ---------- SOBRE ---------- */}

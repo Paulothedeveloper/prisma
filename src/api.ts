@@ -230,6 +230,8 @@ export const saveAnnotated = (nearPath: string, data: number[]) =>
 // ----- Sync notebook↔desktop (metadados por hash) -----
 export const exportCatalog = (path: string) => invoke<number>("export_catalog", { path });
 export const importCatalog = (path: string) => invoke<number>("import_catalog", { path });
+export const backupCatalog = (dest: string) => invoke<void>("backup_catalog", { dest });
+export const restoreCatalog = (src: string) => invoke<void>("restore_catalog", { src });
 export const trashAsset = (id: number, trashed: boolean) =>
   invoke<void>("trash_asset", { id, trashed });
 export const emptyTrash = () => invoke<number>("empty_trash");

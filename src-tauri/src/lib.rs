@@ -1363,6 +1363,39 @@ fn reset_app(app: tauri::AppHandle) -> Result<(), String> {
     app.restart()
 }
 
+/// Backup do catálogo num arquivo .db único e consistente (VACUUM INTO inclui o WAL).
+/// Não toca em nenhum arquivo de mídia — só copia o banco (tags/estrelas/notas/coleções).
+#[tauri::command]
+fn backup_catalog(app: tauri::AppHandle, dest: String) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let safe = dest.replace('\'', "''");
+    conn.execute(&format!("VACUUM INTO '{safe}'"), [])
+        .map_err(|e| e.to_string())?;
+    tracing::info!(dest = %dest, "backup_catalog: catálogo exportado");
+    Ok(())
+}
+
+/// Restaura o catálogo a partir de um backup .db. O banco está aberto/locked, então não dá
+/// pra sobrescrever na hora: grava um MARCADOR e reinicia; no boot o arquivo é trocado
+/// ANTES de abrir o banco. Não toca em mídia.
+#[tauri::command]
+fn restore_catalog(app: tauri::AppHandle, src: String) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let p = std::path::Path::new(&src);
+    if !p.exists() {
+        return Err("Arquivo de backup não encontrado.".into());
+    }
+    // validação leve: cabeçalho de arquivo SQLite
+    let header = std::fs::read(p).map_err(|e| e.to_string())?;
+    if header.len() < 16 || &header[0..15] != b"SQLite format 3" {
+        return Err("Esse arquivo não parece um backup válido do PRISMA.".into());
+    }
+    std::fs::write(state.data_dir.join("pending_restore.txt"), &src).map_err(|e| e.to_string())?;
+    tracing::info!(src = %src, "restore_catalog: restauração agendada; reiniciando");
+    app.restart()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Logs estruturados. Controlável via env PRISMA_LOG (ex.: PRISMA_LOG=debug);
@@ -1409,6 +1442,20 @@ pub fn run() {
                     }
                 }
             }
+            // Restauração de backup pendente: troca o arquivo do banco ANTES de abrir.
+            let pending = data_dir.join("pending_restore.txt");
+            if pending.exists() {
+                if let Ok(src) = std::fs::read_to_string(&pending) {
+                    let src = src.trim();
+                    if !src.is_empty() && std::path::Path::new(src).exists() {
+                        let _ = std::fs::copy(src, &db_path);
+                        let _ = std::fs::remove_file(data_dir.join("prisma.db-wal"));
+                        let _ = std::fs::remove_file(data_dir.join("prisma.db-shm"));
+                    }
+                }
+                let _ = std::fs::remove_file(&pending);
+            }
+
             let conn = db::open(&db_path).expect("falha ao abrir o banco");
             // Limpeza única: tira da biblioteca o clipe de teste do Gyroflow (pasta temp).
             let _ = conn.execute(
@@ -1562,7 +1609,9 @@ pub fn run() {
             delete_preset,
             concat_run,
             export_catalog,
-            import_catalog
+            import_catalog,
+            backup_catalog,
+            restore_catalog
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
