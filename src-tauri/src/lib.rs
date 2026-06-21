@@ -1330,8 +1330,10 @@ fn reset_app(app: tauri::AppHandle) -> Result<(), String> {
     {
         let conn = state.db.lock().map_err(|e| e.to_string())?;
         let tables: Vec<String> = {
+            // exclui as tabelas internas do FTS5 (assets_fts*); limpar `assets` já zera o
+            // índice pelos triggers, e ele se auto-repara no boot.
             let mut stmt = conn
-                .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+                .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '%\\_fts%' ESCAPE '\\'")
                 .map_err(|e| e.to_string())?;
             let rows = stmt
                 .query_map([], |r| r.get::<_, String>(0))

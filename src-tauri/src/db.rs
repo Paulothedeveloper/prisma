@@ -225,6 +225,40 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         )",
         [],
     )?;
+
+    // Busca INSTANTÂNEA (FTS5): índice de texto espelhando filename/name/ai_desc, com a
+    // tabela `assets` como conteúdo. Triggers mantêm sincronizado em insert/update/delete.
+    // unicode61 + remove_diacritics: "praia" acha "praiá"/"Praia". Bem mais rápido e
+    // esperto que o LIKE full-scan em bibliotecas grandes.
+    let _ = conn.execute_batch(
+        r#"
+        CREATE VIRTUAL TABLE IF NOT EXISTS assets_fts USING fts5(
+            filename, name, ai_desc,
+            content='assets', content_rowid='id',
+            tokenize='unicode61 remove_diacritics 2'
+        );
+        CREATE TRIGGER IF NOT EXISTS assets_fts_ai AFTER INSERT ON assets BEGIN
+            INSERT INTO assets_fts(rowid, filename, name, ai_desc)
+            VALUES (new.id, new.filename, new.name, new.ai_desc);
+        END;
+        CREATE TRIGGER IF NOT EXISTS assets_fts_ad AFTER DELETE ON assets BEGIN
+            INSERT INTO assets_fts(assets_fts, rowid, filename, name, ai_desc)
+            VALUES('delete', old.id, old.filename, old.name, old.ai_desc);
+        END;
+        CREATE TRIGGER IF NOT EXISTS assets_fts_au AFTER UPDATE ON assets BEGIN
+            INSERT INTO assets_fts(assets_fts, rowid, filename, name, ai_desc)
+            VALUES('delete', old.id, old.filename, old.name, old.ai_desc);
+            INSERT INTO assets_fts(rowid, filename, name, ai_desc)
+            VALUES (new.id, new.filename, new.name, new.ai_desc);
+        END;
+        "#,
+    );
+    // popula/repara o índice se estiver fora de sincronia (1ª criação ou trigger perdido)
+    let assets_n: i64 = conn.query_row("SELECT COUNT(*) FROM assets", [], |r| r.get(0)).unwrap_or(0);
+    let fts_n: i64 = conn.query_row("SELECT COUNT(*) FROM assets_fts", [], |r| r.get(0)).unwrap_or(-1);
+    if assets_n != fts_n {
+        let _ = conn.execute("INSERT INTO assets_fts(assets_fts) VALUES('rebuild')", []);
+    }
     Ok(())
 }
 
@@ -740,17 +774,35 @@ pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     }
 
     if !f.query.trim().is_empty() {
-        // busca por NOME + conteúdo (descrição IA + tags) → digitar "praia" acha o que a IA etiquetou
+        // FTS5 em filename/name/ai_desc (cada termo vira prefixo: "pra" acha "praia") +
+        // tags por LIKE (são poucas). Sanitiza pra não quebrar a sintaxe do MATCH.
+        let terms: Vec<String> = f
+            .query
+            .to_lowercase()
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|t| !t.is_empty())
+            .map(|t| format!("{t}*"))
+            .collect();
         let like = format!("%{}%", f.query.trim());
-        sql.push_str(
-            " AND (filename LIKE ? OR name LIKE ? OR ai_desc LIKE ? OR EXISTS(\
-               SELECT 1 FROM asset_tags at JOIN tags t ON t.id=at.tag_id \
-               WHERE at.asset_id=a.id AND t.name LIKE ?))",
-        );
-        args.push(Box::new(like.clone()));
-        args.push(Box::new(like.clone()));
-        args.push(Box::new(like.clone()));
-        args.push(Box::new(like));
+        if terms.is_empty() {
+            // consulta só com símbolos → cai no LIKE de nome/tag
+            sql.push_str(
+                " AND (filename LIKE ? OR name LIKE ? OR EXISTS(\
+                   SELECT 1 FROM asset_tags at JOIN tags t ON t.id=at.tag_id \
+                   WHERE at.asset_id=a.id AND t.name LIKE ?))",
+            );
+            args.push(Box::new(like.clone()));
+            args.push(Box::new(like.clone()));
+            args.push(Box::new(like));
+        } else {
+            sql.push_str(
+                " AND (a.id IN (SELECT rowid FROM assets_fts WHERE assets_fts MATCH ?) \
+                   OR EXISTS(SELECT 1 FROM asset_tags at JOIN tags t ON t.id=at.tag_id \
+                   WHERE at.asset_id=a.id AND t.name LIKE ?))",
+            );
+            args.push(Box::new(terms.join(" ")));
+            args.push(Box::new(like));
+        }
     }
     if let Some(k) = &f.kind {
         if !k.is_empty() && k != "all" {
