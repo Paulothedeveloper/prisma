@@ -398,6 +398,16 @@ export default function App() {
     return () => document.removeEventListener("click", onClick, true);
   }, []);
 
+  // Largura da sidebar salva (reclamação do Eagle: sidebar não-redimensionável).
+  useEffect(() => {
+    try {
+      const w = localStorage.getItem("prisma.sb");
+      if (w) document.documentElement.style.setProperty("--sb", w);
+    } catch {
+      /* ignora */
+    }
+  }, []);
+
   // Navegar pra uma pasta/categoria LIMPA os filtros do topo (resolução/tom/etc),
   // senão um preset tipo "4K e acima" fica grudado e some com vídeos LOG/720p e Documentos.
   // (Presets inteligentes sinalizam via smartNav pra NÃO limpar.)
@@ -1296,6 +1306,30 @@ export default function App() {
             </div>
           )}
         </aside>
+
+        <div
+          className="sb-resize"
+          title={t("app.resizeSidebar")}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            const move = (ev: MouseEvent) => {
+              const w = Math.max(180, Math.min(460, ev.clientX));
+              document.documentElement.style.setProperty("--sb", `${w}px`);
+            };
+            const up = () => {
+              window.removeEventListener("mousemove", move);
+              window.removeEventListener("mouseup", up);
+              const cur = getComputedStyle(document.documentElement).getPropertyValue("--sb").trim();
+              try {
+                localStorage.setItem("prisma.sb", cur);
+              } catch {
+                /* ignora */
+              }
+            };
+            window.addEventListener("mousemove", move);
+            window.addEventListener("mouseup", up);
+          }}
+        />
 
         <main className="grid-area">
           {view.t === "similar" && (

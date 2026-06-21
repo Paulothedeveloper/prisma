@@ -495,6 +495,17 @@ body {
   min-height: 0;
   overflow: hidden;
 }
+.sb-resize {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.sb-resize:hover,
+.sb-resize:active {
+  background: var(--accent-soft);
+}
 .sidebar {
   width: var(--sb);
   flex-shrink: 0;
