@@ -1,11 +1,11 @@
 {
-    "version":  "0.7.2",
-    "notes":  "Live Photo (foto + .mov irmao toca no hover e no preview, badge LIVE) + AI Action: perguntar a IA sobre a imagem (Descrever / Que texto ha / Sugerir nome / pergunta livre) no Inspetor.",
-    "pub_date":  "2026-06-22T11:54:04Z",
+    "version":  "0.8.0",
+    "notes":  "Ecossistema: PRISMA conversa com o VELVET (cor no DaVinci - exporta o catalogo de LUTs por humor) e com o QUARTZO (PKM nosso - ligar assets as suas notas, no lugar do Obsidian). Configuracoes \u003e Ecossistema e painel Detalhes \u003e Quartzo.",
+    "pub_date":  "2026-06-22T12:31:10Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTNac1VqN1FjUGdUaFZvWXpGQnZ6WVlHeWluV3IzeVFVTThsV09lZ2FJSGF0eU9uVFVES21Hem9iZnRuVnAzT2pzNHozR1NONDNDNm9RNi80bmErY0FVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTI5MTg1CWZpbGU6UFJJU01BXzAuNy4yX3g2NC1zZXR1cC5leGUKSjl6ZTh3YkVWYUc4S2Z6Sm11M3BiTm5ja2I1bTk5MEl1K0YxSnQ1MUtTL29NYWU1RGI2bDNlQU5lU1M2a2drKzM0QkwrMEhnZDdrMHBkeEdhMU1aQlE9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.7.2/PRISMA_0.7.2_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTR6aklDcnFoOWkzS3B1WHpya21QVUxURUJWZ0tPNmsxbmFmQ1NHZWVmeEI2VkFnZkZQNTBhZkxLM3ZSWS9FbzlZVmIrU0JPcityd0t0QjBMUVh2MEFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTMxNDQ3CWZpbGU6UFJJU01BXzAuOC4wX3g2NC1zZXR1cC5leGUKa05BakU2aVJlc3Z0dmovQXdUVjMrWTIzR3E2V1FSRUVzVThDZXUvdzVCUVB2QVNEeGxnOEExZGUyN0xsNTZFWmtTVG5TaC9hYmZJa2ZUVDlLMDZNRHc9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.8.0/PRISMA_0.8.0_x64-setup.exe"
                                          }
                   }
 }
