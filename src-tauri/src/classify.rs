@@ -7,7 +7,12 @@ pub fn categorize(ext: &str) -> &'static str {
     match ext.to_ascii_lowercase().as_str() {
         // Imagens (com e sem alpha tratadas igual na grade; alpha vira flag visual depois)
         "jpg" | "jpeg" | "png" | "tiff" | "tif" | "webp" | "heic" | "heif" | "bmp" | "tga"
-        | "jfif" | "avif" | "exr" | "dpx" | "svg" => "image",
+        | "jfif" | "avif" | "exr" | "dpx" | "svg" | "jxl" => "image",
+        // RAW de câmera (Canon/Nikon/Sony/Fuji/Panasonic/Olympus/Pentax/Samsung/Leica…):
+        // tratados como imagem; a thumb sai do JPEG embutido (raw_embedded_thumb).
+        "cr2" | "cr3" | "crw" | "nef" | "nrw" | "arw" | "srf" | "sr2" | "dng" | "raf" | "rw2"
+        | "orf" | "pef" | "srw" | "raw" | "3fr" | "fff" | "iiq" | "dcr" | "kdc" | "mrw" | "x3f"
+        | "rwl" | "erf" | "mos" | "mef" => "image",
         // GIF / animacao
         "gif" | "apng" => "gif",
         // Video
@@ -40,6 +45,16 @@ pub fn is_gif(ext: &str) -> bool {
 
 pub fn is_image(ext: &str) -> bool {
     matches!(categorize(ext), "image")
+}
+
+/// RAW de câmera: a miniatura vem do JPEG embutido, não da decodificação do mosaico.
+pub fn is_raw(ext: &str) -> bool {
+    matches!(
+        ext.to_ascii_lowercase().as_str(),
+        "cr2" | "cr3" | "crw" | "nef" | "nrw" | "arw" | "srf" | "sr2" | "dng" | "raf" | "rw2"
+            | "orf" | "pef" | "srw" | "raw" | "3fr" | "fff" | "iiq" | "dcr" | "kdc" | "mrw"
+            | "x3f" | "rwl" | "erf" | "mos" | "mef"
+    )
 }
 
 pub fn is_audio(ext: &str) -> bool {

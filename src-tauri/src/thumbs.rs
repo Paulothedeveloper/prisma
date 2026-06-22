@@ -94,6 +94,24 @@ pub fn generate(src: &Path, ext: &str, out_dir: &Path, id: i64) -> (Option<Strin
             }
             return (None, meta);
         }
+        // 0.5) RAW de câmera → extrai o JPEG de preview embutido (rápido, sem decodificar
+        // o mosaico Bayer). Antes do crate `image` porque ele decodificaria o RAW como TIFF
+        // e sairia lixo/lento.
+        if classify::is_raw(ext) {
+            if let Some((w, h)) = raw_embedded_thumb(src, &out) {
+                meta.width = Some(w as i64);
+                meta.height = Some(h as i64);
+                return (Some(out.to_string_lossy().to_string()), meta);
+            }
+            // sem preview embutido: tenta ffmpeg (alguns DNG/RAW ele lê), senão ícone.
+            if image_thumb_ffmpeg(src, &out).is_ok() {
+                let m = ffprobe_meta(src);
+                meta.width = m.width;
+                meta.height = m.height;
+                return (Some(out.to_string_lossy().to_string()), meta);
+            }
+            return (None, meta);
+        }
         // 1) crate `image` com deteccao por CONTEUDO (pega .png que e jpeg, etc.)
         if let Ok((w, h)) = image_thumb(src, &out) {
             meta.width = Some(w as i64);
@@ -180,6 +198,68 @@ fn font_thumb(src: &Path, out: &Path) -> Option<(u32, u32)> {
     }
     img.save(out).ok()?;
     Some((w, h))
+}
+
+/// Extrai o maior JPEG embutido num arquivo RAW e gera a miniatura dele.
+/// Quase todo RAW de câmera carrega um preview JPEG (às vezes em resolução cheia);
+/// achamos o maior bloco FFD8…FFD9 que decodifica. Puro Rust, offline, sem decodificar Bayer.
+fn raw_embedded_thumb(src: &Path, out: &Path) -> Option<(u32, u32)> {
+    use std::io::Read;
+    // Lê até 96MB (cobre RAW grandes sem estourar memória num lote).
+    let mut f = std::fs::File::open(src).ok()?;
+    let mut buf = Vec::new();
+    f.take(96 * 1024 * 1024).read_to_end(&mut buf).ok()?;
+
+    let mut blobs = find_jpeg_blobs(&buf);
+    if blobs.is_empty() {
+        return None;
+    }
+    // Maior primeiro (preview de maior resolução).
+    blobs.sort_by_key(|(s, e)| std::cmp::Reverse(e - s));
+
+    for (s, e) in blobs.into_iter().take(4) {
+        let slice = &buf[s..e];
+        if let Ok(img) = image::load_from_memory_with_format(slice, image::ImageFormat::Jpeg) {
+            let (w, h) = (img.width(), img.height());
+            // ignora previews minúsculos (ícone de 160px de algumas câmeras) se houver coisa melhor
+            if w < 160 || h < 160 {
+                continue;
+            }
+            let thumb = img.thumbnail(THUMB_MAX, THUMB_MAX);
+            if thumb.save(out).is_ok() {
+                return Some((w, h));
+            }
+        }
+    }
+    None
+}
+
+/// Acha todos os blocos JPEG (FF D8 FF … FF D9) num buffer. Separado pra ser testável.
+fn find_jpeg_blobs(buf: &[u8]) -> Vec<(usize, usize)> {
+    let mut blobs: Vec<(usize, usize)> = Vec::new();
+    let mut i = 0usize;
+    while i + 3 < buf.len() {
+        if buf[i] == 0xFF && buf[i + 1] == 0xD8 && buf[i + 2] == 0xFF {
+            let mut j = i + 2;
+            let mut end = None;
+            while j + 1 < buf.len() {
+                if buf[j] == 0xFF && buf[j + 1] == 0xD9 {
+                    end = Some(j + 2);
+                    break;
+                }
+                j += 1;
+            }
+            if let Some(e) = end {
+                blobs.push((i, e));
+                i = e;
+                continue;
+            } else {
+                break;
+            }
+        }
+        i += 1;
+    }
+    blobs
 }
 
 fn image_thumb(src: &Path, out: &Path) -> Result<(u32, u32), String> {
@@ -508,4 +588,33 @@ fn ffprobe_meta(src: &Path) -> ProbeMeta {
         }
     }
     m
+}
+
+#[cfg(test)]
+mod tests {
+    use super::find_jpeg_blobs;
+
+    #[test]
+    fn acha_o_maior_jpeg_embutido() {
+        // RAW sintetico: lixo + JPEG pequeno + lixo + JPEG maior + lixo
+        let small = [0xFFu8, 0xD8, 0xFF, 0x11, 0x22, 0xFF, 0xD9];
+        let big = [0xFFu8, 0xD8, 0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0xFF, 0xD9];
+        let mut buf: Vec<u8> = vec![0x00, 0x10, 0x20];
+        buf.extend_from_slice(&small);
+        buf.extend_from_slice(&[0xAA, 0xBB]);
+        buf.extend_from_slice(&big);
+        buf.extend_from_slice(&[0xCC, 0xDD, 0xEE]);
+
+        let mut blobs = find_jpeg_blobs(&buf);
+        assert_eq!(blobs.len(), 2, "deve achar os dois JPEGs");
+        blobs.sort_by_key(|(s, e)| std::cmp::Reverse(e - s));
+        let (s, e) = blobs[0];
+        assert_eq!(&buf[s..e], &big, "o maior bloco deve ser o JPEG grande, completo");
+    }
+
+    #[test]
+    fn buffer_sem_jpeg_nao_acha_nada() {
+        let buf = [0x00u8, 0x01, 0x02, 0xFF, 0xD8, 0x03]; // SOI sem EOI
+        assert!(find_jpeg_blobs(&buf).is_empty());
+    }
 }

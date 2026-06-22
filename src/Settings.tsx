@@ -38,7 +38,7 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.7.0";
+const APP_VERSION = "0.7.1";
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
 // curto ≈ US$ 0,001/imagem). É só pra dar noção antes de rodar — não é cobrança exata.

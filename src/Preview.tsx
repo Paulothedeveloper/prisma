@@ -8,6 +8,11 @@ import { t } from "./i18n";
 import { sfx } from "./sfx";
 
 const WEB_VIDEO_CODECS = new Set(["h264", "vp8", "vp9", "av1", "avc1"]);
+// Formatos de imagem que o WebView (Chromium) renderiza nativamente. Os demais
+// (RAW, HEIC, TIFF, EXR, DPX, JXL…) mostram a miniatura em cache + abrir externo.
+const WEB_IMAGE_EXTS = new Set([
+  "jpg", "jpeg", "jfif", "png", "gif", "webp", "bmp", "svg", "avif", "apng",
+]);
 
 interface Props {
   asset: Asset;
@@ -102,9 +107,22 @@ export function Preview({ asset, onClose, onNav }: Props) {
             <AudioPlayer src={url} waveform={thumbUrl} title={asset.name || asset.filename} />
           </div>
         ) : isImageLike ? (
-          <div className="preview-img-wrap">
-            <img src={url} className="preview-media" alt="" />
-          </div>
+          WEB_IMAGE_EXTS.has(asset.ext.toLowerCase()) ? (
+            <div className="preview-img-wrap">
+              <img src={url} className="preview-media" alt="" />
+            </div>
+          ) : (
+            // RAW/HEIC/TIFF/EXR… → miniatura de alta qualidade do cache + abrir no app externo
+            <div className="preview-unsupported">
+              {thumbUrl && <img src={thumbUrl} className="preview-media" alt="" />}
+              <button
+                className="preview-openext"
+                onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
+              >
+                <Icon name="play" size={16} /> {t("prev.openExternal")}
+              </button>
+            </div>
+          )
         ) : (
           <div className="preview-noprev">
             <div className="preview-ext">{asset.ext.toUpperCase()}</div>
