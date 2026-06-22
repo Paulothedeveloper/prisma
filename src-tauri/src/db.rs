@@ -582,8 +582,10 @@ pub fn pending_phash(conn: &Connection) -> rusqlite::Result<Vec<(i64, String)>> 
     rows.collect()
 }
 
-/// "Buscar por imagem": assets mais parecidos com `id` (menor distância de Hamming do phash).
-pub fn similar(conn: &Connection, id: i64, limit: i64) -> rusqlite::Result<Vec<Asset>> {
+/// "Buscar por imagem": assets mais parecidos com `id` (menor distância de Hamming do
+/// phash). `max_dist` = quão diferente pode ser (0 = idêntico … 64 = qualquer coisa);
+/// ajustável pelo usuário tipo digiKam.
+pub fn similar(conn: &Connection, id: i64, limit: i64, max_dist: u32) -> rusqlite::Result<Vec<Asset>> {
     let target: Option<i64> =
         conn.query_row("SELECT phash FROM assets WHERE id=?1", params![id], |r| r.get(0)).ok().flatten();
     let Some(target) = target else { return Ok(Vec::new()) };
@@ -599,8 +601,9 @@ pub fn similar(conn: &Connection, id: i64, limit: i64) -> rusqlite::Result<Vec<A
         .collect();
     scored.sort_by_key(|(_, d)| *d);
     let take = limit.max(1) as usize;
-    // só os razoavelmente parecidos (distância <= 22 de 64 bits)
-    let ids: Vec<i64> = scored.into_iter().filter(|(_, d)| *d <= 22).take(take).map(|(a, _)| a).collect();
+    // só os dentro do limite de distância escolhido (de 64 bits)
+    let cap = max_dist.clamp(1, 64);
+    let ids: Vec<i64> = scored.into_iter().filter(|(_, d)| *d <= cap).take(take).map(|(a, _)| a).collect();
     if ids.is_empty() {
         return Ok(Vec::new());
     }

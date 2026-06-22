@@ -993,10 +993,16 @@ fn ai_analyze_untagged(app: tauri::AppHandle, limit: i64) -> Result<usize, Strin
 
 /// "Buscar por imagem": assets visualmente parecidos com `id` (perceptual hash local).
 #[tauri::command]
-fn similar_assets(app: tauri::AppHandle, id: i64, limit: i64) -> Result<Vec<db::Asset>, String> {
+fn similar_assets(
+    app: tauri::AppHandle,
+    id: i64,
+    limit: i64,
+    max_dist: i64,
+) -> Result<Vec<db::Asset>, String> {
     let state = app.state::<AppState>();
     let lim = if limit <= 0 { 60 } else { limit };
-    state.reads.with(|conn| db::similar(conn, id, lim)).map_err(|e| e.to_string())
+    let md = if max_dist <= 0 { 22 } else { max_dist as u32 }; // padrão 22
+    state.reads.with(|conn| db::similar(conn, id, lim, md)).map_err(|e| e.to_string())
 }
 
 // ---------- Ações de item (estilo Eagle) ----------

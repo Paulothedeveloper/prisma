@@ -238,6 +238,7 @@ export default function App() {
   const [thumbSize, setThumbSize] = useState(190);
   const [layout, setLayout] = useState<"grid" | "list" | "waterfall">("grid");
   const [boardMode, setBoardMode] = useState(false); // moodboard (só em coleção)
+  const [simThreshold, setSimThreshold] = useState(22); // tolerância da busca por similaridade
   const [selected, setSelected] = useState<Asset | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const anchorRef = useRef<number | null>(null);
@@ -308,7 +309,7 @@ export default function App() {
         }
       };
       if (view.t === "similar") {
-        const rows = await similarAssets(view.v);
+        const rows = await similarAssets(view.v, 60, simThreshold);
         offsetRef.current = rows.length;
         setAssets(rows);
         fireCascade();
@@ -327,7 +328,7 @@ export default function App() {
       setAssets((prev) => (reset ? rows : [...prev, ...rows]));
       fireCascade();
     },
-    [buildFilter, view]
+    [buildFilter, view, simThreshold]
   );
 
   const refreshMeta = useCallback(async () => {
@@ -387,6 +388,12 @@ export default function App() {
     runSearch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout]);
+
+  // Ajustar a tolerância da busca por similaridade → re-busca (só na visão "similar").
+  useEffect(() => {
+    if (view.t === "similar") runSearch(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simThreshold]);
 
   // SFX "de software": um tap discreto em QUALQUER botão/controle (listener global, em
   // captura). Ignora a seleção de mídia (.card) e os controles do player ([data-sfx-skip])
@@ -1348,6 +1355,17 @@ export default function App() {
           {view.t === "similar" && (
             <div className="trash-banner similar-banner">
               <span>{t("ban.similar")} <b>{view.label}</b></span>
+              <label className="sim-thresh" title={t("ban.simThreshold")}>
+                <span>{t("ban.simStrict")}</span>
+                <input
+                  type="range"
+                  min={6}
+                  max={40}
+                  value={simThreshold}
+                  onChange={(e) => setSimThreshold(Number(e.target.value))}
+                />
+                <span>{t("ban.simLoose")}</span>
+              </label>
               <button className="trash-empty similar-back" onClick={() => setView({ t: "all" })}>
                 <Icon name="chevronLeft" size={13} /> {t("ban.back")}
               </button>

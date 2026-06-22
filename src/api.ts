@@ -268,8 +268,8 @@ export const duplicateAsset = (id: number) => invoke<void>("duplicate_asset", { 
 export const refreshThumb = (id: number) => invoke<void>("refresh_thumb", { id });
 export const setCustomThumb = (id: number, source: string) =>
   invoke<void>("set_custom_thumb", { id, source });
-export const similarAssets = (id: number, limit = 60) =>
-  invoke<Asset[]>("similar_assets", { id, limit });
+export const similarAssets = (id: number, limit = 60, maxDist = 22) =>
+  invoke<Asset[]>("similar_assets", { id, limit, maxDist });
 
 // ----- Batch Rename (renomeia o arquivo no disco) -----
 export interface RenameResult {

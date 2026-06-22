@@ -4974,3 +4974,16 @@ body {
   color: var(--text-3);
   font-size: 14px;
 }
+
+/* slider de tolerância da busca por similaridade (no banner) */
+.sim-thresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-2);
+  margin-left: auto;
+}
+.sim-thresh input {
+  width: 120px;
+}
