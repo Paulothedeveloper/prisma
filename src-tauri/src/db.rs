@@ -788,33 +788,20 @@ pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     }
 
     if !f.query.trim().is_empty() {
-        // FTS5 em filename/name/ai_desc (cada termo vira prefixo: "pra" acha "praia") +
-        // tags por LIKE (são poucas). Sanitiza pra não quebrar a sintaxe do MATCH.
-        let terms: Vec<String> = f
-            .query
-            .to_lowercase()
-            .split(|c: char| !c.is_alphanumeric())
-            .filter(|t| !t.is_empty())
-            .map(|t| format!("{t}*"))
-            .collect();
-        let like = format!("%{}%", f.query.trim());
-        if terms.is_empty() {
-            // consulta só com símbolos → cai no LIKE de nome/tag
+        // Busca por NOME + descrição da IA + tags. LIKE é robusto e rápido o bastante;
+        // cada termo (separado por espaço) precisa casar em algum campo (AND entre termos).
+        let q = f.query.trim().to_lowercase();
+        let terms: Vec<&str> = q.split_whitespace().filter(|t| !t.is_empty()).collect();
+        for term in &terms {
+            let like = format!("%{term}%");
             sql.push_str(
-                " AND (filename LIKE ? OR name LIKE ? OR EXISTS(\
-                   SELECT 1 FROM asset_tags at JOIN tags t ON t.id=at.tag_id \
-                   WHERE at.asset_id=a.id AND t.name LIKE ?))",
-            );
-            args.push(Box::new(like.clone()));
-            args.push(Box::new(like.clone()));
-            args.push(Box::new(like));
-        } else {
-            sql.push_str(
-                " AND (a.id IN (SELECT rowid FROM assets_fts WHERE assets_fts MATCH ?) \
+                " AND (LOWER(filename) LIKE ? OR LOWER(name) LIKE ? OR LOWER(ai_desc) LIKE ? \
                    OR EXISTS(SELECT 1 FROM asset_tags at JOIN tags t ON t.id=at.tag_id \
-                   WHERE at.asset_id=a.id AND t.name LIKE ?))",
+                   WHERE at.asset_id=a.id AND LOWER(t.name) LIKE ?))",
             );
-            args.push(Box::new(terms.join(" ")));
+            args.push(Box::new(like.clone()));
+            args.push(Box::new(like.clone()));
+            args.push(Box::new(like.clone()));
             args.push(Box::new(like));
         }
     }
@@ -849,9 +836,10 @@ pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     }
     if let Some(folder) = &f.folder {
         if !folder.is_empty() {
-            sql.push_str(" AND (dir = ? OR dir LIKE ?)");
+            // SÓ a mídia DIRETA da pasta (não herda das subpastas). As subpastas aparecem
+            // como cards-capa em cima da grade. Assim a pasta-só-de-subpastas mostra só elas.
+            sql.push_str(" AND dir = ?");
             args.push(Box::new(folder.clone()));
-            args.push(Box::new(format!("{folder}\\%")));
         }
     }
     if let Some(e) = &f.ext {
