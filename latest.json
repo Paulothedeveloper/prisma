@@ -1,11 +1,11 @@
 {
-    "version":  "0.6.1",
-    "notes":  "Correcoes: a busca voltou a funcionar (nome/descricao IA/tags) e a pasta agora mostra so a midia direta dela (sem herdar das subpastas).",
-    "pub_date":  "2026-06-22T01:31:55Z",
+    "version":  "0.7.0",
+    "notes":  "Subpastas agora aparecem como cards na propria grade (estilo Eagle). A busca acha PASTAS alem de midias, com escopo nesta-pasta/tudo. Novos: baixador de video/audio (yt-dlp nativo) e player de musica com letra sincronizada.",
+    "pub_date":  "2026-06-22T06:36:55Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTJmZzQ1dTMvZGlvRUVDaTd0WEFVM2RYSEExSHBDRG4zZjJzUGlJOCs0Zm1ZV3JiZXJsTS9TZUN5SmxQQnVhbXBjb0h0cXNoZ1BHTGVUUzJmSEN5YXdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTA2Mjk2CWZpbGU6UFJJU01BXzAuNi4xX3g2NC1zZXR1cC5leGUKT2xIeHFWNWRGOUtnZnJTTlZlSjB5ZDhJUkFuSFFlY0Eya3UycjJXblV5c3g1b3h3NDhCU3ZmRHNyZ3ZYTFhwNDE2SWM4MEpSL2xrNVN0U3M1cVMvQ2c9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.6.1/PRISMA_0.6.1_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWS9OZGxsaWkwc1VrOFVyK2RSdjhqZy9mSHFIR3ExT0FTbkY3VmtnUE1RVEY3SEY5eFFpNEZLV2NyYTV3TjY3OGRwTFNNQ3VpVjN1ZHhQQjcyc0RIUWdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTEwMTc5CWZpbGU6UFJJU01BXzAuNy4wX3g2NC1zZXR1cC5leGUKU1hMTmd4ZHVUNjMycXppSHVLYnQ2OVhVWTd6Um0xZTlDcFFlNDVESGRsZTRBQnZ5ZWFVYlE1K3N0MkZKR2h4eUQ3UXRnalM4UHllcnpoTGJPQVZTQnc9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.7.0/PRISMA_0.7.0_x64-setup.exe"
                                          }
                   }
 }
