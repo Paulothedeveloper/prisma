@@ -38,9 +38,17 @@ struct VelvetCatalog {
 /// Monta o JSON-contrato com todas as LUTs catalogadas (por humor) e escreve em `out`.
 /// Retorna quantas LUTs foram exportadas.
 pub fn export_velvet_catalog(conn: &Connection, out: &Path) -> rusqlite::Result<usize> {
+    // UMA query só (antes era N+1 = 1 query por LUT): junta as tags com group_concat usando
+    // o separador unit (char 31) e desmembro no Rust.
     let mut stmt = conn.prepare(
-        "SELECT id, path, COALESCE(name, filename), ext, warm, bright, sat, ai_desc \
-         FROM assets WHERE type='lut' AND trashed=0 ORDER BY COALESCE(name, filename) COLLATE NOCASE",
+        "SELECT a.id, a.path, COALESCE(a.name, a.filename), a.ext, a.warm, a.bright, a.sat, a.ai_desc, \
+                group_concat(t.name, char(31)) \
+         FROM assets a \
+         LEFT JOIN asset_tags at ON at.asset_id = a.id \
+         LEFT JOIN tags t ON t.id = at.tag_id \
+         WHERE a.type='lut' AND a.trashed=0 \
+         GROUP BY a.id \
+         ORDER BY COALESCE(a.name, a.filename) COLLATE NOCASE",
     )?;
     let rows = stmt.query_map([], |r| {
         Ok((
@@ -52,19 +60,16 @@ pub fn export_velvet_catalog(conn: &Connection, out: &Path) -> rusqlite::Result<
             r.get::<_, Option<String>>(5)?,
             r.get::<_, Option<String>>(6)?,
             r.get::<_, Option<String>>(7)?,
+            r.get::<_, Option<String>>(8)?,
         ))
     })?;
 
     let mut luts = Vec::new();
     for row in rows {
-        let (id, path, name, ext, warm, bright, sat, ai_desc) = row?;
-        let mut tstmt = conn.prepare(
-            "SELECT t.name FROM tags t JOIN asset_tags at ON at.tag_id=t.id WHERE at.asset_id=?1",
-        )?;
-        let tags: Vec<String> = tstmt
-            .query_map([id], |r| r.get::<_, String>(0))?
-            .filter_map(|x| x.ok())
-            .collect();
+        let (id, path, name, ext, warm, bright, sat, ai_desc, tags_str) = row?;
+        let tags: Vec<String> = tags_str
+            .map(|s| s.split('\u{1f}').map(|x| x.to_string()).collect())
+            .unwrap_or_default();
         luts.push(LutEntry { id, path, name, ext, warm, bright, sat, ai_desc, tags });
     }
 

@@ -217,7 +217,7 @@ fn raw_embedded_thumb(src: &Path, out: &Path) -> Option<(u32, u32)> {
     // Maior primeiro (preview de maior resolução).
     blobs.sort_by_key(|(s, e)| std::cmp::Reverse(e - s));
 
-    for (s, e) in blobs.into_iter().take(4) {
+    for (s, e) in blobs.into_iter().take(8) {
         let slice = &buf[s..e];
         if let Ok(img) = image::load_from_memory_with_format(slice, image::ImageFormat::Jpeg) {
             let (w, h) = (img.width(), img.height());

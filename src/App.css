@@ -170,6 +170,44 @@ body {
   font-size: 15px;
   letter-spacing: 0.02em;
 }
+/* Setas voltar/avançar (histórico de navegação, estilo navegador) */
+.nav-arrows {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 10px;
+}
+.nav-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.nav-arrow:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-1);
+}
+.nav-arrow:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+/* Cabeçalho de pastas dentro da grade/lista (Virtuoso Header) */
+.grid-folders {
+  margin-bottom: 14px;
+}
+.folder-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
 .search-wrap {
   flex: 0 0 auto;
   width: 440px;

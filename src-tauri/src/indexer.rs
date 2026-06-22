@@ -18,7 +18,7 @@ use walkdir::WalkDir;
 /// ffmpeg, evita congelar o PC em bibliotecas grandes. Teto 4 (igual antes).
 fn concurrency() -> usize {
     std::thread::available_parallelism()
-        .map(|n| n.get().saturating_sub(2).clamp(1, 4))
+        .map(|n| n.get().saturating_sub(2).clamp(1, 8))
         .unwrap_or(2)
 }
 
@@ -81,13 +81,13 @@ pub fn index_folder(
 
     // --- Passo 1: catalogar (rapido, uma transacao) ---
     let folder_id = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::upsert_folder(&conn, &folder, now()).unwrap_or(0)
     };
 
     let mut pending: Vec<(i64, String, String, String)> = Vec::new(); // (id, path, ext, kind)
     {
-        let mut conn = db.lock().unwrap();
+        let mut conn = db.lock().unwrap_or_else(|p| p.into_inner());
         let tx = conn.transaction().unwrap();
         for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
             if !entry.file_type().is_file() {
@@ -147,7 +147,7 @@ pub fn index_folder(
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_default();
         if !name.is_empty() {
-            let conn = db.lock().unwrap();
+            let conn = db.lock().unwrap_or_else(|p| p.into_inner());
             let _ = db::autotag_under(&conn, &folder, &name);
         }
     }
@@ -166,7 +166,7 @@ pub fn index_folder(
 
     // Duplicados na importação: avisa o usuário pra ele decidir (excluir/substituir/ignorar).
     let dups = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::find_import_dups(&conn, &import_ids).unwrap_or_default()
     };
     if !dups.is_empty() {
@@ -176,7 +176,7 @@ pub fn index_folder(
     // Image sequences: agrupa frames numerados num só asset representante (escondendo o resto).
     // Live Photos: liga imagem + .mov irmão (esconde o vídeo do par).
     {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         let _ = db::detect_sequences(&conn, &folder);
         let _ = db::detect_live_photos(&conn, &folder);
     }
@@ -194,13 +194,13 @@ pub fn rescan_folder(
 ) {
     let root = Path::new(&folder);
     let folder_id = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::upsert_folder(&conn, &folder, now()).unwrap_or(0)
     };
 
     // 1) cataloga (upsert) tudo que existe agora no disco
     if root.exists() {
-        let mut conn = db.lock().unwrap();
+        let mut conn = db.lock().unwrap_or_else(|p| p.into_inner());
         let tx = conn.transaction().unwrap();
         for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
             if !entry.file_type().is_file() {
@@ -241,10 +241,10 @@ pub fn rescan_folder(
     let mut removed = 0;
     {
         let under = {
-            let conn = db.lock().unwrap();
+            let conn = db.lock().unwrap_or_else(|p| p.into_inner());
             db::assets_under(&conn, &folder).unwrap_or_default()
         };
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         for (id, path) in under {
             if !Path::new(&path).exists() {
                 let _ = db::delete_asset(&conn, id);
@@ -255,7 +255,7 @@ pub fn rescan_folder(
 
     // 3) gera thumb só pros novos (sem miniatura)
     let pending = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::pending_thumbs_under(&conn, &folder).unwrap_or_default()
     };
     let total = pending.len();
@@ -268,7 +268,7 @@ pub fn rescan_folder(
     }
     // Re-detecta sequences e Live Photos (pares novos depois do re-scan).
     {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         let _ = db::detect_sequences(&conn, &folder);
         let _ = db::detect_live_photos(&conn, &folder);
     }
@@ -284,7 +284,7 @@ pub fn resume_missing(
     thumbs_dir: std::path::PathBuf,
 ) {
     let pending = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::pending_thumbs(&conn).unwrap_or_default()
     };
     if pending.is_empty() {
@@ -336,7 +336,7 @@ pub fn index_one(db: &Arc<Mutex<Connection>>, thumbs_dir: &Path, path: &Path) ->
         folder_id: 0,
     };
     let id = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::upsert_asset(&conn, &na).ok()?
     };
     let (thumb, meta) = thumbs::generate(path, &ext, thumbs_dir, id);
@@ -346,7 +346,7 @@ pub fn index_one(db: &Arc<Mutex<Connection>>, thumbs_dir: &Path, path: &Path) ->
         None => (None, None),
     };
     let hash = thumbs::quick_hash(path, size as u64);
-    let conn = db.lock().unwrap();
+    let conn = db.lock().unwrap_or_else(|p| p.into_inner());
     let _ = db::set_processed(&conn, id, thumb.as_deref(), meta.width, meta.height,
         meta.duration, dom.as_deref(), buck.as_deref(), hash.as_deref());
     if let Some(s) = &swatch {
@@ -362,7 +362,7 @@ pub fn index_one(db: &Arc<Mutex<Connection>>, thumbs_dir: &Path, path: &Path) ->
 /// têm thumb mas foram indexados antes do recurso existir. Roda no boot, em background.
 pub fn backfill_traits(app: AppHandle, db: Arc<Mutex<Connection>>) {
     let pending = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::pending_traits(&conn).unwrap_or_default()
     };
     if pending.is_empty() {
@@ -370,18 +370,18 @@ pub fn backfill_traits(app: AppHandle, db: Arc<Mutex<Connection>>) {
     }
     for (id, thumb) in pending {
         if let Some(s) = thumbs::analyze_thumb(Path::new(&thumb)) {
-            let conn = db.lock().unwrap();
+            let conn = db.lock().unwrap_or_else(|p| p.into_inner());
             let _ = db::set_traits(&conn, id, &s.bright, &s.warm, &s.sat);
         }
     }
     // backfill do perceptual hash (busca por imagem) pros que ainda não têm
     let pend_ph = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::pending_phash(&conn).unwrap_or_default()
     };
     for (id, thumb) in pend_ph {
         if let Some(ph) = thumbs::phash(Path::new(&thumb)) {
-            let conn = db.lock().unwrap();
+            let conn = db.lock().unwrap_or_else(|p| p.into_inner());
             let _ = db::set_phash(&conn, id, ph as i64);
         }
     }
@@ -409,7 +409,7 @@ fn run_thumb_queue(
         let done = done.clone();
         handles.push(std::thread::spawn(move || loop {
             let item = {
-                let mut q = queue.lock().unwrap();
+                let mut q = queue.lock().unwrap_or_else(|p| p.into_inner());
                 q.next()
             };
             let Some((id, path, ext, kind)) = item else { break };
@@ -420,7 +420,7 @@ fn run_thumb_queue(
             // Corrompidos: mídia que não abre em NENHUM decodificador sai da biblioteca.
             let is_media = matches!(kind.as_str(), "image" | "gif" | "video" | "audio");
             if is_media && thumb.is_none() && meta.width.is_none() && meta.duration.is_none() {
-                let conn = db.lock().unwrap();
+                let conn = db.lock().unwrap_or_else(|p| p.into_inner());
                 let _ = db::delete_asset(&conn, id);
                 drop(conn);
                 let d = done.fetch_add(1, Ordering::SeqCst) + 1;
@@ -451,7 +451,7 @@ fn run_thumb_queue(
             let hash = thumbs::quick_hash(p, size);
 
             {
-                let conn = db.lock().unwrap();
+                let conn = db.lock().unwrap_or_else(|p| p.into_inner());
                 let _ = db::set_processed(
                     &conn,
                     id,

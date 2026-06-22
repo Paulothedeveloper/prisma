@@ -960,7 +960,7 @@ fn reindex_output(
     };
 
     let id = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::upsert_asset(&conn, &na).unwrap_or(0)
     };
     if id > 0 {
@@ -971,7 +971,7 @@ fn reindex_output(
             None => (None, None),
         };
         let hash = thumbs::quick_hash(output, size as u64);
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         let _ = db::set_processed(&conn, id, thumb.as_deref(), meta.width, meta.height,
             meta.duration, dom.as_deref(), buck.as_deref(), hash.as_deref());
         if let Some(s) = &swatch {

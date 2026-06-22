@@ -221,7 +221,7 @@ fn parse_result(text: &str) -> AiResult {
     }
     // fallback: se não veio no formato, usa o texto inteiro como descrição.
     if tags.is_empty() && description.is_empty() {
-        description = text.trim().chars().take(240).collect();
+        description = text.trim().chars().take(500).collect();
     }
     AiResult { tags, description }
 }

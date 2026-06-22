@@ -86,6 +86,8 @@ import { TrafficLights } from "./TrafficLights";
 import "./App.css";
 
 const PAGE = 200;
+// Array vazio ESTÁVEL (mesma referência entre renders) — evita remontar o cabeçalho de pastas.
+const NO_SUBS: SubCard[] = [];
 
 const CATEGORY_LABELS: Record<string, string> = {
   image: t("cat.image"),
@@ -246,6 +248,11 @@ export default function App() {
   const [clipMode, setClipMode] = useState(false); // busca semântica (CLIP) ligada
   const [clipStat, setClipStat] = useState<{ done: number; total: number } | null>(null);
   const [clipBusy, setClipBusy] = useState(false);
+  // Histórico de navegação (voltar/avançar) — como um navegador.
+  const histRef = useRef<View[]>([{ t: "all" }]);
+  const ptrRef = useRef(0);
+  const navJump = useRef(false);
+  const [, setNavTick] = useState(0);
   const [booted, setBooted] = useState(false);
   const [thumbSize, setThumbSize] = useState(190);
   const [layout, setLayout] = useState<"grid" | "list" | "waterfall">("grid");
@@ -396,7 +403,12 @@ export default function App() {
     }
     const scope = view.t === "folder" && folderScope ? view.v : null;
     const t = window.setTimeout(() => {
-      searchFolders(q, scope).then(setSearchedFolders).catch(() => setSearchedFolders([]));
+      searchFolders(q, scope)
+        .then(setSearchedFolders)
+        .catch((e) => {
+          console.warn("searchFolders falhou:", e);
+          setSearchedFolders([]);
+        });
     }, 140);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -431,11 +443,50 @@ export default function App() {
     setBoardMode(false); // sai do modo quadro ao trocar de view
     gridRef.current?.scrollToIndex?.(0);
     // subpastas como cards-capa (só na visão de pasta)
-    if (view.t === "folder") subfolders(view.v).then(setSubCards).catch(() => setSubCards([]));
+    if (view.t === "folder")
+      subfolders(view.v)
+        .then(setSubCards)
+        .catch((e) => {
+          console.warn("subfolders falhou:", e);
+          setSubCards([]);
+        });
     else setSubCards([]);
     runSearch(true);
+    // Histórico voltar/avançar: empilha a nova view (a menos que tenha vindo de um botão).
+    if (navJump.current) {
+      navJump.current = false;
+    } else {
+      const cur = histRef.current[ptrRef.current];
+      if (JSON.stringify(cur) !== JSON.stringify(view)) {
+        histRef.current = histRef.current.slice(0, ptrRef.current + 1);
+        histRef.current.push(view);
+        ptrRef.current = histRef.current.length - 1;
+      }
+    }
+    setNavTick((t) => t + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
+
+  const goBack = () => {
+    if (ptrRef.current > 0) {
+      ptrRef.current -= 1;
+      navJump.current = true;
+      sfx.tap();
+      cascadeOnNextLoad.current = true;
+      setView(histRef.current[ptrRef.current]);
+    }
+  };
+  const goForward = () => {
+    if (ptrRef.current < histRef.current.length - 1) {
+      ptrRef.current += 1;
+      navJump.current = true;
+      sfx.tap();
+      cascadeOnNextLoad.current = true;
+      setView(histRef.current[ptrRef.current]);
+    }
+  };
+  const canGoBack = ptrRef.current > 0;
+  const canGoForward = ptrRef.current < histRef.current.length - 1;
 
   // Trocar de layout (grade/lista/waterfall): também instantâneo, sem animar a grade.
   useEffect(() => {
@@ -904,7 +955,7 @@ export default function App() {
     ? searchedFolders
     : view.t === "folder"
     ? subCards
-    : [];
+    : NO_SUBS;
   const subN = gridFolders.length;
   const subCardEl = (s: SubCard) => {
     const cover = s.cover ? convertFileSrc(s.cover) : null;
@@ -935,6 +986,42 @@ export default function App() {
       </button>
     );
   };
+
+  // Cabeçalho da grade com as pastas (cards de pasta na visão de grade, linhas na de lista).
+  // Renderizar via components.Header do Virtuoso evita o offset de índice que recicla DOM e
+  // causava SOBREPOSIÇÃO de miniaturas (bug visual). Memoizado pra não remontar a cada render.
+  const gridHeader = useMemo(() => {
+    if (gridFolders.length === 0) return undefined;
+    const H = () => <div className="grid grid-folders">{gridFolders.map(subCardEl)}</div>;
+    return { Header: H };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridFolders]);
+  const listHeader = useMemo(() => {
+    if (gridFolders.length === 0) return undefined;
+    const H = () => (
+      <div className="folder-rows">
+        {gridFolders.map((s) => (
+          <button
+            key={`sub:${s.dir}`}
+            className="asset-row folder-row"
+            onClick={() => {
+              sfx.tap();
+              cascadeOnNextLoad.current = true;
+              setView({ t: "folder", v: s.dir, label: s.name });
+            }}
+            title={s.name}
+          >
+            <Icon name="folder" size={18} />
+            <span className="folder-row-name">{s.name}</span>
+            <span className="folder-row-count">{s.count}</span>
+          </button>
+        ))}
+      </div>
+    );
+    return { Header: H };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridFolders]);
+
   const anyFilter = minRating || fExt || fRes || fDur || fBright || fWarm || fSat || fOrient;
   const clearFilters = () => {
     setMinRating(0);
@@ -967,6 +1054,24 @@ export default function App() {
           <div className="brand" data-tauri-drag-region>
             <Logo size={19} />
             <span className="brand-name">PRISMA</span>
+          </div>
+          <div className="nav-arrows">
+            <button
+              className="nav-arrow"
+              onClick={goBack}
+              disabled={!canGoBack}
+              title={t("nav.back")}
+            >
+              <Icon name="chevronLeft" size={16} />
+            </button>
+            <button
+              className="nav-arrow"
+              onClick={goForward}
+              disabled={!canGoForward}
+              title={t("nav.forward")}
+            >
+              <Icon name="chevronRight" size={16} />
+            </button>
           </div>
         </div>
         <div className="search-wrap" data-tauri-drag-region>
@@ -1577,39 +1682,19 @@ export default function App() {
               <Virtuoso
                 ref={gridRef}
                 style={{ height: "100%" }}
-                totalCount={subN + assets.length}
+                totalCount={assets.length}
                 overscan={600}
                 endReached={() => runSearch(false)}
-                computeItemKey={(i) =>
-                  i < subN ? `sub:${gridFolders[i].dir}` : assets[i - subN]?.id ?? i
-                }
+                computeItemKey={(i) => assets[i]?.id ?? i}
+                components={listHeader}
                 itemContent={(i) => {
-                  if (i < subN) {
-                    const s = gridFolders[i];
-                    return (
-                      <button
-                        className="asset-row folder-row"
-                        onClick={() => {
-                          sfx.tap();
-                          cascadeOnNextLoad.current = true;
-                          setView({ t: "folder", v: s.dir, label: s.name });
-                        }}
-                        title={s.name}
-                      >
-                        <Icon name="folder" size={18} />
-                        <span className="folder-row-name">{s.name}</span>
-                        <span className="folder-row-count">{s.count}</span>
-                      </button>
-                    );
-                  }
-                  const j = i - subN;
-                  const a = assets[j];
+                  const a = assets[i];
                   if (!a) return <span />;
                   return (
                     <AssetRow
                       asset={a}
                       selected={selectedIds.has(a.id) || selected?.id === a.id}
-                      onClick={(x, e) => handleCardClick(x, e, j)}
+                      onClick={(x, e) => handleCardClick(x, e, i)}
                       onPreview={setPreviewAsset}
                       onContext={openCtx}
                       animDelayMs={Math.min(i, 18) * 18}
@@ -1648,26 +1733,23 @@ export default function App() {
               <VirtuosoGrid
                 ref={gridRef}
                 style={{ height: "100%" }}
-                totalCount={subN + assets.length}
+                totalCount={assets.length}
                 overscan={500}
                 endReached={() => runSearch(false)}
-                computeItemKey={(i) =>
-                  i < subN ? `sub:${gridFolders[i].dir}` : assets[i - subN]?.id ?? i
-                }
+                computeItemKey={(i) => assets[i]?.id ?? i}
                 listClassName="grid"
+                components={gridHeader}
                 itemContent={(i) => {
-                  if (i < subN) return subCardEl(gridFolders[i]);
-                  const j = i - subN;
-                  const a = assets[j];
+                  const a = assets[i];
                   if (!a) return <span />;
                   return (
                     <AssetCard
                       asset={a}
                       selected={selectedIds.has(a.id) || selected?.id === a.id}
-                      onClick={(x, e) => handleCardClick(x, e, j)}
+                      onClick={(x, e) => handleCardClick(x, e, i)}
                       onPreview={setPreviewAsset}
                       onContext={openCtx}
-                      reorder={inCollection !== null ? { index: j, onReorder } : undefined}
+                      reorder={inCollection !== null ? { index: i, onReorder } : undefined}
                       animDelayMs={Math.min(i, 14) * 25}
                     />
                   );

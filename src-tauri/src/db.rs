@@ -179,7 +179,14 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         );
         "#,
     )?;
-    // Migrações leves: adiciona colunas novas em bancos já existentes (ignora se já existe).
+    // Migrações leves: adiciona colunas novas em bancos já existentes. Em vez de depender do
+    // erro silenciado do ALTER (frágil), CHECO as colunas existentes via PRAGMA table_info e
+    // só adiciono as que faltam — e logo de verdade se um ALTER necessário falhar.
+    let existing: std::collections::HashSet<String> = {
+        let mut s = conn.prepare("PRAGMA table_info(assets)")?;
+        let rows = s.query_map([], |r| r.get::<_, String>(1))?;
+        rows.filter_map(|x| x.ok()).collect()
+    };
     for col in [
         "dir TEXT",
         "color_bucket TEXT",
@@ -199,7 +206,13 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "live_member INTEGER NOT NULL DEFAULT 0", // 1 = o vídeo do par Live Photo (escondido na grade)
         "clip_embed BLOB", // embedding CLIP (512 f32) pra busca semântica local
     ] {
-        let _ = conn.execute(&format!("ALTER TABLE assets ADD COLUMN {col}"), []);
+        let name = col.split_whitespace().next().unwrap_or("");
+        if existing.contains(name) {
+            continue;
+        }
+        if let Err(e) = conn.execute(&format!("ALTER TABLE assets ADD COLUMN {col}"), []) {
+            tracing::warn!(column = name, error = %e, "migração: ALTER TABLE assets falhou");
+        }
     }
     // Metadados de pasta: apelido (nome amigável) e ocultar da barra lateral.
     conn.execute(
@@ -213,6 +226,17 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
     let _ = conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_trashed ON assets(trashed)", []);
     let _ = conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_bright ON assets(bright)", []);
     let _ = conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_warm ON assets(warm)", []);
+    // Índices da auditoria: `name`/`modified_at` (sort "recentes") + compostos pros filtros
+    // mais comuns — fazem a busca/ordenação não arrastar acima de ~20k assets.
+    for ix in [
+        "CREATE INDEX IF NOT EXISTS idx_assets_name ON assets(name)",
+        "CREATE INDEX IF NOT EXISTS idx_assets_modified ON assets(modified_at)",
+        "CREATE INDEX IF NOT EXISTS idx_assets_trashed_type ON assets(trashed, type)",
+        "CREATE INDEX IF NOT EXISTS idx_assets_dir_type ON assets(dir, type)",
+        "CREATE INDEX IF NOT EXISTS idx_assets_sat ON assets(sat)",
+    ] {
+        let _ = conn.execute(ix, []);
+    }
     // capa + cor/ícone da pasta (estilo Eagle)
     for col in ["cover TEXT", "color TEXT"] {
         let _ = conn.execute(&format!("ALTER TABLE folder_meta ADD COLUMN {col}"), []);
@@ -1741,7 +1765,7 @@ pub fn smart_search(conn: &Connection, id: i64, sort: Option<&str>) -> rusqlite:
         _ => "filename COLLATE NOCASE",
     };
     let sql = format!(
-        "SELECT {SELECT_COLS} FROM assets a WHERE a.trashed=0 AND ({where_clause}) ORDER BY {order} LIMIT 1000"
+        "SELECT {SELECT_COLS} FROM assets a WHERE a.trashed=0 AND ({where_clause}) ORDER BY {order} LIMIT 10000"
     );
     let params: Vec<&dyn rusqlite::types::ToSql> = args.iter().map(|b| b.as_ref()).collect();
     let mut stmt = conn.prepare(&sql)?;

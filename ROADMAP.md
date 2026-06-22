@@ -12,20 +12,24 @@
 - 0.8.2 AI Background Remover (u2netp ONNX)
 - 0.9.0 **Busca semântica local (CLIP)**
 
-## 0.9.1 — Endurecimento (TODA a auditoria)
+## 0.9.1 — Endurecimento (auditoria) + 2 bugs de print ✅ (publicado)
+**Bugs reportados (prints)**
+- [x] **Bug visual**: sobreposição de miniaturas (cards de pasta na grade) — pastas foram pro
+      `components.Header` do Virtuoso, fim do offset de índice que reciclava DOM
+- [x] **Setas voltar/avançar**: histórico de navegação (como navegador) no cabeçalho
 **Pendências reais**
-- [ ] Índices faltantes: `name`, `modified_at`, compostos `(trashed,type)` e `(dir,type)`
-- [ ] `.lock().unwrap()` (~25×) → helper que não derruba o app (recupera de poison + log)
-- [ ] Licença: trocar o stub por checagem **ed25519 real** (mantém tudo livre por padrão)
+- [x] Índices faltantes: `name`, `modified_at`, `(trashed,type)`, `(dir,type)`, `sat`
+- [x] `.lock().unwrap()` (26×) → `unwrap_or_else(|p| p.into_inner())` (recupera de poison, não paniqua)
+- [ ] Licença: checagem **ed25519 real** → adiada (gate está dormente/tudo livre; faço na virada comercial)
 **Qualidade**
-- [ ] N+1 query no `ecosystem.rs` → 1 JOIN
-- [ ] `let _ =` sensíveis (set_health/assign_tag/commit/emit) → `tracing::warn` no erro
-- [ ] Migração de schema: `PRAGMA table_info` + transação (parar de depender de erro silenciado)
-- [ ] Front: `.catch(() => setX([]))` → avisar (toast/console) em vez de sumir
+- [x] N+1 query no `ecosystem.rs` → 1 JOIN com group_concat
+- [x] Migração de schema: `PRAGMA table_info` + `tracing::warn` (parar de depender de erro silenciado)
+- [x] Front: `.catch` de subfolders/searchFolders → `console.warn` em vez de sumir
+- [ ] `let _ =` sensíveis restantes (emit de progresso) → log — parcial
 **Meia-boca**
-- [ ] Limites configuráveis/maiores: `LIMIT 1000` (paginar/raise), vault `take(10)`, desc IA 240, RAW 4 JPEGs
-- [ ] Concorrência: subir o teto `clamp(1,4)` conforme núcleos
-- [ ] UI pra **desparear** Live Photo / image-sequence (corrigir falso-positivo)
+- [x] Limites maiores: smart folder `LIMIT 1000→10000`, desc IA 240→500, RAW 4→8 JPEGs
+- [x] Concorrência: teto `clamp(1,4)→clamp(1,8)`
+- [ ] UI pra **desparear** Live Photo / image-sequence → adiada (edge case)
 
 ## 0.9.2 — VELVET: "Aplicar CST no DaVinci" (1 botão)
 - [ ] Botão no Detalhes (vídeo) → PRISMA decide a árvore de nós (CST IN/OUT + Exposição/Balance/

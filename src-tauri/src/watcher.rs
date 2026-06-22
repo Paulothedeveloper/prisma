@@ -31,7 +31,7 @@ pub fn start(
     .ok()?;
 
     let roots = {
-        let conn = db.lock().unwrap();
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::watched_roots(&conn).unwrap_or_default()
     };
     for root in &roots {
@@ -77,7 +77,7 @@ pub fn start(
                 let pstr = p.to_string_lossy().to_string();
                 if p.is_file() {
                     let already = {
-                        let conn = db.lock().unwrap();
+                        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
                         db::path_exists(&conn, &pstr)
                     };
                     if !already {
@@ -92,7 +92,7 @@ pub fn start(
                     }
                 } else if !p.exists() {
                     // sumiu do disco → tira do catálogo (arquivo ou pasta inteira)
-                    let conn = db.lock().unwrap();
+                    let conn = db.lock().unwrap_or_else(|p| p.into_inner());
                     let removed = db::delete_by_path(&conn, &pstr).unwrap_or(false);
                     let under = db::assets_under(&conn, &pstr).unwrap_or_default();
                     for (id, _) in &under {
