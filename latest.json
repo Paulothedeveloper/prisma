@@ -1,11 +1,11 @@
 {
-    "version":  "0.8.2",
-    "notes":  "Remover fundo com IA (u2netp ONNX embutido): no painel Detalhes, botao \u0027Remover fundo com IA\u0027 gera um PNG transparente no Inbox, sem GPU obrigatoria e sem tocar no original.",
-    "pub_date":  "2026-06-22T13:22:59Z",
+    "version":  "0.9.0",
+    "notes":  "Busca semantica local com IA (CLIP): ligue o botao \u0027Semantica\u0027 na busca e ache imagens por significado (\u0027por do sol na praia\u0027), 100% offline. Indexa as imagens 1 vez (modelo ~155MB baixado sozinho).",
+    "pub_date":  "2026-06-22T15:58:05Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXhRNzEvQjBKSVQvaFhKYUc1c0w5MC9KZTRXTFQrZDJ3NXdFSFpRQjJNeThGdmQvNVBPVURVeE1RQkJ0cjh0eTl6TmxnWnRhaGliU00zdzRYQ1JSRmdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTM0NTM4CWZpbGU6UFJJU01BXzAuOC4yX3g2NC1zZXR1cC5leGUKNldUU2NqY0I0SHBtdG5Scjc5QWhCNkR1NHhndndWQnRCVU02NHBtUlNkQmJlNHQ3cDMweWJNM1B3aDNFWHc5RExMS3laUVp2bGJ1aE5UcXJSWHlwQ1E9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.8.2/PRISMA_0.8.2_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTVHQzZmTWZNemVhWTVYQ2dFM3JxUDJxRmJ1aHpoZ0FvSGFrOHU4R3FPMU5pTmtLc3F5eC9LY2FBT3FTOEN2Ym5hQVRlSHhVL1gxaFB4c0s3U0pTQ0FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTM2MzQ1CWZpbGU6UFJJU01BXzAuOS4wX3g2NC1zZXR1cC5leGUKZ0UwemlVWTliNDNuVnIvN0l3YjhQNFgzYVJjZHpKMHZaOXlGaFhpV29DeTRUeWF2RG5IUUFsTzFhU3hOSHNrT1kvYkNVdk4vMkZETUZtU3RKRjc4Qmc9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.0/PRISMA_0.9.0_x64-setup.exe"
                                          }
                   }
 }
