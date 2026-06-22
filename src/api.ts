@@ -455,6 +455,16 @@ export const aiUpscale = (id: number) => invoke<string>("ai_upscale", { id });
 // AI Background Remover: remove o fundo (u2netp ONNX em Rust puro, baixado sob demanda)
 export const aiRemoveBg = (id: number) => invoke<string>("ai_remove_bg", { id });
 
+// ----- CLIP: busca semântica local (AI Search) -----
+export interface ClipStatus {
+  done: number;
+  total: number;
+}
+export const clipStatus = () => invoke<ClipStatus>("clip_status");
+export const clipIndex = (limit: number) => invoke<number>("clip_index", { limit });
+export const clipSearch = (query: string, limit: number) =>
+  invoke<Asset[]>("clip_search", { query, limit });
+
 // ----- Ecossistema: VELVET (cor no DaVinci) + QUARTZO (PKM nosso) -----
 export interface QuartzoNote {
   rel: string;

@@ -197,6 +197,7 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "seq_member INTEGER NOT NULL DEFAULT 0", // 1 = frame interno de uma sequence (escondido)
         "live_motion TEXT", // caminho do .mov irmão (Live Photo) — a imagem "vive" ao passar o mouse
         "live_member INTEGER NOT NULL DEFAULT 0", // 1 = o vídeo do par Live Photo (escondido na grade)
+        "clip_embed BLOB", // embedding CLIP (512 f32) pra busca semântica local
     ] {
         let _ = conn.execute(&format!("ALTER TABLE assets ADD COLUMN {col}"), []);
     }
@@ -1853,4 +1854,63 @@ pub fn replace_asset(conn: &Connection, old_id: i64, new_id: i64) -> rusqlite::R
     )?;
     delete_asset(conn, old_id)?;
     Ok(())
+}
+
+// ---------- CLIP (busca semântica local) ----------
+
+/// Imagens (e GIFs) que ainda não têm embedding CLIP. `limit<=0` = todas.
+pub fn assets_needing_clip(conn: &Connection, limit: i64) -> rusqlite::Result<Vec<(i64, String)>> {
+    let sql = format!(
+        "SELECT id, path FROM assets \
+         WHERE clip_embed IS NULL AND trashed=0 AND seq_member=0 AND live_member=0 \
+           AND type IN ('image','gif') {}",
+        if limit > 0 { format!("LIMIT {limit}") } else { String::new() }
+    );
+    let mut stmt = conn.prepare(&sql)?;
+    let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+    rows.collect()
+}
+
+pub fn set_clip_embed(conn: &Connection, id: i64, blob: &[u8]) -> rusqlite::Result<()> {
+    conn.execute("UPDATE assets SET clip_embed=?2 WHERE id=?1", params![id, blob])?;
+    Ok(())
+}
+
+/// (com_embedding, total_de_imagens) — pra mostrar o progresso da indexação semântica.
+pub fn clip_counts(conn: &Connection) -> rusqlite::Result<(i64, i64)> {
+    let total: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM assets WHERE trashed=0 AND seq_member=0 AND live_member=0 AND type IN ('image','gif')",
+        [],
+        |r| r.get(0),
+    )?;
+    let done: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM assets WHERE clip_embed IS NOT NULL AND trashed=0 AND type IN ('image','gif')",
+        [],
+        |r| r.get(0),
+    )?;
+    Ok((done, total))
+}
+
+/// Todos os (id, embedding) pra a busca por cosseno.
+pub fn all_clip_embeds(conn: &Connection) -> rusqlite::Result<Vec<(i64, Vec<u8>)>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, clip_embed FROM assets WHERE clip_embed IS NOT NULL AND trashed=0",
+    )?;
+    let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+    rows.collect()
+}
+
+/// Busca os assets por uma lista ordenada de ids (preserva a ordem do ranking CLIP).
+pub fn assets_by_ids(conn: &Connection, ids: &[i64]) -> rusqlite::Result<Vec<Asset>> {
+    let mut out = Vec::new();
+    for id in ids {
+        if let Ok(a) = conn.query_row(
+            &format!("SELECT {SELECT_COLS} FROM assets a WHERE id=?1"),
+            params![id],
+            row_to_asset,
+        ) {
+            out.push(a);
+        }
+    }
+    Ok(out)
 }

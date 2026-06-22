@@ -45,6 +45,9 @@ import {
   aiAnalyzeMany,
   subfolders,
   searchFolders,
+  clipSearch,
+  clipStatus,
+  clipIndex,
   type Asset,
   type SubCard,
   type Counts,
@@ -240,6 +243,9 @@ export default function App() {
   const [subCards, setSubCards] = useState<SubCard[]>([]);
   const [searchedFolders, setSearchedFolders] = useState<SubCard[]>([]);
   const [folderScope, setFolderScope] = useState(true); // busca: dentro da pasta (true) ou global
+  const [clipMode, setClipMode] = useState(false); // busca semântica (CLIP) ligada
+  const [clipStat, setClipStat] = useState<{ done: number; total: number } | null>(null);
+  const [clipBusy, setClipBusy] = useState(false);
   const [booted, setBooted] = useState(false);
   const [thumbSize, setThumbSize] = useState(190);
   const [layout, setLayout] = useState<"grid" | "list" | "waterfall">("grid");
@@ -317,6 +323,14 @@ export default function App() {
           cascadeTimer.current = window.setTimeout(() => setSwitching(false), 850);
         }
       };
+      // Busca semântica (CLIP): ranqueia por significado em vez de filtrar por texto.
+      if (clipMode && query.trim()) {
+        const rows = await clipSearch(query.trim(), 80);
+        offsetRef.current = rows.length;
+        setAssets(rows);
+        fireCascade();
+        return;
+      }
       if (view.t === "similar") {
         const rows = await similarAssets(view.v, 60, simThreshold);
         offsetRef.current = rows.length;
@@ -337,7 +351,7 @@ export default function App() {
       setAssets((prev) => (reset ? rows : [...prev, ...rows]));
       fireCascade();
     },
-    [buildFilter, view, simThreshold]
+    [buildFilter, view, simThreshold, clipMode, query]
   );
 
   const refreshMeta = useCallback(async () => {
@@ -356,7 +370,22 @@ export default function App() {
     const t = window.setTimeout(() => runSearch(true), 110);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort, folderScope]);
+  }, [query, minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort, folderScope, clipMode]);
+
+  // Ao ligar a busca semântica, confere quantas imagens já têm embedding CLIP.
+  useEffect(() => {
+    if (clipMode) clipStatus().then(setClipStat).catch(() => {});
+  }, [clipMode]);
+
+  const doClipIndex = async () => {
+    setClipBusy(true);
+    try {
+      await clipIndex(0);
+    } catch (e) {
+      setClipBusy(false);
+      window.alert(`${t("common.error")}: ${String(e)}`);
+    }
+  };
 
   // Busca acha PASTAS também (estilo Eagle): consulta nomes de pasta em paralelo às mídias.
   useEffect(() => {
@@ -518,6 +547,15 @@ export default function App() {
       setAiProgress(null);
       runSearch(true);
       refreshMeta();
+    }).then((u) => unl.push(u));
+    // Indexação semântica (CLIP): progresso + fim → atualiza o status do banner.
+    listen<number>("clip:progress", (e) =>
+      setClipStat((s) => (s ? { ...s, done: e.payload } : s)),
+    ).then((u) => unl.push(u));
+    listen<number>("clip:done", () => {
+      setClipBusy(false);
+      clipStatus().then(setClipStat).catch(() => {});
+      runSearch(true);
     }).then((u) => unl.push(u));
     // Proxies automáticos (ao importar): progresso + fim → atualiza a grade pra já tocar.
     listen<{ done: number; total: number; made: number }>("proxy:progress", (e) =>
@@ -948,6 +986,13 @@ export default function App() {
               <Icon name="close" size={13} />
             </button>
           )}
+          <button
+            className={`search-clip ${clipMode ? "on" : ""}`}
+            onClick={() => setClipMode((m) => !m)}
+            title={t("search.semanticHint")}
+          >
+            <Icon name="sparkles" size={13} /> {t("search.semantic")}
+          </button>
         </div>
         <div className="tb-right" data-tauri-drag-region>
           <button className="icon-btn tb-gear" onClick={() => setShowSettings(true)} title={t("app.settings")}>
@@ -1480,6 +1525,19 @@ export default function App() {
                 onClick={() => removeWithAnim(() => emptyTrash().then(() => setSelected(null)))}
               >
                 <Icon name="trash" size={13} /> {t("ban.empty")}
+              </button>
+            </div>
+          )}
+          {clipMode && clipStat && (clipStat.done < clipStat.total || clipBusy) && (
+            <div className="clip-banner">
+              <span>
+                <Icon name="sparkles" size={13} />{" "}
+                {t("clip.status")
+                  .replace("{done}", clipStat.done.toLocaleString("pt-BR"))
+                  .replace("{total}", clipStat.total.toLocaleString("pt-BR"))}
+              </span>
+              <button className="trash-empty" onClick={doClipIndex} disabled={clipBusy}>
+                {clipBusy ? t("clip.indexing") : t("clip.index")}
               </button>
             </div>
           )}

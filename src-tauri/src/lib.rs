@@ -1,6 +1,7 @@
 mod ai;
 mod bgremove;
 mod classify;
+mod clip;
 mod db;
 mod ecosystem;
 mod extras;
@@ -403,6 +404,81 @@ fn ai_remove_bg(app: tauri::AppHandle, id: i64) -> Result<String, String> {
     indexer::index_one(&db, &thumbs_dir, &out).ok_or("fundo removido mas falhou ao catalogar")?;
     tracing::info!(src = %path, dest = %out.display(), "ai_remove_bg: fundo removido");
     Ok(out.to_string_lossy().to_string())
+}
+
+// ---------- CLIP: busca semântica local (plugin "AI Search" do Eagle) ----------
+
+#[derive(serde::Serialize)]
+struct ClipStatus {
+    done: i64,
+    total: i64,
+}
+
+#[tauri::command]
+fn clip_status(app: tauri::AppHandle) -> Result<ClipStatus, String> {
+    let state = app.state::<AppState>();
+    let (done, total) = state.reads.with(|c| db::clip_counts(c)).map_err(|e| e.to_string())?;
+    Ok(ClipStatus { done, total })
+}
+
+/// Indexa (gera embeddings CLIP) as imagens que ainda não têm, em segundo plano.
+/// Emite `clip:progress` (nº feito) e `clip:done`. `limit<=0` = todas.
+#[tauri::command]
+fn clip_index(app: tauri::AppHandle, limit: i64) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let pending = state
+        .reads
+        .with(|c| db::assets_needing_clip(c, limit))
+        .map_err(|e| e.to_string())?;
+    let n = pending.len();
+    if n == 0 {
+        let _ = app.emit("clip:done", 0u64);
+        return Ok(0);
+    }
+    let data_dir = state.data_dir.clone();
+    let db = state.db.clone();
+    let app2 = app.clone();
+    std::thread::spawn(move || {
+        let mut vis = match clip::vision_session(&data_dir) {
+            Ok(s) => s,
+            Err(e) => {
+                let _ = app2.emit("clip:error", e);
+                return;
+            }
+        };
+        let mut done = 0u64;
+        for (id, path) in pending {
+            if let Ok(emb) = clip::embed_image(&mut vis, std::path::Path::new(&path)) {
+                let blob = clip::embed_to_blob(&emb);
+                if let Ok(conn) = db.lock() {
+                    let _ = db::set_clip_embed(&conn, id, &blob);
+                }
+            }
+            done += 1;
+            if done % 5 == 0 {
+                let _ = app2.emit("clip:progress", done);
+            }
+        }
+        let _ = app2.emit("clip:done", done);
+    });
+    Ok(n)
+}
+
+/// Busca semântica: embeda o texto da query e ranqueia as imagens por cosseno.
+#[tauri::command]
+fn clip_search(app: tauri::AppHandle, query: String, limit: i64) -> Result<Vec<db::Asset>, String> {
+    let state = app.state::<AppState>();
+    let mut enc = clip::text_encoder(&state.data_dir)?;
+    let q = clip::embed_text(&mut enc, query.trim())?;
+    let embeds = state.reads.with(|c| db::all_clip_embeds(c)).map_err(|e| e.to_string())?;
+    let mut scored: Vec<(i64, f32)> = embeds
+        .iter()
+        .map(|(id, blob)| (*id, clip::cosine(&q, &clip::blob_to_embed(blob))))
+        .collect();
+    scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    let n = if limit > 0 { limit as usize } else { 60 };
+    let ids: Vec<i64> = scored.into_iter().take(n).map(|(id, _)| id).collect();
+    state.reads.with(|c| db::assets_by_ids(c, &ids)).map_err(|e| e.to_string())
 }
 
 /// Auto-tag: marca todos os assets da pasta com o nome dela (Briefing 4 #7).
@@ -1957,6 +2033,9 @@ pub fn run() {
             ai_ask_image,
             ai_upscale,
             ai_remove_bg,
+            clip_status,
+            clip_index,
+            clip_search,
             export_velvet_catalog,
             quartzo_get_vault,
             quartzo_set_vault,

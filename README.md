@@ -43,6 +43,7 @@ Além de catalogar, o PRISMA entende a parte **técnica** do vídeo: lê os meta
 - 🛠️ **Oficina** de codificação + **MotionSilk** (estabilização).
 - 📁 **Pastas inteligentes**, **busca por imagem**, **duplicados** e **Lixeira** reversível.
 - 🔗 **Ecossistema integrado**: conversa com o **Quartzo** (nosso PKM — ligar assets às suas notas) e com o **VELVET** (cor no DaVinci Resolve — escolhe a LUT do seu catálogo por humor). Ver [Ecossistema](#-ecossistema--ecosystem).
+- 🧠 **Busca semântica local (CLIP)**: ache imagens por **ideia**, não só por nome — "pôr do sol na praia" — 100% offline, sem mandar nada pra nuvem.
 - 🧰 **Recursos do Eagle, nativos**: baixador de vídeo/áudio (yt-dlp), player com letra sincronizada, RAW/HEIC/JXL com miniatura, Live Photo, "Perguntar à IA", **ampliar imagem 4x com IA** (Real-ESRGAN) e **remover fundo com IA** (u2netp, ONNX em Rust) — tudo embutido, sem plugins.
 
 ### Privacidade e segurança — pode usar sem medo
@@ -85,7 +86,8 @@ Beyond cataloging, PRISMA understands the **technical** side of video: it reads 
 - 🛠️ **Encoder workshop** + **MotionSilk** (stabilization).
 - 📁 **Smart folders**, **image search**, **duplicates** and a reversible **Trash**.
 - 🔗 **Integrated ecosystem**: talks to **Quartzo** (our PKM — link assets to your notes) and to **VELVET** (color in DaVinci Resolve — picks the LUT from your catalog by mood). See [Ecosystem](#-ecossistema--ecosystem).
-- 🧰 **Eagle features, native**: video/audio downloader (yt-dlp), synced-lyrics player, RAW/HEIC/JXL thumbnails, Live Photo, "Ask AI" and **AI 4x image upscaling** (Real-ESRGAN) — all built in, no plugins.
+- 🧠 **Local semantic search (CLIP)**: find images by **idea**, not just name — "sunset on the beach" — 100% offline, nothing leaves your machine.
+- 🧰 **Eagle features, native**: video/audio downloader (yt-dlp), synced-lyrics player, RAW/HEIC/JXL thumbnails, Live Photo, "Ask AI", **AI 4x image upscaling** (Real-ESRGAN) and **AI background removal** (u2netp, ONNX in Rust) — all built in, no plugins.
 
 ### Privacy & security — use it with confidence
 
