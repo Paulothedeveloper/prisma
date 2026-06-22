@@ -452,6 +452,8 @@ export const aiAskImage = (id: number, question: string) =>
   invoke<string>("ai_ask_image", { id, question });
 // AI Image Enlarger: amplia a imagem 4x (Real-ESRGAN, baixado sob demanda)
 export const aiUpscale = (id: number) => invoke<string>("ai_upscale", { id });
+// AI Background Remover: remove o fundo (u2netp ONNX em Rust puro, baixado sob demanda)
+export const aiRemoveBg = (id: number) => invoke<string>("ai_remove_bg", { id });
 
 // ----- Ecossistema: VELVET (cor no DaVinci) + QUARTZO (PKM nosso) -----
 export interface QuartzoNote {

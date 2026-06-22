@@ -1,4 +1,5 @@
 mod ai;
+mod bgremove;
 mod classify;
 mod db;
 mod ecosystem;
@@ -377,6 +378,30 @@ fn ai_upscale(app: tauri::AppHandle, id: i64) -> Result<String, String> {
     let thumbs_dir = state.thumbs_dir.clone();
     indexer::index_one(&db, &thumbs_dir, &out).ok_or("ampliado mas falhou ao catalogar")?;
     tracing::info!(src = %path, dest = %out.display(), "ai_upscale: imagem ampliada 4x");
+    Ok(out.to_string_lossy().to_string())
+}
+
+/// AI Background Remover (plugin do Eagle): remove o fundo da imagem (u2netp, Rust puro,
+/// modelo baixado sob demanda) e cataloga o PNG transparente no Inbox. Não-destrutivo.
+#[tauri::command]
+fn ai_remove_bg(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let path: String = state
+        .reads
+        .with(|conn| {
+            conn.query_row(
+                "SELECT path FROM assets WHERE id=?1",
+                rusqlite::params![id],
+                |r| r.get(0),
+            )
+        })
+        .map_err(|e| e.to_string())?;
+    let inbox = state.data_dir.join("Inbox");
+    let out = bgremove::remove_bg(&state.data_dir, &inbox, std::path::Path::new(&path))?;
+    let db = state.db.clone();
+    let thumbs_dir = state.thumbs_dir.clone();
+    indexer::index_one(&db, &thumbs_dir, &out).ok_or("fundo removido mas falhou ao catalogar")?;
+    tracing::info!(src = %path, dest = %out.display(), "ai_remove_bg: fundo removido");
     Ok(out.to_string_lossy().to_string())
 }
 
@@ -1931,6 +1956,7 @@ pub fn run() {
             fetch_lyrics,
             ai_ask_image,
             ai_upscale,
+            ai_remove_bg,
             export_velvet_catalog,
             quartzo_get_vault,
             quartzo_set_vault,

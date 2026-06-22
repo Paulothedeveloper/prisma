@@ -43,7 +43,7 @@ Além de catalogar, o PRISMA entende a parte **técnica** do vídeo: lê os meta
 - 🛠️ **Oficina** de codificação + **MotionSilk** (estabilização).
 - 📁 **Pastas inteligentes**, **busca por imagem**, **duplicados** e **Lixeira** reversível.
 - 🔗 **Ecossistema integrado**: conversa com o **Quartzo** (nosso PKM — ligar assets às suas notas) e com o **VELVET** (cor no DaVinci Resolve — escolhe a LUT do seu catálogo por humor). Ver [Ecossistema](#-ecossistema--ecosystem).
-- 🧰 **Recursos do Eagle, nativos**: baixador de vídeo/áudio (yt-dlp), player com letra sincronizada, RAW/HEIC/JXL com miniatura, Live Photo, "Perguntar à IA" e **ampliar imagem 4x com IA** (Real-ESRGAN) — tudo embutido, sem plugins.
+- 🧰 **Recursos do Eagle, nativos**: baixador de vídeo/áudio (yt-dlp), player com letra sincronizada, RAW/HEIC/JXL com miniatura, Live Photo, "Perguntar à IA", **ampliar imagem 4x com IA** (Real-ESRGAN) e **remover fundo com IA** (u2netp, ONNX em Rust) — tudo embutido, sem plugins.
 
 ### Privacidade e segurança — pode usar sem medo
 

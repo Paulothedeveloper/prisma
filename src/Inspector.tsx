@@ -36,6 +36,7 @@ import {
   aiAnalyze,
   aiAskImage,
   aiUpscale,
+  aiRemoveBg,
   openExternal,
   quartzoNotes,
   quartzoAttach,
@@ -154,6 +155,9 @@ export function Inspector({
   // AI Image Enlarger (Real-ESRGAN)
   const [upBusy, setUpBusy] = useState(false);
   const [upMsg, setUpMsg] = useState<string | null>(null);
+  // AI Background Remover (u2netp)
+  const [bgBusy, setBgBusy] = useState(false);
+  const [bgMsg, setBgMsg] = useState<string | null>(null);
   // Quartzo (PKM nosso): notas ligadas ao asset + anexar a uma nota.
   const [qzOpen, setQzOpen] = useState(false);
   const [qzNotes, setQzNotes] = useState<QuartzoNote[]>([]);
@@ -295,6 +299,19 @@ export function Inspector({
       setUpMsg(`${t("common.error")}: ${String(e)}`);
     } finally {
       setUpBusy(false);
+    }
+  };
+  const doRemoveBg = async () => {
+    setBgBusy(true);
+    setBgMsg(t("insp.bgBusy"));
+    try {
+      await aiRemoveBg(asset.id);
+      setBgMsg(t("insp.bgDone"));
+      onMutate();
+    } catch (e) {
+      setBgMsg(`${t("common.error")}: ${String(e)}`);
+    } finally {
+      setBgBusy(false);
     }
   };
   const aiAble = ["image", "gif", "video"].includes(asset.type);
@@ -696,6 +713,10 @@ export function Inspector({
               <Icon name="sparkles" size={12} /> {upBusy ? t("insp.upscaleBusy") : t("insp.upscale")}
             </button>
             {upMsg && <div className="qz-msg">{upMsg}</div>}
+            <button className="ai-btn" onClick={doRemoveBg} disabled={bgBusy}>
+              <Icon name="sparkles" size={12} /> {bgBusy ? t("insp.bgBusy") : t("insp.bg")}
+            </button>
+            {bgMsg && <div className="qz-msg">{bgMsg}</div>}
           </>
         )}
       </div>
