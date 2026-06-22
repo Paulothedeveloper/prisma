@@ -1433,6 +1433,38 @@ fn export_velvet_catalog(app: tauri::AppHandle) -> Result<String, String> {
     Ok(out.to_string_lossy().to_string())
 }
 
+/// VELVET "Aplicar CST no DaVinci": o PRISMA decide a árvore de nós (CST IN/OUT + Exposição/
+/// Balanço/Saturação/Curva + nó VELVET) a partir do CST que ele lê do clipe e grava o request
+/// `velvet_apply.json`. O plugin VELVET (Resolve Python API) consome e monta tudo. Retorna um
+/// resumo curto pra UI.
+#[derive(serde::Serialize)]
+struct VelvetApplyResult {
+    summary: String,
+    nodes: usize,
+    request_path: String,
+}
+
+#[tauri::command]
+fn velvet_apply_cst(app: tauri::AppHandle, id: i64) -> Result<VelvetApplyResult, String> {
+    let state = app.state::<AppState>();
+    let path: String = state
+        .reads
+        .with(|conn| {
+            conn.query_row("SELECT path FROM assets WHERE id=?1", rusqlite::params![id], |r| r.get(0))
+        })
+        .map_err(|e| e.to_string())?;
+    let media = mediainfo::probe(std::path::Path::new(&path));
+    let req = ecosystem::build_apply_request(&media, &path);
+    let n = req.get("nodes").and_then(|x| x.as_array()).map(|a| a.len()).unwrap_or(0);
+    let out = ecosystem::write_apply_request(&state.data_dir, &req)?;
+    tracing::info!(clip = %path, nodes = n, "velvet_apply_cst: request gravado");
+    Ok(VelvetApplyResult {
+        summary: media.cst.summary.clone(),
+        nodes: n,
+        request_path: out.to_string_lossy().to_string(),
+    })
+}
+
 #[tauri::command]
 fn quartzo_get_vault(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let state = app.state::<AppState>();
@@ -2062,6 +2094,7 @@ pub fn run() {
             clip_index,
             clip_search,
             export_velvet_catalog,
+            velvet_apply_cst,
             quartzo_get_vault,
             quartzo_set_vault,
             quartzo_notes,

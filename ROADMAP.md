@@ -46,10 +46,11 @@
 - [ ] (depende do retorno do Paulo) cravar a causa-raiz com o erro capturado, se for JS;
       se for GPU/WebView, avaliar `background_color` da janela / args do WebView2
 
-## 0.9.4 — VELVET: "Aplicar CST no DaVinci" (1 botão)
-- [ ] Botão no Detalhes (vídeo) → PRISMA decide a árvore de nós (CST IN/OUT + Exposição/Balance/
-      Saturação/Curva + nó VELVET) e grava um **request** (`velvet_apply.json`) que o plugin VELVET
-      (Resolve Python API) consome pra montar e aplicar. Contrato em `docs/INTEGRATION.md`.
+## 0.9.4 — VELVET: "Aplicar CST no DaVinci" (1 botão) ✅ (lado PRISMA)
+- [x] Botão no Detalhes (vídeo) → PRISMA decide a árvore de nós (CST IN/OUT + Exposição/Balanço/
+      Saturação/Curva + nó VELVET) a partir do CST que lê do clipe e grava o **request**
+      `velvet_apply.json` (`prisma.velvet.apply/1`). Contrato em `docs/INTEGRATION.md` §1.5.
+- [ ] Lado Resolve (Python API) que consome o request e monta os nós = sessão do VELVET (documentado)
 
 ## 0.9.3 — Deep-link real
 - [ ] Registrar `prisma://asset/<id>` no Windows (bidirecional de verdade com Quartzo/VELVET)

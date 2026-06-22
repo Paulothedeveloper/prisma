@@ -42,6 +42,7 @@ import {
   quartzoAttach,
   quartzoNotesForAsset,
   quartzoOpenNote,
+  velvetApplyCst,
   type QuartzoNote,
   type Asset,
   type Tag,
@@ -158,6 +159,9 @@ export function Inspector({
   // AI Background Remover (u2netp)
   const [bgBusy, setBgBusy] = useState(false);
   const [bgMsg, setBgMsg] = useState<string | null>(null);
+  // VELVET: aplicar CST no DaVinci (gera o request da arvore de nos).
+  const [velvetMsg, setVelvetMsg] = useState<string | null>(null);
+  const [velvetBusy, setVelvetBusy] = useState(false);
   // Quartzo (PKM nosso): notas ligadas ao asset + anexar a uma nota.
   const [qzOpen, setQzOpen] = useState(false);
   const [qzNotes, setQzNotes] = useState<QuartzoNote[]>([]);
@@ -312,6 +316,18 @@ export function Inspector({
       setBgMsg(`${t("common.error")}: ${String(e)}`);
     } finally {
       setBgBusy(false);
+    }
+  };
+  const doVelvetApply = async () => {
+    setVelvetBusy(true);
+    setVelvetMsg(null);
+    try {
+      const r = await velvetApplyCst(asset.id);
+      setVelvetMsg(t("velvet.applyDone").replace("{n}", String(r.nodes)));
+    } catch (e) {
+      setVelvetMsg(`${t("common.error")}: ${String(e)}`);
+    } finally {
+      setVelvetBusy(false);
     }
   };
   const aiAble = ["image", "gif", "video"].includes(asset.type);
@@ -546,6 +562,17 @@ export function Inspector({
       )}
       {/* CST: o coração pro Paulo — 2 nós (IN/OUT) + destino de entrega */}
       {info?.ok && v && <CstCard info={info} />}
+      {/* VELVET: aplicar a árvore de nós (CST + Exposição/Balanço/Saturação/Curva + VELVET) no DaVinci */}
+      {info?.ok && v && (
+        <div className="velvet-apply">
+          <button className="ai-btn velvet-btn" onClick={doVelvetApply} disabled={velvetBusy}>
+            <Icon name="sparkles" size={12} />
+            {velvetBusy ? t("velvet.applyBusy") : t("velvet.apply")}
+          </button>
+          {velvetMsg && <div className="qz-msg">{velvetMsg}</div>}
+          <div className="velvet-hint">{t("velvet.applyHint")}</div>
+        </div>
+      )}
       {/* Plano de Color sob medida (IA + vault) — sob demanda */}
       {info?.ok && v && <ColorPlanCard path={asset.path} />}
       {loadingInfo && <div className="insp-loading">{t("insp.readingMeta")}</div>}

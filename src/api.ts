@@ -471,6 +471,14 @@ export interface QuartzoNote {
   name: string;
 }
 export const exportVelvetCatalog = () => invoke<string>("export_velvet_catalog");
+// VELVET: aplicar CST no DaVinci (PRISMA decide a arvore de nos + grava o request)
+export interface VelvetApplyResult {
+  summary: string;
+  nodes: number;
+  request_path: string;
+}
+export const velvetApplyCst = (id: number) =>
+  invoke<VelvetApplyResult>("velvet_apply_cst", { id });
 export const quartzoGetVault = () => invoke<string | null>("quartzo_get_vault");
 export const quartzoSetVault = (path: string) => invoke<void>("quartzo_set_vault", { path });
 export const quartzoNotes = () => invoke<QuartzoNote[]>("quartzo_notes");

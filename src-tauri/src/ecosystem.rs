@@ -79,6 +79,78 @@ pub fn export_velvet_catalog(conn: &Connection, out: &Path) -> rusqlite::Result<
     Ok(cat.count)
 }
 
+// ---------------- VELVET: "Aplicar CST no DaVinci" (1 botão) ----------------
+
+/// Monta o REQUEST que o plugin VELVET (lado Resolve, Python API) consome pra criar o projeto/
+/// timeline de cor e montar a árvore de nós já configurada: nó de CST (entrada/saída) + nós
+/// nomeados (Exposição/Balanço/Saturação/Curva) + nó VELVET. O PRISMA DECIDE a estrutura
+/// (a partir do CST que ele já lê do clipe); o VELVET só APLICA. Contrato em docs/INTEGRATION.md.
+pub fn build_apply_request(media: &crate::mediainfo::MediaInfo, path: &str) -> serde_json::Value {
+    let cst = &media.cst;
+    let name = std::path::Path::new(path)
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let (w, h, fps) = media
+        .video
+        .as_ref()
+        .map(|v| (v.width, v.height, v.fps))
+        .unwrap_or((None, None, None));
+
+    // Estrutura de nós que o PRISMA recomenda (a "melhor estrutura automática"):
+    let mut nodes: Vec<serde_json::Value> = Vec::new();
+    if cst.needs_cst {
+        nodes.push(serde_json::json!({
+            "name": "CST Entrada", "role": "cst_in",
+            "input_color_space": cst.input_color_space,
+            "input_gamma": cst.input_gamma,
+            "output": "DaVinci Wide Gamut / Intermediate"
+        }));
+    }
+    for (nm, role) in [
+        ("Exposição", "exposure"),
+        ("Balanço", "balance"),
+        ("Saturação", "saturation"),
+        ("Curva", "curve"),
+    ] {
+        nodes.push(serde_json::json!({ "name": nm, "role": role }));
+    }
+    // Nó VELVET (DCTL) — o Core aplica o look; LUT criativa fica a critério (nó nativo).
+    nodes.push(serde_json::json!({ "name": "VELVET", "role": "velvet", "dctl": "VELVET_Core", "lut": null }));
+    if cst.needs_cst {
+        nodes.push(serde_json::json!({
+            "name": "CST Saída", "role": "cst_out",
+            "input": "DaVinci Wide Gamut / Intermediate",
+            "output": cst.output,
+            "tone_mapping": cst.tone_mapping
+        }));
+    }
+
+    serde_json::json!({
+        "schema": "prisma.velvet.apply/1",
+        "clip": { "path": path, "name": name, "width": w, "height": h, "fps": fps },
+        "cst": {
+            "needs": cst.needs_cst,
+            "determinate": cst.determinate,
+            "input_color_space": cst.input_color_space,
+            "input_gamma": cst.input_gamma,
+            "output": cst.output,
+            "tone_mapping": cst.tone_mapping,
+            "summary": cst.summary
+        },
+        "nodes": nodes,
+        "velvet": { "core": "VELVET_Core" }
+    })
+}
+
+/// Escreve o request num arquivo estável que o VELVET (Resolve) lê.
+pub fn write_apply_request(data_dir: &Path, req: &serde_json::Value) -> Result<PathBuf, String> {
+    let out = data_dir.join("velvet_apply.json");
+    let txt = serde_json::to_string_pretty(req).map_err(|e| e.to_string())?;
+    std::fs::write(&out, txt).map_err(|e| e.to_string())?;
+    Ok(out)
+}
+
 // ---------------- QUARTZO: ler/escrever notas do vault ----------------
 
 #[derive(Serialize)]

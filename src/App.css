@@ -4442,6 +4442,19 @@ body {
   white-space: pre-wrap;
   animation: popIn 0.2s ease;
 }
+/* VELVET: aplicar CST no DaVinci */
+.velvet-apply {
+  margin-top: 10px;
+}
+.velvet-btn {
+  margin-top: 0;
+}
+.velvet-hint {
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.45;
+  margin-top: 6px;
+}
 /* Quartzo (PKM) no Inspetor */
 .qz-head {
   display: flex;

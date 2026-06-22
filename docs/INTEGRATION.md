@@ -53,6 +53,52 @@ WHERE type='lut' AND trashed=0 AND warm='warm' AND bright='medium';
 ```
 Use o JSON quando puder; o `.db` direto quando precisar de algo que o JSON não traz.
 
+## 1.5. VELVET ↔ PRISMA — "Aplicar CST no DaVinci" (1 botão)
+
+Fluxo: no PRISMA (painel Detalhes de um vídeo) o usuário clica **"Aplicar CST no DaVinci
+(VELVET)"**. O PRISMA **decide a árvore de nós** a partir do CST que ele já lê do clipe e grava
+um request estável:
+
+```
+%APPDATA%\com.paulo.prisma\velvet_apply.json
+```
+
+Formato (`schema: "prisma.velvet.apply/1"`):
+```json
+{
+  "schema": "prisma.velvet.apply/1",
+  "clip": { "path": "...", "name": "...", "width": 3840, "height": 2160, "fps": 23.976 },
+  "cst": {
+    "needs": true,
+    "input_color_space": "Sony S-Gamut3.Cine",
+    "input_gamma": "Sony S-Log3",
+    "output": "Rec.709 Gamma 2.4",
+    "tone_mapping": false,
+    "summary": "..."
+  },
+  "nodes": [
+    { "name": "CST Entrada", "role": "cst_in", "input_color_space": "...", "input_gamma": "...", "output": "DaVinci Wide Gamut / Intermediate" },
+    { "name": "Exposição",   "role": "exposure" },
+    { "name": "Balanço",     "role": "balance" },
+    { "name": "Saturação",   "role": "saturation" },
+    { "name": "Curva",       "role": "curve" },
+    { "name": "VELVET",      "role": "velvet", "dctl": "VELVET_Core", "lut": null },
+    { "name": "CST Saída",   "role": "cst_out", "input": "DaVinci Wide Gamut / Intermediate", "output": "Rec.709 Gamma 2.4", "tone_mapping": false }
+  ],
+  "velvet": { "core": "VELVET_Core" }
+}
+```
+
+**O que o lado VELVET (Resolve, Python API) faz** (a IMPLEMENTAR na sessão do VELVET):
+1. Lê `velvet_apply.json` (polling ou trigger).
+2. Acha/cria o item de timeline do `clip.path` (ou aplica no clipe selecionado).
+3. Monta os nós **na ordem e com os nomes** de `nodes[]` (Resolve: `AddNode`/`SetNodeLabel`),
+   setando o **Color Space Transform** nos nós `cst_in`/`cst_out` com os valores do `cst`.
+4. No nó `velvet`, aplica o `VELVET_Core` (DCTL) — e, se quiser, a LUT criativa por nó nativo.
+5. PowerGrade sempre pela Galeria/API. PRISMA = decide; VELVET = aplica.
+
+> Se `cst.needs` for `false` (material já 709), os nós `cst_in`/`cst_out` são omitidos.
+
 ## 2. QUARTZO ↔ PRISMA — notas ligadas aos assets
 
 O QUARTZO é o nosso PKM (vault markdown). A "ligação" entre nota e asset é **bidirecional**:
