@@ -39,7 +39,14 @@
 - [x] **"Algumas pastas não excluem"** → causa: `dir = ?` case-sensitive; fix `COLLATE NOCASE`
 - [x] **Auditoria do botão direito** (mídia + pasta): todas as ações wired e com feedback
 
-## 0.9.3 — VELVET: "Aplicar CST no DaVinci" (1 botão)
+## 0.9.3 — Rede de segurança contra "tela preta" (bug reportado) ✅
+- [x] **ErrorBoundary** no root (App + PreviewWindow): erro de render vira tela de recuperação
+      com o ERRO REAL + recarregar/copiar, em vez de tela preta; guarda em `localStorage.prisma.lastError`
+- [x] Handlers globais `window.error` / `unhandledrejection` → logam e guardam o último erro
+- [ ] (depende do retorno do Paulo) cravar a causa-raiz com o erro capturado, se for JS;
+      se for GPU/WebView, avaliar `background_color` da janela / args do WebView2
+
+## 0.9.4 — VELVET: "Aplicar CST no DaVinci" (1 botão)
 - [ ] Botão no Detalhes (vídeo) → PRISMA decide a árvore de nós (CST IN/OUT + Exposição/Balance/
       Saturação/Curva + nó VELVET) e grava um **request** (`velvet_apply.json`) que o plugin VELVET
       (Resolve Python API) consome pra montar e aplicar. Contrato em `docs/INTEGRATION.md`.
