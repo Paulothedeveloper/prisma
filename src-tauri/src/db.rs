@@ -27,6 +27,7 @@ pub struct Asset {
     pub health_level: Option<String>,
     pub health_flags: Option<String>,
     pub seq_frames: Option<i64>,
+    pub live_motion: Option<String>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -194,6 +195,8 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "health_flags TEXT", // flags do diagnóstico: vfr,banding,proxy,8bitlog,mono... (CSV)
         "seq_frames INTEGER", // nº de frames se este asset REPRESENTA uma image sequence
         "seq_member INTEGER NOT NULL DEFAULT 0", // 1 = frame interno de uma sequence (escondido)
+        "live_motion TEXT", // caminho do .mov irmão (Live Photo) — a imagem "vive" ao passar o mouse
+        "live_member INTEGER NOT NULL DEFAULT 0", // 1 = o vídeo do par Live Photo (escondido na grade)
     ] {
         let _ = conn.execute(&format!("ALTER TABLE assets ADD COLUMN {col}"), []);
     }
@@ -759,12 +762,13 @@ fn row_to_asset(r: &rusqlite::Row) -> rusqlite::Result<Asset> {
         health_level: r.get("health_level")?,
         health_flags: r.get("health_flags")?,
         seq_frames: r.get("seq_frames")?,
+        live_motion: r.get("live_motion")?,
     })
 }
 
 const SELECT_COLS: &str = "id, path, filename, name, ext, type, size, modified_at, width, height,
     duration, rating, notes, dominant_color, color_bucket, thumbnail_path, proxy_path,
-    health_level, health_flags, seq_frames";
+    health_level, health_flags, seq_frames, live_motion";
 
 /// Busca/filtra com filtros combinados. Tudo via SQLite -> instantaneo.
 pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
@@ -772,7 +776,8 @@ pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     let mut args: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
 
     // Image sequences: esconde os frames internos; só o representante aparece.
-    sql.push_str(" AND seq_member=0");
+    // Live Photos: esconde o vídeo do par; a imagem é que "vive" no hover.
+    sql.push_str(" AND seq_member=0 AND live_member=0");
 
     // Lixeira: por padrão esconde os trashed; a view de lixeira mostra só eles.
     if f.trashed {
@@ -1482,6 +1487,57 @@ pub fn detect_sequences(conn: &Connection, dir: &str) -> rusqlite::Result<usize>
         seqs += 1;
     }
     Ok(seqs)
+}
+
+/// Live Photo (estilo iPhone): uma imagem (HEIC/JPG) acompanhada de um vídeo curto (.mov)
+/// com o MESMO nome-base na MESMA pasta. Liga a imagem ao vídeo (live_motion) e esconde o
+/// vídeo da grade (live_member=1). Não-destrutivo: só metadado. Retorna nº de pares.
+pub fn detect_live_photos(conn: &Connection, dir: &str) -> rusqlite::Result<usize> {
+    use std::collections::HashMap;
+    let like = format!("{dir}\\%");
+    // Imagens candidatas (sem par ainda) e vídeos .mov/.mp4 visíveis.
+    let mut stmt = conn.prepare(
+        "SELECT id, dir, filename, type FROM assets \
+         WHERE (dir=?1 OR dir LIKE ?2) AND trashed=0 AND seq_member=0 AND live_member=0 \
+           AND (type='image' OR type='video')",
+    )?;
+    let rows: Vec<(i64, String, String, String)> = stmt
+        .query_map(params![dir, like], |r| {
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+        })?
+        .filter_map(|x| x.ok())
+        .collect();
+
+    // chave (dir, stem-minúsculo) → imagens e vídeos
+    let mut imgs: HashMap<(String, String), i64> = HashMap::new();
+    let mut vids: HashMap<(String, String), (i64, String)> = HashMap::new();
+    for (id, fdir, fname, kind) in &rows {
+        let stem = fname.rsplit_once('.').map(|(s, _)| s).unwrap_or(fname).to_lowercase();
+        let ext = fname.rsplit_once('.').map(|(_, e)| e.to_lowercase()).unwrap_or_default();
+        let key = (fdir.clone(), stem);
+        if kind == "image" {
+            imgs.entry(key).or_insert(*id);
+        } else if ext == "mov" || ext == "mp4" {
+            // recupera o caminho do vídeo
+            let path: String = conn
+                .query_row("SELECT path FROM assets WHERE id=?1", params![id], |r| r.get(0))
+                .unwrap_or_default();
+            vids.entry(key).or_insert((*id, path));
+        }
+    }
+
+    let mut pairs = 0usize;
+    for (key, img_id) in imgs {
+        if let Some((vid_id, vid_path)) = vids.get(&key) {
+            conn.execute(
+                "UPDATE assets SET live_motion=?2 WHERE id=?1 AND (live_motion IS NULL OR live_motion='')",
+                params![img_id, vid_path],
+            )?;
+            conn.execute("UPDATE assets SET live_member=1 WHERE id=?1", params![vid_id])?;
+            pairs += 1;
+        }
+    }
+    Ok(pairs)
 }
 
 /// Dados de um clipe pro export FCPXML (path, nome, duração, fps, w, h, tipo).

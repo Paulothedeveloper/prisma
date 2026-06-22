@@ -838,6 +838,38 @@ body {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+.badge-live {
+  top: 7px;
+  left: 7px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.badge-live::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 2px solid #ffd60a;
+}
+.preview-live-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
 .badge-offline {
   bottom: 7px;
   left: 7px;
@@ -4277,6 +4309,57 @@ body {
 .ai-btn:disabled {
   opacity: 0.6;
   cursor: default;
+}
+/* AI Action (perguntar à IA sobre a imagem) */
+.ai-ask {
+  margin-top: 6px;
+}
+.ai-ask-toggle {
+  margin-top: 0;
+}
+.ai-ask-panel {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: popIn 0.18s ease;
+}
+.ai-ask-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ai-ask-presets button {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-2);
+  font-size: 11.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.ai-ask-presets button:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+.ai-ask-presets button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ai-ask-answer {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-1);
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  animation: popIn 0.2s ease;
 }
 .ai-err {
   margin-top: 7px;

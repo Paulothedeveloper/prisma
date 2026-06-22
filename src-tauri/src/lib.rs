@@ -1021,6 +1021,31 @@ fn ai_analyze_many(app: tauri::AppHandle, ids: Vec<i64>) -> Result<(), String> {
     Ok(())
 }
 
+/// AI Action (plugin do Eagle): pergunta livre sobre UMA imagem (descreva, que texto há,
+/// sugira um nome, etc.). Usa a thumb em cache e a chave/modelo já configurados.
+#[tauri::command]
+fn ai_ask_image(app: tauri::AppHandle, id: i64, question: String) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let settings = ai::load_settings(&state.data_dir);
+    let key = settings
+        .anthropic_key
+        .clone()
+        .filter(|k| !k.is_empty())
+        .ok_or("Configure sua chave da API nas configurações.")?;
+    let thumb: Option<String> = state
+        .reads
+        .with(|conn| {
+            conn.query_row(
+                "SELECT thumbnail_path FROM assets WHERE id=?1",
+                rusqlite::params![id],
+                |r| r.get(0),
+            )
+        })
+        .map_err(|e| e.to_string())?;
+    let thumb = thumb.filter(|t| !t.is_empty()).ok_or("Este item não tem miniatura para a IA olhar.")?;
+    ai::ask_image(&key, &settings.model(), std::path::Path::new(&thumb), question.trim())
+}
+
 /// Quantos assets ainda não têm descrição de IA (pra mostrar no botão "Analisar todas").
 #[tauri::command]
 fn ai_pending_count(app: tauri::AppHandle) -> Result<i64, String> {
@@ -1791,6 +1816,7 @@ pub fn run() {
             video_download,
             video_download_info,
             fetch_lyrics,
+            ai_ask_image,
             autotag_folder,
             paste_image,
             add_from_url,

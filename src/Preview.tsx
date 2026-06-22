@@ -107,7 +107,21 @@ export function Preview({ asset, onClose, onNav }: Props) {
             <AudioPlayer src={url} waveform={thumbUrl} title={asset.name || asset.filename} />
           </div>
         ) : isImageLike ? (
-          WEB_IMAGE_EXTS.has(asset.ext.toLowerCase()) ? (
+          asset.live_motion ? (
+            // Live Photo: toca o vídeo do par em tela cheia (loop, mudo), com a foto de poster.
+            <div className="preview-img-wrap">
+              <video
+                src={convertFileSrc(asset.live_motion)}
+                poster={thumbUrl ?? undefined}
+                className="preview-media"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+              <span className="preview-live-badge">LIVE</span>
+            </div>
+          ) : WEB_IMAGE_EXTS.has(asset.ext.toLowerCase()) ? (
             <div className="preview-img-wrap">
               <img src={url} className="preview-media" alt="" />
             </div>

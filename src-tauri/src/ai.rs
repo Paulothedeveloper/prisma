@@ -114,6 +114,54 @@ pub fn analyze_image(key: &str, model: &str, thumb_path: &Path) -> Result<AiResu
     Ok(parse_result(&text))
 }
 
+/// AI Action (plugin do Eagle): pergunta LIVRE sobre a imagem (descreva, que texto tem,
+/// sugira nome, etc.). Manda a thumb + a pergunta do usuário e devolve a resposta crua.
+/// Bloqueante (rode numa thread).
+pub fn ask_image(key: &str, model: &str, thumb_path: &Path, question: &str) -> Result<String, String> {
+    let bytes = std::fs::read(thumb_path).map_err(|e| format!("thumb: {e}"))?;
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    let body = serde_json::json!({
+        "model": model,
+        "max_tokens": 700,
+        "messages": [{
+            "role": "user",
+            "content": [
+                { "type": "image", "source": { "type": "base64", "media_type": media_type(thumb_path), "data": b64 } },
+                { "type": "text", "text": question }
+            ]
+        }]
+    });
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client
+        .post("https://api.anthropic.com/v1/messages")
+        .header("x-api-key", key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .map_err(|e| format!("rede: {e}"))?;
+    let status = resp.status();
+    let json: serde_json::Value = resp.json().map_err(|e| e.to_string())?;
+    if !status.is_success() {
+        let msg = json
+            .get("error")
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+            .unwrap_or("falha na API");
+        return Err(format!("Claude {status}: {msg}"));
+    }
+    Ok(json
+        .get("content")
+        .and_then(|c| c.get(0))
+        .and_then(|b| b.get("text"))
+        .and_then(|t| t.as_str())
+        .unwrap_or("")
+        .to_string())
+}
+
 /// Chamada de TEXTO ao Claude (sem imagem) — usada pelo Plano de Color (Briefing 6 §4).
 /// Bloqueante (rode numa thread). Retorna o texto da resposta.
 pub fn ask_text(key: &str, model: &str, system: &str, user: &str) -> Result<String, String> {

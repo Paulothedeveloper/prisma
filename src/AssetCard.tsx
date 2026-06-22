@@ -75,6 +75,9 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
   const isVideo = asset.type === "video";
   const isGif = asset.type === "gif";
   const isAudio = asset.type === "audio";
+  // Live Photo (iPhone): imagem com .mov irmão — "vive" ao passar o mouse, como o Eagle.
+  const isLive = !!asset.live_motion && asset.type === "image";
+  const liveSrc = asset.live_motion ? convertFileSrc(asset.live_motion) : null;
   // Respeita a preferência "Tocar ao passar o mouse" (Configurações › Reprodução).
   const playHover = hover && hoverAutoplayOn();
 
@@ -138,6 +141,23 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
             onError={() => setVidReady(false)}
           />
         )}
+        {isLive && playHover && liveSrc && (
+          <video
+            ref={videoRef}
+            src={liveSrc}
+            muted
+            autoPlay
+            loop
+            preload="auto"
+            playsInline
+            className={`media media-over ${vidReady ? "show" : ""}`}
+            onLoadedData={() => {
+              setVidReady(true);
+              videoRef.current?.play().catch(() => {});
+            }}
+            onError={() => setVidReady(false)}
+          />
+        )}
         {isGif && hover && <img src={origUrl} className="media media-over show" alt="" />}
         {isAudio && playHover && (
           <audio
@@ -162,6 +182,11 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
             SEQ · {asset.seq_frames}
           </span>
         ) : null}
+        {isLive && (
+          <span className="badge badge-live" title={t("card.livePhoto")}>
+            LIVE
+          </span>
+        )}
         {isOffline(asset.path) && (
           <span className="badge badge-offline" title={t("card.offline")}>
             OFFLINE

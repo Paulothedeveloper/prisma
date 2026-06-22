@@ -174,9 +174,11 @@ pub fn index_folder(
     }
 
     // Image sequences: agrupa frames numerados num só asset representante (escondendo o resto).
+    // Live Photos: liga imagem + .mov irmão (esconde o vídeo do par).
     {
         let conn = db.lock().unwrap();
         let _ = db::detect_sequences(&conn, &folder);
+        let _ = db::detect_live_photos(&conn, &folder);
     }
 
     let _ = app.emit("index:done", DonePayload { folder, total });
@@ -263,6 +265,12 @@ pub fn rescan_folder(
     );
     if total > 0 {
         run_thumb_queue(&app, &db, &thumbs_dir, pending);
+    }
+    // Re-detecta sequences e Live Photos (pares novos depois do re-scan).
+    {
+        let conn = db.lock().unwrap();
+        let _ = db::detect_sequences(&conn, &folder);
+        let _ = db::detect_live_photos(&conn, &folder);
     }
     let _ = app.emit("index:rescan", removed);
     let _ = app.emit("index:done", DonePayload { folder, total });

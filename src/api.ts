@@ -21,6 +21,7 @@ export interface Asset {
   health_level: string | null; // red | yellow | green
   health_flags: string | null; // CSV: vfr,banding,proxy...
   seq_frames: number | null; // nº de frames se for uma image sequence
+  live_motion: string | null; // caminho do .mov do par Live Photo (toca no hover)
 }
 
 export interface Tag {
@@ -446,6 +447,9 @@ export const setAiKey = (key: string) => invoke<void>("set_ai_key", { key });
 export const aiAnalyze = (id: number) => invoke<string[]>("ai_analyze", { id });
 export const aiAnalyzeMany = (ids: number[]) =>
   invoke<void>("ai_analyze_many", { ids });
+// AI Action: pergunta livre sobre uma imagem (descreva, que texto há, sugira nome…)
+export const aiAskImage = (id: number, question: string) =>
+  invoke<string>("ai_ask_image", { id, question });
 // Analisa com IA todos os assets SEM descrição ainda (até um limite, pra controlar custo).
 export const aiAnalyzeUntagged = (limit: number) =>
   invoke<number>("ai_analyze_untagged", { limit });

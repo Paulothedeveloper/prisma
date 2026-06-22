@@ -34,6 +34,7 @@ import {
   removeAsset,
   trashAsset,
   aiAnalyze,
+  aiAskImage,
   openExternal,
   type Asset,
   type Tag,
@@ -138,6 +139,12 @@ export function Inspector({
   const [renaming, setRenaming] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiErr, setAiErr] = useState<string | null>(null);
+  // AI Action (plugin do Eagle): pergunta livre sobre a imagem.
+  const [askOpen, setAskOpen] = useState(false);
+  const [askQ, setAskQ] = useState("");
+  const [askBusy, setAskBusy] = useState(false);
+  const [askAnswer, setAskAnswer] = useState<string | null>(null);
+  const [askErr, setAskErr] = useState<string | null>(null);
 
   useEffect(() => {
     setRatingState(asset.rating);
@@ -213,6 +220,23 @@ export function Inspector({
       if (msg.toLowerCase().includes("chave")) onOpenSettings();
     } finally {
       setAiBusy(false);
+    }
+  };
+  const doAsk = async (preset?: string) => {
+    const q = (preset ?? askQ).trim();
+    if (!q) return;
+    setAskBusy(true);
+    setAskErr(null);
+    setAskAnswer(null);
+    try {
+      const ans = await aiAskImage(asset.id, q);
+      setAskAnswer(ans);
+    } catch (e) {
+      const msg = String(e);
+      setAskErr(msg);
+      if (msg.toLowerCase().includes("chave")) onOpenSettings();
+    } finally {
+      setAskBusy(false);
     }
   };
   const aiAble = ["image", "gif", "video"].includes(asset.type);
@@ -571,6 +595,40 @@ export function Inspector({
           </button>
         )}
         {aiErr && <div className="ai-err">{aiErr}</div>}
+
+        {/* AI Action: perguntar livremente sobre a imagem */}
+        {aiAble && (
+          <div className="ai-ask">
+            <button className="ai-btn ai-ask-toggle" onClick={() => setAskOpen((o) => !o)}>
+              <Icon name="sparkles" size={12} /> {t("insp.aiAsk")}
+            </button>
+            {askOpen && (
+              <div className="ai-ask-panel">
+                <div className="ai-ask-presets">
+                  <button onClick={() => doAsk(t("insp.aiAskDescribe"))} disabled={askBusy}>
+                    {t("insp.aiAskDescribeBtn")}
+                  </button>
+                  <button onClick={() => doAsk(t("insp.aiAskText"))} disabled={askBusy}>
+                    {t("insp.aiAskTextBtn")}
+                  </button>
+                  <button onClick={() => doAsk(t("insp.aiAskName"))} disabled={askBusy}>
+                    {t("insp.aiAskNameBtn")}
+                  </button>
+                </div>
+                <input
+                  className="field"
+                  placeholder={t("insp.aiAskPlaceholder")}
+                  value={askQ}
+                  onChange={(e) => setAskQ(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && doAsk()}
+                />
+                {askBusy && <div className="insp-loading">{t("plan.busy")}</div>}
+                {askErr && <div className="ai-err">{askErr}</div>}
+                {askAnswer && <div className="ai-ask-answer">{askAnswer}</div>}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Coleções */}
