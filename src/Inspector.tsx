@@ -35,6 +35,7 @@ import {
   trashAsset,
   aiAnalyze,
   aiAskImage,
+  aiUpscale,
   openExternal,
   quartzoNotes,
   quartzoAttach,
@@ -150,6 +151,9 @@ export function Inspector({
   const [askBusy, setAskBusy] = useState(false);
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [askErr, setAskErr] = useState<string | null>(null);
+  // AI Image Enlarger (Real-ESRGAN)
+  const [upBusy, setUpBusy] = useState(false);
+  const [upMsg, setUpMsg] = useState<string | null>(null);
   // Quartzo (PKM nosso): notas ligadas ao asset + anexar a uma nota.
   const [qzOpen, setQzOpen] = useState(false);
   const [qzNotes, setQzNotes] = useState<QuartzoNote[]>([]);
@@ -280,7 +284,21 @@ export function Inspector({
       setQzMsg(String(e));
     }
   };
+  const doUpscale = async () => {
+    setUpBusy(true);
+    setUpMsg(t("insp.upscaleBusy"));
+    try {
+      await aiUpscale(asset.id);
+      setUpMsg(t("insp.upscaleDone"));
+      onMutate();
+    } catch (e) {
+      setUpMsg(`${t("common.error")}: ${String(e)}`);
+    } finally {
+      setUpBusy(false);
+    }
+  };
   const aiAble = ["image", "gif", "video"].includes(asset.type);
+  const upscalable = asset.type === "image";
   const displayName = asset.name || asset.filename;
   const folderPath = asset.path.replace(/\\[^\\]+$/, "");
   const doDuplicate = async () => {
@@ -669,6 +687,16 @@ export function Inspector({
               </div>
             )}
           </div>
+        )}
+
+        {/* AI Image Enlarger (Real-ESRGAN): amplia a imagem 4x */}
+        {upscalable && (
+          <>
+            <button className="ai-btn" onClick={doUpscale} disabled={upBusy}>
+              <Icon name="sparkles" size={12} /> {upBusy ? t("insp.upscaleBusy") : t("insp.upscale")}
+            </button>
+            {upMsg && <div className="qz-msg">{upMsg}</div>}
+          </>
         )}
       </div>
 

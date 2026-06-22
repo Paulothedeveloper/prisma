@@ -450,6 +450,8 @@ export const aiAnalyzeMany = (ids: number[]) =>
 // AI Action: pergunta livre sobre uma imagem (descreva, que texto há, sugira nome…)
 export const aiAskImage = (id: number, question: string) =>
   invoke<string>("ai_ask_image", { id, question });
+// AI Image Enlarger: amplia a imagem 4x (Real-ESRGAN, baixado sob demanda)
+export const aiUpscale = (id: number) => invoke<string>("ai_upscale", { id });
 
 // ----- Ecossistema: VELVET (cor no DaVinci) + QUARTZO (PKM nosso) -----
 export interface QuartzoNote {

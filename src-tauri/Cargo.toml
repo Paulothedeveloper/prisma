@@ -30,6 +30,7 @@ hex = "0.4"
 dirs = "5"
 reqwest = { version = "0.12", features = ["blocking", "json", "rustls-tls"], default-features = false }
 base64 = "0.22"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 notify = "6"
 resvg = "0.44"
 ab_glyph = "0.2"

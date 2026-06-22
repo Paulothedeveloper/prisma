@@ -131,6 +131,84 @@ pub fn download(
     }
 }
 
+// ---------------- AI Image Enlarger (Real-ESRGAN ncnn-vulkan) ----------------
+
+const REALESRGAN_URL: &str =
+    "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip";
+
+/// Garante o Real-ESRGAN (exe + modelos) no diretório de dados; baixa+extrai uma vez.
+/// Retorna o caminho do .exe. Pesa ~30MB e roda na GPU (Vulkan).
+pub fn realesrgan_exe(data_dir: &Path) -> Result<PathBuf, String> {
+    let dir = data_dir.join("bin").join("realesrgan");
+    let exe = dir.join("realesrgan-ncnn-vulkan.exe");
+    if exe.exists() {
+        return Ok(exe);
+    }
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    tracing::info!("baixando Real-ESRGAN (ampliador de imagem)…");
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(300))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client.get(REALESRGAN_URL).send().map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("não consegui baixar o Real-ESRGAN (HTTP {})", resp.status()));
+    }
+    let bytes = resp.bytes().map_err(|e| e.to_string())?;
+    // extrai o zip preservando a estrutura (exe + models/)
+    let reader = std::io::Cursor::new(bytes);
+    let mut zip = zip::ZipArchive::new(reader).map_err(|e| format!("zip: {e}"))?;
+    for i in 0..zip.len() {
+        let mut entry = zip.by_index(i).map_err(|e| e.to_string())?;
+        let Some(rel) = entry.enclosed_name() else { continue };
+        let out = dir.join(rel);
+        if entry.is_dir() {
+            std::fs::create_dir_all(&out).map_err(|e| e.to_string())?;
+        } else {
+            if let Some(p) = out.parent() {
+                std::fs::create_dir_all(p).map_err(|e| e.to_string())?;
+            }
+            let mut f = std::fs::File::create(&out).map_err(|e| e.to_string())?;
+            std::io::copy(&mut entry, &mut f).map_err(|e| e.to_string())?;
+        }
+    }
+    if !exe.exists() {
+        return Err("baixei o pacote mas não achei o executável do Real-ESRGAN".into());
+    }
+    Ok(exe)
+}
+
+/// Amplia uma imagem 4x via Real-ESRGAN. Escreve um PNG novo em `dest_dir` (não-destrutivo).
+pub fn upscale(data_dir: &Path, dest_dir: &Path, input: &Path) -> Result<PathBuf, String> {
+    let exe = realesrgan_exe(data_dir)?;
+    std::fs::create_dir_all(dest_dir).map_err(|e| e.to_string())?;
+    let stem = input.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_else(|| "imagem".into());
+    let mut out = dest_dir.join(format!("{stem}_4x.png"));
+    let mut n = 1;
+    while out.exists() {
+        out = dest_dir.join(format!("{stem}_4x_{n}.png"));
+        n += 1;
+    }
+    let mut c = Command::new(&exe);
+    no_window(&mut c);
+    // -n realesrgan-x4plus (foto), -s 4, -f png. O cwd = pasta do exe (acha models/).
+    c.current_dir(exe.parent().unwrap_or(data_dir));
+    c.args([
+        "-i", &input.to_string_lossy(),
+        "-o", &out.to_string_lossy(),
+        "-s", "4",
+        "-n", "realesrgan-x4plus",
+        "-f", "png",
+    ]);
+    let res = c.output().map_err(|e| e.to_string())?;
+    if !res.status.success() || !out.exists() {
+        let err = String::from_utf8_lossy(&res.stderr);
+        let last = err.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or("falhou");
+        return Err(format!("ampliação falhou: {last}"));
+    }
+    Ok(out)
+}
+
 /// Letras SINCRONIZADAS (timestamps) via lrclib.net — API pública, sem chave.
 /// Faz o parse do LRC ("[mm:ss.xx] texto") em linhas com tempo em segundos.
 pub fn lyrics(artist: &str, title: &str) -> Result<Vec<LyricLine>, String> {

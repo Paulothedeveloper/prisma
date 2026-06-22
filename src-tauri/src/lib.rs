@@ -356,6 +356,30 @@ fn fetch_lyrics(artist: String, title: String) -> Result<Vec<extras::LyricLine>,
     extras::lyrics(artist.trim(), title.trim())
 }
 
+/// AI Image Enlarger (plugin do Eagle): amplia a imagem 4x via Real-ESRGAN (baixado sob
+/// demanda) e cataloga o resultado no Inbox. Não-destrutivo. Retorna o caminho do PNG novo.
+#[tauri::command]
+fn ai_upscale(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let path: String = state
+        .reads
+        .with(|conn| {
+            conn.query_row(
+                "SELECT path FROM assets WHERE id=?1",
+                rusqlite::params![id],
+                |r| r.get(0),
+            )
+        })
+        .map_err(|e| e.to_string())?;
+    let inbox = state.data_dir.join("Inbox");
+    let out = extras::upscale(&state.data_dir, &inbox, std::path::Path::new(&path))?;
+    let db = state.db.clone();
+    let thumbs_dir = state.thumbs_dir.clone();
+    indexer::index_one(&db, &thumbs_dir, &out).ok_or("ampliado mas falhou ao catalogar")?;
+    tracing::info!(src = %path, dest = %out.display(), "ai_upscale: imagem ampliada 4x");
+    Ok(out.to_string_lossy().to_string())
+}
+
 /// Auto-tag: marca todos os assets da pasta com o nome dela (Briefing 4 #7).
 #[tauri::command]
 fn autotag_folder(app: tauri::AppHandle, dir: String) -> Result<i64, String> {
@@ -1906,6 +1930,7 @@ pub fn run() {
             video_download_info,
             fetch_lyrics,
             ai_ask_image,
+            ai_upscale,
             export_velvet_catalog,
             quartzo_get_vault,
             quartzo_set_vault,
