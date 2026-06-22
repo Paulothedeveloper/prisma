@@ -735,15 +735,43 @@ pub fn videos_without_proxy_under(conn: &Connection, root: &str) -> rusqlite::Re
 pub fn remove_folder(conn: &Connection, root: &str) -> rusqlite::Result<usize> {
     let r = root.trim_end_matches('\\');
     let like = format!("{r}\\%");
+    // `COLLATE NOCASE` no match EXATO: no Windows o `dir` guardado pode diferir só na caixa
+    // do que foi passado (ex.: "C:\Fotos" vs "c:\fotos") — sem isso, a pasta "não excluía".
     let n = conn.execute(
-        "DELETE FROM assets WHERE dir = ?1 OR dir LIKE ?2",
+        "DELETE FROM assets WHERE dir = ?1 COLLATE NOCASE OR dir LIKE ?2",
         params![r, like],
     )?;
     let _ = conn.execute(
-        "DELETE FROM folder_meta WHERE dir = ?1 OR dir LIKE ?2",
+        "DELETE FROM folder_meta WHERE dir = ?1 COLLATE NOCASE OR dir LIKE ?2",
         params![r, like],
     );
     Ok(n)
+}
+
+/// Arquivos de CACHE (proxy + miniatura) dos assets sob uma pasta — sempre dentro do
+/// diretório de dados do app (nunca o original), seguros pra apagar do disco junto com a
+/// remoção do catálogo (senão ficam órfãos). Coletar ANTES de deletar as linhas.
+pub fn folder_cache_files(conn: &Connection, root: &str) -> rusqlite::Result<Vec<String>> {
+    let r = root.trim_end_matches('\\');
+    let like = format!("{r}\\%");
+    let mut stmt = conn.prepare(
+        "SELECT proxy_path FROM assets WHERE (dir=?1 COLLATE NOCASE OR dir LIKE ?2) AND proxy_path IS NOT NULL AND proxy_path<>'' \
+         UNION ALL \
+         SELECT thumbnail_path FROM assets WHERE (dir=?1 COLLATE NOCASE OR dir LIKE ?2) AND thumbnail_path IS NOT NULL AND thumbnail_path<>''",
+    )?;
+    let rows = stmt.query_map(params![r, like], |r| r.get::<_, String>(0))?;
+    rows.collect()
+}
+
+/// Cache (proxy + miniatura) dos assets na Lixeira — pra apagar do disco ao esvaziar.
+pub fn trashed_cache_files(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare(
+        "SELECT proxy_path FROM assets WHERE trashed=1 AND proxy_path IS NOT NULL AND proxy_path<>'' \
+         UNION ALL \
+         SELECT thumbnail_path FROM assets WHERE trashed=1 AND thumbnail_path IS NOT NULL AND thumbnail_path<>''",
+    )?;
+    let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
+    rows.collect()
 }
 
 /// TODOS os vídeos sem proxy da biblioteca (pro botão "Recarregar proxies").

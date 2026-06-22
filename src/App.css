@@ -5051,6 +5051,75 @@ body {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), var(--glass-hi);
   overflow: hidden;
 }
+/* ---------- Confirmação própria (anima + SFX, no lugar do window.confirm) ---------- */
+.confirm-modal {
+  width: min(400px, 92vw);
+  padding: 24px 22px 18px;
+  text-align: center;
+}
+.confirm-icon {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-1);
+}
+.confirm-icon.danger {
+  background: rgba(255, 69, 58, 0.16);
+  color: #ff7a70;
+}
+.confirm-title {
+  font-size: 16px;
+  font-weight: 650;
+  margin: 0 0 6px;
+}
+.confirm-msg {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2);
+  margin: 0 0 18px;
+  word-break: break-word;
+}
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.confirm-cancel,
+.confirm-ok {
+  flex: 1;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.confirm-cancel {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-1);
+}
+.confirm-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.confirm-ok {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.confirm-ok.danger {
+  background: #ff453a;
+  border-color: #ff453a;
+}
+.confirm-ok:hover {
+  filter: brightness(1.08);
+}
+
 /* ---------- Video Downloader (modal) ---------- */
 .dl-modal {
   width: min(480px, 92vw);

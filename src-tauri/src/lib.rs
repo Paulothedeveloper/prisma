@@ -502,8 +502,29 @@ fn trash_asset(app: tauri::AppHandle, id: i64, trashed: bool) -> Result<(), Stri
 #[tauri::command]
 fn empty_trash(app: tauri::AppHandle) -> Result<i64, String> {
     let state = app.state::<AppState>();
-    let conn = state.db.lock().map_err(|e| e.to_string())?;
-    db::empty_trash(&conn).map_err(|e| e.to_string())
+    let (n, files) = {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        let files = db::trashed_cache_files(&conn).unwrap_or_default();
+        let n = db::empty_trash(&conn).map_err(|e| e.to_string())?;
+        (n, files)
+    };
+    delete_cache_files(&files); // apaga proxy + miniatura órfãos do disco
+    Ok(n)
+}
+
+/// Apaga arquivos de cache (proxy/miniatura) do disco. Só dentro do diretório de dados —
+/// `db` só devolve caminhos de cache, nunca os originais.
+fn delete_cache_files(paths: &[String]) {
+    for p in paths {
+        if p.is_empty() {
+            continue;
+        }
+        if let Err(e) = std::fs::remove_file(p) {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                tracing::warn!(file = %p, error = %e, "não consegui apagar arquivo de cache");
+            }
+        }
+    }
 }
 
 /// "Manter só 1 de cada": manda os duplicados (menos o mais antigo) pra Lixeira. Retorna quantos.
@@ -1719,10 +1740,14 @@ fn health_counts(app: tauri::AppHandle) -> Result<std::collections::HashMap<Stri
 #[tauri::command]
 fn remove_folder_lib(app: tauri::AppHandle, dir: String) -> Result<usize, String> {
     let state = app.state::<AppState>();
-    let n = {
+    let (n, files) = {
         let conn = state.db.lock().map_err(|e| e.to_string())?;
-        db::remove_folder(&conn, &dir).map_err(|e| e.to_string())?
+        let files = db::folder_cache_files(&conn, &dir).unwrap_or_default();
+        let n = db::remove_folder(&conn, &dir).map_err(|e| e.to_string())?;
+        (n, files)
     };
+    delete_cache_files(&files); // apaga proxy + miniatura órfãos do disco
+    tracing::info!(dir = %dir, removed = n, cache = files.len(), "remove_folder: pasta removida da biblioteca");
     Ok(n)
 }
 

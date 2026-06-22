@@ -65,6 +65,7 @@ import { Inspector } from "./Inspector";
 import { Preview } from "./Preview";
 import { DupModal } from "./DupModal";
 import { DownloadModal } from "./DownloadModal";
+import { ConfirmModal, type ConfirmOpts } from "./ConfirmModal";
 import { Settings } from "./Settings";
 import { SmartBuilder } from "./SmartBuilder";
 import { BatchRename } from "./BatchRename";
@@ -729,6 +730,7 @@ export default function App() {
   };
   // Coletor da web (designer): cola uma URL, baixa pro Inbox e cataloga.
   const [showDownload, setShowDownload] = useState(false);
+  const [confirmDlg, setConfirmDlg] = useState<ConfirmOpts | null>(null);
   const addFromWeb = async () => {
     setAddMenu(false);
     const url = window.prompt(t("app.addUrlPrompt"));
@@ -884,9 +886,14 @@ export default function App() {
   const batchFixCfr = useCallback(() => {
     const vids = assets.filter((a) => selectedIds.has(a.id) && a.type === "video");
     if (vids.length === 0) return;
-    if (!window.confirm(t("ctx.cfrConfirm").replace("{x}", String(vids.length)))) return;
-    vids.forEach((a) => oficinaRun("vfr_cfr", a.path, { codec: "h265", crf: 18 }));
-    clearSelection();
+    setConfirmDlg({
+      title: t("ctx.cfr"),
+      message: t("ctx.cfrConfirm").replace("{x}", String(vids.length)),
+      onConfirm: () => {
+        vids.forEach((a) => oficinaRun("vfr_cfr", a.path, { codec: "h265", crf: 18 }));
+        clearSelection();
+      },
+    });
   }, [assets, selectedIds, clearSelection]);
 
   const batchAddCollection = useCallback(
@@ -1399,15 +1406,23 @@ export default function App() {
                 onRescan={(dir) => rescanFolder(dir)}
                 onColor={(dir, color) => setFolderColor(dir, color).then(refreshMeta)}
                 onAutotag={(dir) => autotagFolder(dir).then(() => { runSearch(true); refreshMeta(); })}
-                onRemoveFolder={(dir) => {
-                  if (!window.confirm(t("app.removeFolderConfirm").replace("{x}", dir)))
-                    return;
-                  removeFolderLib(dir).then(() => {
-                    if (folderSel === dir || (view.t === "folder" && view.v === dir)) setView({ t: "all" });
-                    runSearch(true);
-                    refreshMeta();
-                  });
-                }}
+                onRemoveFolder={(dir) =>
+                  setConfirmDlg({
+                    title: t("fld.remove"),
+                    message: t("app.removeFolderConfirm").replace("{x}", dir),
+                    danger: true,
+                    confirmLabel: t("fld.remove"),
+                    onConfirm: () => {
+                      // Anima a saída da grade (estilo lixeira) + SFX, depois remove e recarrega.
+                      removeWithAnim(async () => {
+                        await removeFolderLib(dir);
+                        if (folderSel === dir || (view.t === "folder" && view.v === dir))
+                          setView({ t: "all" });
+                        refreshMeta();
+                      });
+                    },
+                  })
+                }
               />
             </div>
           )}
@@ -1797,6 +1812,9 @@ export default function App() {
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
       {showDownload && (
         <DownloadModal onClose={() => setShowDownload(false)} onDone={onMutate} />
+      )}
+      {confirmDlg && (
+        <ConfirmModal opts={confirmDlg} onClose={() => setConfirmDlg(null)} />
       )}
 
       {welcome && (
