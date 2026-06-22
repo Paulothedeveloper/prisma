@@ -244,6 +244,10 @@ export const setBoardItem = (
   w: number,
   z: number
 ) => invoke<void>("set_board_item", { collectionId, assetId, x, y, w, z });
+
+// ----- Export pro NLE (FCPXML) -----
+export const exportNle = (assetIds: number[], dest: string) =>
+  invoke<number>("export_nle", { assetIds, dest });
 export const saveAnnotated = (nearPath: string, data: number[]) =>
   invoke<string>("save_annotated", { nearPath, data });
 

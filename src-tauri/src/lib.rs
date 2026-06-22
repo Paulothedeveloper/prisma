@@ -6,6 +6,7 @@ mod features;
 mod indexer;
 mod jobs;
 mod mediainfo;
+mod nle;
 mod oficina;
 mod thumbs;
 mod vault;
@@ -773,6 +774,35 @@ fn reorder_collection(app: tauri::AppHandle, collection_id: i64, ordered: Vec<i6
 fn collections_for_asset(app: tauri::AppHandle, id: i64) -> Result<Vec<i64>, String> {
     let state = app.state::<AppState>();
     state.reads.with(|conn| db::collections_for_asset(conn, id)).map_err(|e| e.to_string())
+}
+
+/// Exporta os clipes selecionados como FCPXML (DaVinci Resolve / FCP). Não-destrutivo:
+/// só escreve o .fcpxml apontando pros arquivos originais; o NLE relinka por caminho.
+#[tauri::command]
+fn export_nle(app: tauri::AppHandle, asset_ids: Vec<i64>, dest: String) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let clips: Vec<nle::NleClip> = state.reads.with(|c| {
+        asset_ids
+            .iter()
+            .filter_map(|&id| db::clip_for_nle(c, id))
+            .map(|(path, name, duration, fps, w, h, kind)| nle::NleClip {
+                path,
+                name,
+                duration,
+                fps,
+                w,
+                h,
+                kind,
+            })
+            .collect()
+    });
+    if clips.is_empty() {
+        return Err("Nenhum clipe pra exportar.".into());
+    }
+    let n = clips.len();
+    std::fs::write(&dest, nle::build_fcpxml(&clips)).map_err(|e| e.to_string())?;
+    tracing::info!(dest = %dest, n, "export_nle: FCPXML gerado");
+    Ok(n)
 }
 
 // ---------- Moodboard (quadro livre de uma coleção) ----------
@@ -1663,6 +1693,7 @@ pub fn run() {
             collections_for_asset,
             board_layout,
             set_board_item,
+            export_nle,
             resolve_dup,
             drag_icon,
             remove_asset,

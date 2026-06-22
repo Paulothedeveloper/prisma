@@ -1351,6 +1351,30 @@ pub fn set_board_item(
     Ok(())
 }
 
+/// Dados de um clipe pro export FCPXML (path, nome, duração, fps, w, h, tipo).
+pub fn clip_for_nle(
+    conn: &Connection,
+    id: i64,
+) -> Option<(String, String, f64, f64, i64, i64, String)> {
+    conn.query_row(
+        "SELECT path, COALESCE(name, filename), COALESCE(duration, 0.0), COALESCE(fps, 0.0), \
+         COALESCE(width, 0), COALESCE(height, 0), type FROM assets WHERE id=?1",
+        params![id],
+        |r| {
+            Ok((
+                r.get(0)?,
+                r.get(1)?,
+                r.get(2)?,
+                r.get(3)?,
+                r.get(4)?,
+                r.get(5)?,
+                r.get(6)?,
+            ))
+        },
+    )
+    .ok()
+}
+
 // ---------- Sync (export/import de metadados por hash) ----------
 
 /// (id, hash, name, rating, notes, ai_desc) de todos os assets com hash — pra exportar metadados.

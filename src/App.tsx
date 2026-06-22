@@ -4,7 +4,7 @@ import { VirtuosoGrid, Virtuoso } from "react-virtuoso";
 import { listen } from "@tauri-apps/api/event";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import {
   searchAssets,
   getCounts,
@@ -25,6 +25,7 @@ import {
   removeFolderLib,
   pasteImage,
   addFromUrl,
+  exportNle,
   duplicateAsset,
   emptyTrash,
   dedupeKeepOne,
@@ -1614,6 +1615,25 @@ export default function App() {
           />
           <button className="batch-clear" onClick={() => setBatchRename(true)}>
             <Icon name="pencil" size={13} /> {t("batch.rename")}
+          </button>
+          <button
+            className="batch-clear"
+            title={t("batch.nleHint")}
+            onClick={async () => {
+              const p = await saveDialog({
+                defaultPath: "prisma.fcpxml",
+                filters: [{ name: "FCPXML", extensions: ["fcpxml"] }],
+              });
+              if (typeof p === "string") {
+                try {
+                  await exportNle([...selectedIds], p);
+                } catch (e) {
+                  window.alert(`${t("common.error")}: ${String(e)}`);
+                }
+              }
+            }}
+          >
+            <Icon name="reveal" size={13} /> {t("batch.nle")}
           </button>
           <button
             className="batch-clear"
