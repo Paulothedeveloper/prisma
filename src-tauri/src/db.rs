@@ -431,7 +431,7 @@ pub fn pending_thumbs(
 ) -> rusqlite::Result<Vec<(i64, String, String, String)>> {
     let mut stmt = conn.prepare(
         "SELECT id, path, ext, type FROM assets
-         WHERE thumbnail_path IS NULL AND type IN ('image','gif','video','audio')",
+         WHERE thumbnail_path IS NULL AND type IN ('image','gif','video','audio','font')",
     )?;
     let rows = stmt.query_map([], |r| {
         Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
@@ -454,7 +454,7 @@ pub fn pending_thumbs_under(
 ) -> rusqlite::Result<Vec<(i64, String, String, String)>> {
     let mut stmt = conn.prepare(
         "SELECT id, path, ext, type FROM assets
-         WHERE thumbnail_path IS NULL AND type IN ('image','gif','video','audio')
+         WHERE thumbnail_path IS NULL AND type IN ('image','gif','video','audio','font')
            AND (dir = ?1 OR dir LIKE ?2)",
     )?;
     let like = format!("{dir}\\%");

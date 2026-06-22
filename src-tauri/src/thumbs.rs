@@ -131,8 +131,55 @@ pub fn generate(src: &Path, ext: &str, out_dir: &Path, id: i64) -> (Option<Strin
         return (None, meta);
     }
 
+    // Fonte (designer): renderiza uma amostra do tipo como miniatura.
+    if classify::categorize(ext) == "font" {
+        if let Some((w, h)) = font_thumb(src, &out_dir.join(format!("{id}.png"))) {
+            meta.width = Some(w as i64);
+            meta.height = Some(h as i64);
+            return (Some(out_dir.join(format!("{id}.png")).to_string_lossy().to_string()), meta);
+        }
+        return (None, meta);
+    }
+
     // Demais tipos: sem thumb (frontend mostra icone por categoria).
     (None, meta)
+}
+
+/// Renderiza uma amostra da fonte (Aa Gg 123) como miniatura PNG via ab_glyph (Rust puro).
+/// Só LÊ o arquivo da fonte. .woff/.woff2 (comprimidos) não são suportados → ícone.
+fn font_thumb(src: &Path, out: &Path) -> Option<(u32, u32)> {
+    use ab_glyph::{Font, FontVec, PxScale, ScaleFont, point};
+    let data = std::fs::read(src).ok()?;
+    let font = FontVec::try_from_vec(data).ok()?;
+    let (w, h) = (520u32, 200u32);
+    let scale = PxScale::from(108.0);
+    let mut img = image::RgbaImage::new(w, h);
+    let text = "Aa Gg Qq 123";
+    let mut x = 16.0_f32;
+    let baseline = 132.0_f32;
+    for ch in text.chars() {
+        let gid = font.glyph_id(ch);
+        let g = gid.with_scale_and_position(scale, point(x, baseline));
+        if let Some(og) = font.outline_glyph(g) {
+            let bb = og.px_bounds();
+            og.draw(|gx, gy, c| {
+                let px = bb.min.x as i32 + gx as i32;
+                let py = bb.min.y as i32 + gy as i32;
+                if px >= 0 && py >= 0 && (px as u32) < w && (py as u32) < h {
+                    let a = (c * 255.0) as u8;
+                    if a > 0 {
+                        img.put_pixel(px as u32, py as u32, image::Rgba([235, 235, 240, a]));
+                    }
+                }
+            });
+        }
+        x += font.as_scaled(scale).h_advance(gid);
+        if x > (w as f32) - 40.0 {
+            break;
+        }
+    }
+    img.save(out).ok()?;
+    Some((w, h))
 }
 
 fn image_thumb(src: &Path, out: &Path) -> Result<(u32, u32), String> {
