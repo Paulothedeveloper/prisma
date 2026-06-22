@@ -496,15 +496,29 @@ body {
   overflow: hidden;
 }
 .sb-resize {
-  width: 5px;
+  width: 7px;
   flex-shrink: 0;
   cursor: col-resize;
+  position: relative;
   background: transparent;
   transition: background 0.15s ease;
 }
-.sb-resize:hover,
-.sb-resize:active {
-  background: var(--accent-soft);
+/* linha sutil sempre visível no meio da alça (mostra que dá pra arrastar) */
+.sb-resize::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 1px;
+  background: var(--glass-border);
+  transition: background 0.15s ease, width 0.15s ease;
+}
+.sb-resize:hover::before,
+.sb-resize:active::before {
+  background: var(--accent);
+  width: 2px;
+  left: 2.5px;
 }
 .sidebar {
   width: var(--sb);
