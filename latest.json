@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.5",
-    "notes":  "Conserto da TELA PRETA (causa-raiz: a grade passava um valor invalido pro componente da lista quando nao havia pastas na visao). Tambem: VELVET \u0027Aplicar CST no DaVinci\u0027 (botao no Detalhes gera a arvore de nos pro plugin VELVET montar no Resolve).",
-    "pub_date":  "2026-06-22T22:34:29Z",
+    "version":  "0.9.6",
+    "notes":  "Auto-tag com IA de graca (CLIP): botao-direito numa imagem \u003e Auto-tag com IA (CLIP, gratis). Etiqueta sozinho por ~50 conceitos sem gastar API, e guarda o vetor pra busca semantica.",
+    "pub_date":  "2026-06-22T22:59:28Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTJqSXdpazF1TEVjSzlzM2VVUUtwNWU3YmE4eUpoOUxnem5hS0dOZU1mU200NXpXTkZRYklUNnJ0VXpXZmJpemtSbkJNRGF0ckhRc09KV1Y5b3JjSVFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTY3NjM1CWZpbGU6UFJJU01BXzAuOS41X3g2NC1zZXR1cC5leGUKbjJnM2hVeE5tejJ3dFZibnVFUzg0WkNZaVh0Tmp6QnNJUDNRQm4xTmhtamIwdjBVQnNWNDEvNWNrVzRsSjdHTnFMYVN6TVpsQ0M4ZjdaZ0c5aFVXQ2c9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.5/PRISMA_0.9.5_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTJaRTM5UklodGY4d0VtdWJpSEYxV01aR0RCd2kzd09OT0tnNlNPWjJZbGhieC9jSGs2dGlFTHBxYVp1QWlhWklic2JFOGlmSGRVVFN5RDRRUHRXUlFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTY5MDc2CWZpbGU6UFJJU01BXzAuOS42X3g2NC1zZXR1cC5leGUKRFJjQnU1RDJZQXBCSjMrN09TWUwzYzJvU0RQajlIRXloMWNwZXllZDFZclNwQXNWdG9pS1crN3Y4aFA0dXRWSzNvU0R3Tm5KN3FEUVRad3JhOW5qRHc9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.6/PRISMA_0.9.6_x64-setup.exe"
                                          }
                   }
 }
