@@ -1,11 +1,11 @@
 {
-    "version":  "0.8.1",
-    "notes":  "Ampliar imagem 4x com IA (Real-ESRGAN): no painel Detalhes, botao \u0027Ampliar com IA (4x)\u0027. Baixa o motor sozinho na 1a vez, amplia na GPU e cataloga o PNG novo no Inbox, sem tocar no original.",
-    "pub_date":  "2026-06-22T12:46:29Z",
+    "version":  "0.8.2",
+    "notes":  "Remover fundo com IA (u2netp ONNX embutido): no painel Detalhes, botao \u0027Remover fundo com IA\u0027 gera um PNG transparente no Inbox, sem GPU obrigatoria e sem tocar no original.",
+    "pub_date":  "2026-06-22T13:22:59Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXhxRldlL2FkdU1zSWt1bSt1Q0xPcVVwTTlRTlhVZ3IrSDFxbjBmODFxWU1sdWc1UzBhQVF0cDUwdXRjeFVhTklXWkdRK1JQV3JQbXZrN0FaZ0k0amdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTMyMzUzCWZpbGU6UFJJU01BXzAuOC4xX3g2NC1zZXR1cC5leGUKclFJdGhpNzNQQjBZUHNxcTZrUmRYQWtLdUJNN3JhcWZpekI1MHJTbnRPQ0tXanVKMXRrVVI4UEgrMEd0UktRUG5WTS9NWHlja0loczJOcXpwRThtREE9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.8.1/PRISMA_0.8.1_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXhRNzEvQjBKSVQvaFhKYUc1c0w5MC9KZTRXTFQrZDJ3NXdFSFpRQjJNeThGdmQvNVBPVURVeE1RQkJ0cjh0eTl6TmxnWnRhaGliU00zdzRYQ1JSRmdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTM0NTM4CWZpbGU6UFJJU01BXzAuOC4yX3g2NC1zZXR1cC5leGUKNldUU2NqY0I0SHBtdG5Scjc5QWhCNkR1NHhndndWQnRCVU02NHBtUlNkQmJlNHQ3cDMweWJNM1B3aDNFWHc5RExMS3laUVp2bGJ1aE5UcXJSWHlwQ1E9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.8.2/PRISMA_0.8.2_x64-setup.exe"
                                          }
                   }
 }
