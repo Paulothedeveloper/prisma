@@ -2242,6 +2242,10 @@ body {
   border: 1px solid var(--glass-border);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), var(--glass-hi);
   animation: popIn 0.13s cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* Nunca passar da viewport: se o menu for mais alto que a tela, ROLA em vez de cortar. */
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .ctx-item {
   display: flex;

@@ -32,7 +32,7 @@ import {
   dedupeKeepOne,
   similarAssets,
   rescanFolder,
-  trashAsset,
+  trashPaths,
   addToCollection,
   oficinaRun,
   concatRun,
@@ -886,19 +886,24 @@ export default function App() {
         label: `${t("ctx.trash")}${n}`,
         icon: "trash",
         danger: true,
-        onClick: () => removeWithAnim(() => Promise.all(ids.map((id) => trashAsset(id, true))).then(clearSelection)),
+        onClick: () => {
+          // Manda pra Lixeira pelo CAMINHO (robusto a id obsoleto de arquivos grandes).
+          const targets = many ? assets.filter((x) => ids.includes(x.id)) : [a];
+          const paths = targets.map((x) => x.path);
+          removeWithAnim(() => trashPaths(paths, true).then(clearSelection));
+        },
       },
     ];
   };
 
   // Ações em lote sobre os selecionados
   const batchTrash = useCallback(() => {
-    const ids = [...selectedIds];
+    const paths = assets.filter((a) => selectedIds.has(a.id)).map((a) => a.path);
     removeWithAnim(async () => {
-      for (const id of ids) await trashAsset(id, true);
+      await trashPaths(paths, true);
       clearSelection();
     });
-  }, [selectedIds, clearSelection, removeWithAnim]);
+  }, [assets, selectedIds, clearSelection, removeWithAnim]);
 
   // Conserto VFR→CFR em lote (saúde da biblioteca). FPS é auto-detectado por arquivo no
   // backend; já-feitos são pulados. Pesado → confirma antes pela quantidade.

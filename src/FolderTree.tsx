@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icons";
 import { revealInExplorer, type FolderRow } from "./api";
@@ -90,6 +90,22 @@ function TreeNode({
   const [open, setOpen] = useState(depth < 1);
   const [editing, setEditing] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  // Posição final do menu: MEDE a altura real e encaixa na viewport (antes era um chute de
+  // 360px que cortava o "Remover" quando o menu era mais alto / abria perto da borda).
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!menu) {
+      setMenuPos(null);
+      return;
+    }
+    const el = menuRef.current;
+    const w = el?.offsetWidth ?? 240;
+    const h = el?.offsetHeight ?? 360;
+    const left = Math.max(8, Math.min(menu.x, window.innerWidth - w - 8));
+    const top = Math.max(8, Math.min(menu.y, window.innerHeight - h - 8));
+    setMenuPos({ left, top });
+  }, [menu]);
   const m = meta.get(node.path);
   const hidden = m?.hidden ?? false;
   if (hidden && !showHidden) return null;
@@ -172,11 +188,13 @@ function TreeNode({
               }}
             />
             <div
+              ref={menuRef}
               className="ctx-menu tree-ctx"
               style={{
-                left: Math.max(8, Math.min(menu.x, window.innerWidth - 248)),
-                top: Math.min(menu.y, window.innerHeight - 360),
+                left: menuPos ? menuPos.left : Math.max(8, Math.min(menu.x, window.innerWidth - 248)),
+                top: menuPos ? menuPos.top : menu.y,
                 width: 240,
+                visibility: menuPos ? "visible" : "hidden",
               }}
               onClick={(e) => e.stopPropagation()}
             >

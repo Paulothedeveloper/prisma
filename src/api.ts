@@ -286,6 +286,9 @@ export const backupCatalog = (dest: string) => invoke<void>("backup_catalog", { 
 export const restoreCatalog = (src: string) => invoke<void>("restore_catalog", { src });
 export const trashAsset = (id: number, trashed: boolean) =>
   invoke<void>("trash_asset", { id, trashed });
+// Lixeira por CAMINHO (robusto a id obsoleto — arquivos grandes "tocados" pelo AV mudam de id)
+export const trashPaths = (paths: string[], trashed: boolean) =>
+  invoke<number>("trash_paths", { paths, trashed });
 export const emptyTrash = () => invoke<number>("empty_trash");
 export const dedupeKeepOne = () => invoke<number>("dedupe_keep_one");
 

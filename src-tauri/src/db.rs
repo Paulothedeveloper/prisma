@@ -1054,6 +1054,17 @@ pub fn set_trashed(conn: &Connection, id: i64, trashed: bool) -> rusqlite::Resul
     Ok(())
 }
 
+/// Manda pra Lixeira pelo CAMINHO (estável) em vez do id. Robusto quando o id muda — arquivos
+/// grandes às vezes são "tocados" pelo antivírus, o watcher re-indexa e o id antigo da grade
+/// fica obsoleto (era a causa de "não consigo remover esse arquivo grande de jeito nenhum").
+/// Retorna quantas linhas mudaram.
+pub fn set_trashed_by_path(conn: &Connection, path: &str, trashed: bool) -> rusqlite::Result<usize> {
+    conn.execute(
+        "UPDATE assets SET trashed=?2 WHERE path=?1 COLLATE NOCASE",
+        params![path, if trashed { 1 } else { 0 }],
+    )
+}
+
 /// Esvazia a Lixeira: remove do catálogo os que estão na lixeira (não apaga do disco).
 pub fn empty_trash(conn: &Connection) -> rusqlite::Result<i64> {
     let ids: Vec<i64> = {

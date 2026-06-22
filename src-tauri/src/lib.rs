@@ -571,6 +571,20 @@ fn trash_asset(app: tauri::AppHandle, id: i64, trashed: bool) -> Result<(), Stri
     db::set_trashed(&conn, id, trashed).map_err(|e| e.to_string())
 }
 
+/// Manda vários assets pra Lixeira pelo CAMINHO (robusto a id obsoleto — ver set_trashed_by_path).
+/// Retorna quantos foram realmente marcados (0 = nenhum casou, sinaliza problema pro front).
+#[tauri::command]
+fn trash_paths(app: tauri::AppHandle, paths: Vec<String>, trashed: bool) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let mut n = 0usize;
+    for p in &paths {
+        n += db::set_trashed_by_path(&conn, p, trashed).map_err(|e| e.to_string())?;
+    }
+    tracing::info!(pedidos = paths.len(), marcados = n, "trash_paths");
+    Ok(n)
+}
+
 #[tauri::command]
 fn empty_trash(app: tauri::AppHandle) -> Result<i64, String> {
     let state = app.state::<AppState>();
@@ -2183,6 +2197,7 @@ pub fn run() {
             set_folder_alias,
             set_folder_hidden,
             trash_asset,
+            trash_paths,
             empty_trash,
             dedupe_keep_one,
             rename_asset,
