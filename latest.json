@@ -1,11 +1,11 @@
 {
-    "version":  "0.7.0",
-    "notes":  "Subpastas agora aparecem como cards na propria grade (estilo Eagle). A busca acha PASTAS alem de midias, com escopo nesta-pasta/tudo. Novos: baixador de video/audio (yt-dlp nativo) e player de musica com letra sincronizada.",
-    "pub_date":  "2026-06-22T06:36:55Z",
+    "version":  "0.7.1",
+    "notes":  "Formatos: RAW de camera (CR2/CR3/NEF/ARW/DNG/RAF/RW2/ORF...) com miniatura do preview embutido; JXL e HEIC reconhecidos. Preview de RAW/HEIC/TIFF/EXR/DPX/JXL mostra a miniatura + abrir externo.",
+    "pub_date":  "2026-06-22T11:25:21Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWS9OZGxsaWkwc1VrOFVyK2RSdjhqZy9mSHFIR3ExT0FTbkY3VmtnUE1RVEY3SEY5eFFpNEZLV2NyYTV3TjY3OGRwTFNNQ3VpVjN1ZHhQQjcyc0RIUWdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTEwMTc5CWZpbGU6UFJJU01BXzAuNy4wX3g2NC1zZXR1cC5leGUKU1hMTmd4ZHVUNjMycXppSHVLYnQ2OVhVWTd6Um0xZTlDcFFlNDVESGRsZTRBQnZ5ZWFVYlE1K3N0MkZKR2h4eUQ3UXRnalM4UHllcnpoTGJPQVZTQnc9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.7.0/PRISMA_0.7.0_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXlyVjQwbnA4MzQ2eWV4RnUyWkoxSjVoUEFYV01keG1KUitha0tDQkorZm9rdXBtQnJEenRsNjNNNkpuanpkdDZ0QTA3MWhOaWg5bVlnWWdLYTdDNndFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTI3NDk1CWZpbGU6UFJJU01BXzAuNy4xX3g2NC1zZXR1cC5leGUKTmE4dElsK3psSlJXUS9MQ1pkTGk3S0ZySnUrSDFhZXNFRjlHekhoM2w0RXRPenR4NFlBZ05BUHZ5UC91WEZiVEV0YmJiSHBJejN2S2lzTnhCOHE4RFE9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.7.1/PRISMA_0.7.1_x64-setup.exe"
                                          }
                   }
 }
