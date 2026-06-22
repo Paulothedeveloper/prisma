@@ -99,7 +99,7 @@ export function Preview({ asset, onClose, onNav }: Props) {
           )
         ) : isAudio ? (
           <div className="preview-audio">
-            <AudioPlayer src={url} waveform={thumbUrl} />
+            <AudioPlayer src={url} waveform={thumbUrl} title={asset.name || asset.filename} />
           </div>
         ) : isImageLike ? (
           <div className="preview-img-wrap">

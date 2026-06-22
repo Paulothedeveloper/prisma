@@ -1110,6 +1110,67 @@ pub fn subfolders(conn: &Connection, parent: &str) -> rusqlite::Result<Vec<SubCa
     Ok(out)
 }
 
+/// Busca pastas (em QUALQUER profundidade) cujo nome bata com a query — pra a busca
+/// global achar PASTAS além de mídias (estilo Eagle). Opcionalmente restringe ao escopo
+/// de uma pasta (`scope`). Retorna cards de pasta prontos pra grade.
+pub fn search_folders(
+    conn: &Connection,
+    query: &str,
+    scope: Option<&str>,
+    limit: i64,
+) -> rusqlite::Result<Vec<SubCard>> {
+    let q = query.trim().to_lowercase();
+    if q.is_empty() {
+        return Ok(vec![]);
+    }
+    // Junta dirs do catálogo de mídias e dirs com metadados (apelido/capa).
+    let mut sql = String::from(
+        "SELECT dir, COUNT(*) c, MIN(thumbnail_path) FROM assets WHERE trashed=0",
+    );
+    let mut args: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    if let Some(s) = scope {
+        if !s.is_empty() {
+            sql.push_str(" AND (dir = ? OR dir LIKE ?)");
+            args.push(Box::new(s.to_string()));
+            args.push(Box::new(format!("{s}\\%")));
+        }
+    }
+    sql.push_str(" GROUP BY dir");
+    let mut stmt = conn.prepare(&sql)?;
+    let arg_refs: Vec<&dyn rusqlite::types::ToSql> = args.iter().map(|b| b.as_ref()).collect();
+    let rows: Vec<(String, i64, Option<String>)> = stmt
+        .query_map(arg_refs.as_slice(), |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+
+    let mut out: Vec<SubCard> = Vec::new();
+    for (dir, count, thumb) in rows {
+        // O alias conta como nome também.
+        let (cover_meta, color, alias): (Option<String>, Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT cover, color, alias FROM folder_meta WHERE dir=?1",
+                params![dir],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .unwrap_or((None, None, None));
+        let base = dir.rsplit('\\').next().unwrap_or(&dir).to_string();
+        let name = alias.clone().unwrap_or_else(|| base.clone());
+        let hay = format!("{} {}", base.to_lowercase(), name.to_lowercase());
+        if !hay.contains(&q) {
+            continue;
+        }
+        out.push(SubCard {
+            dir,
+            name,
+            count,
+            cover: cover_meta.or(thumb),
+            color,
+        });
+    }
+    out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    out.truncate(limit.max(0) as usize);
+    Ok(out)
+}
+
 /// Define/limpa o apelido de uma pasta (nome amigável na barra lateral).
 pub fn set_folder_alias(conn: &Connection, dir: &str, alias: Option<&str>) -> rusqlite::Result<()> {
     conn.execute(

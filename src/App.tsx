@@ -44,6 +44,7 @@ import {
   deleteSmart,
   aiAnalyzeMany,
   subfolders,
+  searchFolders,
   type Asset,
   type SubCard,
   type Counts,
@@ -60,6 +61,7 @@ import { AssetRow } from "./AssetRow";
 import { Inspector } from "./Inspector";
 import { Preview } from "./Preview";
 import { DupModal } from "./DupModal";
+import { DownloadModal } from "./DownloadModal";
 import { Settings } from "./Settings";
 import { SmartBuilder } from "./SmartBuilder";
 import { BatchRename } from "./BatchRename";
@@ -236,6 +238,8 @@ export default function App() {
   const cascadeOnNextLoad = useRef(true); // pede cascata na PRÓXIMA carga (nav/layout); animação sem remount
   const cascadeTimer = useRef<number | null>(null);
   const [subCards, setSubCards] = useState<SubCard[]>([]);
+  const [searchedFolders, setSearchedFolders] = useState<SubCard[]>([]);
+  const [folderScope, setFolderScope] = useState(true); // busca: dentro da pasta (true) ou global
   const [booted, setBooted] = useState(false);
   const [thumbSize, setThumbSize] = useState(190);
   const [layout, setLayout] = useState<"grid" | "list" | "waterfall">("grid");
@@ -272,7 +276,10 @@ export default function App() {
         kind: view.t === "kind" ? view.v : null,
         color_bucket: view.t === "color" ? view.v : null,
         tag_id: view.t === "tag" ? view.v : null,
-        folder: view.t === "folder" ? view.v : null,
+        // Escopo da busca: dentro da pasta (recursivo no db) ou GLOBAL quando o usuário
+        // alterna pra "tudo". Sem busca ativa, a pasta sempre filtra (visão direta).
+        folder:
+          view.t === "folder" && !(query.trim() && !folderScope) ? view.v : null,
         collection: view.t === "collection" ? view.v : null,
         dups_only: view.t === "dups",
         trashed: view.t === "trash",
@@ -294,7 +301,7 @@ export default function App() {
         offset,
       };
     },
-    [query, view, minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort]
+    [query, view, minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort, folderScope]
   );
 
   const runSearch = useCallback(
@@ -349,7 +356,22 @@ export default function App() {
     const t = window.setTimeout(() => runSearch(true), 110);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort]);
+  }, [query, minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort, folderScope]);
+
+  // Busca acha PASTAS também (estilo Eagle): consulta nomes de pasta em paralelo às mídias.
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setSearchedFolders([]);
+      return;
+    }
+    const scope = view.t === "folder" && folderScope ? view.v : null;
+    const t = window.setTimeout(() => {
+      searchFolders(q, scope).then(setSearchedFolders).catch(() => setSearchedFolders([]));
+    }, 140);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, folderScope, view]);
 
   useEffect(() => {
     // splash premium até a primeira carga de metadados (com tempo mínimo pro efeito)
@@ -617,6 +639,7 @@ export default function App() {
     for (const f of files) await indexPath(f);
   };
   // Coletor da web (designer): cola uma URL, baixa pro Inbox e cataloga.
+  const [showDownload, setShowDownload] = useState(false);
   const addFromWeb = async () => {
     setAddMenu(false);
     const url = window.prompt(t("app.addUrlPrompt"));
@@ -835,6 +858,45 @@ export default function App() {
   const isView = (v: View) => JSON.stringify(v) === JSON.stringify(view);
   const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
   const folderSel = view.t === "folder" ? view.v : null;
+
+  // Subpastas estilo Eagle: aparecem como CARDS no início da própria grade (fluindo junto
+  // com as mídias), não numa fileira fixada no topo. Ao NAVEGAR mostra as filhas da pasta;
+  // ao BUSCAR mostra as pastas que batem com o termo (busca acha pasta também).
+  const gridFolders: SubCard[] = query.trim()
+    ? searchedFolders
+    : view.t === "folder"
+    ? subCards
+    : [];
+  const subN = gridFolders.length;
+  const subCardEl = (s: SubCard) => {
+    const cover = s.cover ? convertFileSrc(s.cover) : null;
+    return (
+      <button
+        key={`sub:${s.dir}`}
+        className="card folder-card"
+        style={s.color ? { borderColor: s.color } : undefined}
+        onClick={() => {
+          sfx.tap();
+          cascadeOnNextLoad.current = true;
+          setView({ t: "folder", v: s.dir, label: s.name });
+        }}
+        onContextMenu={(e) => e.preventDefault()}
+        title={s.name}
+      >
+        <div className="thumb folder-thumb">
+          {cover ? (
+            <img className="thumb-image" src={cover} alt="" loading="lazy" />
+          ) : (
+            <Icon name="folder" size={42} />
+          )}
+          <span className="folder-badge">
+            <Icon name="folder" size={11} /> {s.count}
+          </span>
+        </div>
+        <div className="card-name">{s.name}</div>
+      </button>
+    );
+  };
   const anyFilter = minRating || fExt || fRes || fDur || fBright || fWarm || fSat || fOrient;
   const clearFilters = () => {
     setMinRating(0);
@@ -912,6 +974,15 @@ export default function App() {
                     <button onClick={addFiles}>
                       <Icon name="image" size={15} /> {t("app.addFiles")} <span className="add-hint">{t("app.addFilesHint")}</span>
                     </button>
+                    <button
+                      onClick={() => {
+                        setAddMenu(false);
+                        setShowDownload(true);
+                      }}
+                    >
+                      <Icon name="video" size={15} /> {t("app.downloadMedia")}{" "}
+                      <span className="add-hint">{t("app.downloadMediaHint")}</span>
+                    </button>
                   </div>
                 </>,
                 document.body
@@ -924,6 +995,22 @@ export default function App() {
         <span className="filter-ico">
           <Icon name="sliders" size={15} />
         </span>
+        {query.trim() && view.t === "folder" && (
+          <div className="scope-toggle" title={t("filter.scopeHint")}>
+            <button
+              className={`scope-btn ${folderScope ? "on" : ""}`}
+              onClick={() => setFolderScope(true)}
+            >
+              <Icon name="folder" size={12} /> {t("filter.scopeFolder")}
+            </button>
+            <button
+              className={`scope-btn ${!folderScope ? "on" : ""}`}
+              onClick={() => setFolderScope(false)}
+            >
+              <Icon name="search" size={12} /> {t("filter.scopeAll")}
+            </button>
+          </div>
+        )}
         <PopupButton value={sort} options={SORT_OPTS} onChange={setSort} />
         <PopupButton value={fRes} options={RES_OPTS} onChange={setFRes} placeholder={t("filter.res")} />
         <PopupButton value={fDur} options={DUR_OPTS} onChange={setFDur} placeholder={t("filter.dur")} />
@@ -1396,31 +1483,6 @@ export default function App() {
               </button>
             </div>
           )}
-          {view.t === "folder" && subCards.length > 0 && (
-            <div className="subfolders">
-              <div className="subfolders-title">{t("app.subfolders")} ({subCards.length})</div>
-              <div className="subfolders-row">
-                {subCards.map((s) => {
-                  const cover = s.cover ? convertFileSrc(s.cover) : null;
-                  return (
-                    <button
-                      key={s.dir}
-                      className="subcard"
-                      style={s.color ? { borderColor: s.color } : undefined}
-                      onClick={() => setView({ t: "folder", v: s.dir, label: s.name })}
-                      title={s.name}
-                    >
-                      <div className="subcard-cover">
-                        {cover ? <img src={cover} alt="" loading="lazy" /> : <Icon name="folder" size={26} />}
-                        <span className="subcard-count">{s.count}</span>
-                      </div>
-                      <div className="subcard-name">{s.name}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
           <div className={`view-fade${switching ? " anim-in" : ""}${clearing ? " clearing" : ""}`}>
             {progress.active && assets.length === 0 ? (
               <div className="indexing-loader">
@@ -1438,6 +1500,10 @@ export default function App() {
                 </div>
                 <div className="il-sub">{t("app.catalogingNote")}</div>
               </div>
+            ) : assets.length === 0 && subN > 0 ? (
+              // Pasta que só contém subpastas (ou busca que só achou pastas): mostra os
+              // cards de pasta (estilo Eagle), não o estado vazio.
+              <div className="grid only-subs">{gridFolders.map((s) => subCardEl(s))}</div>
             ) : assets.length === 0 ? (
               <div className="empty">
                 <Logo size={54} />
@@ -1453,20 +1519,45 @@ export default function App() {
               <Virtuoso
                 ref={gridRef}
                 style={{ height: "100%" }}
-                totalCount={assets.length}
+                totalCount={subN + assets.length}
                 overscan={600}
                 endReached={() => runSearch(false)}
-                computeItemKey={(i) => assets[i]?.id ?? i}
-                itemContent={(i) => (
-                  <AssetRow
-                    asset={assets[i]}
-                    selected={selectedIds.has(assets[i].id) || selected?.id === assets[i].id}
-                    onClick={(a, e) => handleCardClick(a, e, i)}
-                    onPreview={setPreviewAsset}
-                    onContext={openCtx}
-                    animDelayMs={Math.min(i, 18) * 18}
-                  />
-                )}
+                computeItemKey={(i) =>
+                  i < subN ? `sub:${gridFolders[i].dir}` : assets[i - subN]?.id ?? i
+                }
+                itemContent={(i) => {
+                  if (i < subN) {
+                    const s = gridFolders[i];
+                    return (
+                      <button
+                        className="asset-row folder-row"
+                        onClick={() => {
+                          sfx.tap();
+                          cascadeOnNextLoad.current = true;
+                          setView({ t: "folder", v: s.dir, label: s.name });
+                        }}
+                        title={s.name}
+                      >
+                        <Icon name="folder" size={18} />
+                        <span className="folder-row-name">{s.name}</span>
+                        <span className="folder-row-count">{s.count}</span>
+                      </button>
+                    );
+                  }
+                  const j = i - subN;
+                  const a = assets[j];
+                  if (!a) return <span />;
+                  return (
+                    <AssetRow
+                      asset={a}
+                      selected={selectedIds.has(a.id) || selected?.id === a.id}
+                      onClick={(x, e) => handleCardClick(x, e, j)}
+                      onPreview={setPreviewAsset}
+                      onContext={openCtx}
+                      animDelayMs={Math.min(i, 18) * 18}
+                    />
+                  );
+                }}
               />
             ) : layout === "waterfall" ? (
               <div
@@ -1476,6 +1567,11 @@ export default function App() {
                   if (el.scrollTop + el.clientHeight > el.scrollHeight - 700) runSearch(false);
                 }}
               >
+                {gridFolders.map((s) => (
+                  <div className="wf-item" key={`sub:${s.dir}`}>
+                    {subCardEl(s)}
+                  </div>
+                ))}
                 {assets.map((a, i) => (
                   <div className="wf-item" key={a.id}>
                     <AssetCard
@@ -1494,22 +1590,30 @@ export default function App() {
               <VirtuosoGrid
                 ref={gridRef}
                 style={{ height: "100%" }}
-                totalCount={assets.length}
+                totalCount={subN + assets.length}
                 overscan={500}
                 endReached={() => runSearch(false)}
-                computeItemKey={(i) => assets[i]?.id ?? i}
+                computeItemKey={(i) =>
+                  i < subN ? `sub:${gridFolders[i].dir}` : assets[i - subN]?.id ?? i
+                }
                 listClassName="grid"
-                itemContent={(i) => (
-                  <AssetCard
-                    asset={assets[i]}
-                    selected={selectedIds.has(assets[i].id) || selected?.id === assets[i].id}
-                    onClick={(a, e) => handleCardClick(a, e, i)}
-                    onPreview={setPreviewAsset}
-                    onContext={openCtx}
-                    reorder={inCollection !== null ? { index: i, onReorder } : undefined}
-                    animDelayMs={Math.min(i, 14) * 25}
-                  />
-                )}
+                itemContent={(i) => {
+                  if (i < subN) return subCardEl(gridFolders[i]);
+                  const j = i - subN;
+                  const a = assets[j];
+                  if (!a) return <span />;
+                  return (
+                    <AssetCard
+                      asset={a}
+                      selected={selectedIds.has(a.id) || selected?.id === a.id}
+                      onClick={(x, e) => handleCardClick(x, e, j)}
+                      onPreview={setPreviewAsset}
+                      onContext={openCtx}
+                      reorder={inCollection !== null ? { index: j, onReorder } : undefined}
+                      animDelayMs={Math.min(i, 14) * 25}
+                    />
+                  );
+                }}
               />
             )}
           </div>
@@ -1551,6 +1655,9 @@ export default function App() {
       )}
 
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+      {showDownload && (
+        <DownloadModal onClose={() => setShowDownload(false)} onDone={onMutate} />
+      )}
 
       {welcome && (
         <WelcomeModal

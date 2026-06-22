@@ -1,6 +1,7 @@
 mod ai;
 mod classify;
 mod db;
+mod extras;
 mod dbpool;
 mod features;
 mod indexer;
@@ -201,6 +202,20 @@ fn subfolders(app: tauri::AppHandle, parent: String) -> Result<Vec<db::SubCard>,
     state.reads.with(|conn| db::subfolders(conn, &parent)).map_err(|e| e.to_string())
 }
 
+/// Busca pastas pelo nome (qualquer profundidade), opcionalmente dentro de um escopo.
+#[tauri::command]
+fn search_folders(
+    app: tauri::AppHandle,
+    query: String,
+    scope: Option<String>,
+) -> Result<Vec<db::SubCard>, String> {
+    let state = app.state::<AppState>();
+    state
+        .reads
+        .with(|conn| db::search_folders(conn, &query, scope.as_deref(), 40))
+        .map_err(|e| e.to_string())
+}
+
 /// Salva uma imagem ANOTADA (markup) ao lado da original e cataloga (Briefing 4 #9).
 #[tauri::command]
 fn save_annotated(app: tauri::AppHandle, near_path: String, data: Vec<u8>) -> Result<String, String> {
@@ -310,6 +325,34 @@ fn add_from_url(app: tauri::AppHandle, url: String) -> Result<String, String> {
     indexer::index_one(&db, &thumbs_dir, &out).ok_or("falha ao catalogar")?;
     tracing::info!(url = %url, dest = %out.display(), "add_from_url: coletado da web");
     Ok(out.to_string_lossy().to_string())
+}
+
+// ---------- Video Downloader (yt-dlp nativo) ----------
+
+#[tauri::command]
+fn video_download_info(app: tauri::AppHandle, url: String) -> Result<extras::DownloadInfo, String> {
+    let state = app.state::<AppState>();
+    extras::info(&state.data_dir, url.trim())
+}
+
+/// Baixa o vídeo/áudio pro Inbox e JÁ cataloga no PRISMA. Retorna o caminho final.
+#[tauri::command]
+fn video_download(app: tauri::AppHandle, url: String, audio_only: bool) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let inbox = state.data_dir.join("Inbox");
+    let ffmpeg = thumbs::bin_path("ffmpeg");
+    let out = extras::download(&state.data_dir, &ffmpeg, &inbox, url.trim(), audio_only)?;
+    let db = state.db.clone();
+    let thumbs_dir = state.thumbs_dir.clone();
+    indexer::index_one(&db, &thumbs_dir, &out).ok_or("baixado mas falhou ao catalogar")?;
+    tracing::info!(url = %url, dest = %out.display(), "video_download: baixado e catalogado");
+    Ok(out.to_string_lossy().to_string())
+}
+
+/// Letras sincronizadas (LRC) pro Music Player.
+#[tauri::command]
+fn fetch_lyrics(artist: String, title: String) -> Result<Vec<extras::LyricLine>, String> {
+    extras::lyrics(artist.trim(), title.trim())
 }
 
 /// Auto-tag: marca todos os assets da pasta com o nome dela (Briefing 4 #7).
@@ -1744,6 +1787,10 @@ pub fn run() {
             set_folder_cover,
             set_folder_color,
             subfolders,
+            search_folders,
+            video_download,
+            video_download_info,
+            fetch_lyrics,
             autotag_folder,
             paste_image,
             add_from_url,

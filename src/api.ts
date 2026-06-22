@@ -223,6 +223,29 @@ export const setFolderCover = (dir: string, cover: string | null) =>
 export const setFolderColor = (dir: string, color: string | null) =>
   invoke<void>("set_folder_color", { dir, color });
 export const subfolders = (parent: string) => invoke<SubCard[]>("subfolders", { parent });
+export const searchFolders = (query: string, scope: string | null) =>
+  invoke<SubCard[]>("search_folders", { query, scope });
+
+// ----- Video Downloader (yt-dlp nativo) -----
+export interface DownloadInfo {
+  title: string;
+  uploader: string | null;
+  duration: number | null;
+  thumbnail: string | null;
+}
+export const videoDownloadInfo = (url: string) =>
+  invoke<DownloadInfo>("video_download_info", { url });
+export const videoDownload = (url: string, audioOnly: boolean) =>
+  invoke<string>("video_download", { url, audioOnly });
+
+// ----- Letras sincronizadas (LRC) -----
+export interface LyricLine {
+  t: number;
+  text: string;
+}
+export const fetchLyrics = (artist: string, title: string) =>
+  invoke<LyricLine[]>("fetch_lyrics", { artist, title });
+
 export const autotagFolder = (dir: string) => invoke<number>("autotag_folder", { dir });
 export const pasteImage = (data: number[]) => invoke<string>("paste_image", { data });
 export const addFromUrl = (url: string) => invoke<string>("add_from_url", { url });
