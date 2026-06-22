@@ -20,6 +20,7 @@ export interface Asset {
   proxy_path: string | null;
   health_level: string | null; // red | yellow | green
   health_flags: string | null; // CSV: vfr,banding,proxy...
+  seq_frames: number | null; // nº de frames se for uma image sequence
 }
 
 export interface Tag {

@@ -816,6 +816,14 @@ body {
   bottom: 7px;
   right: 7px;
 }
+.badge-seq {
+  top: 7px;
+  right: 7px;
+  background: var(--accent-soft);
+  color: var(--text-1);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
 .badge-rating {
   top: 7px;
   left: 7px;

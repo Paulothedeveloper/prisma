@@ -156,6 +156,11 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
             title={asset.health_flags ? t("card.health").replace("{flags}", asset.health_flags) : t("card.needsAttention")}
           />
         )}
+        {asset.seq_frames ? (
+          <span className="badge badge-seq" title={`${asset.seq_frames} frames`}>
+            SEQ · {asset.seq_frames}
+          </span>
+        ) : null}
         {dur && <span className="badge badge-dur">{dur}</span>}
         {asset.rating > 0 && (
           <span className="badge badge-rating">

@@ -26,6 +26,7 @@ pub struct Asset {
     pub proxy_path: Option<String>,
     pub health_level: Option<String>,
     pub health_flags: Option<String>,
+    pub seq_frames: Option<i64>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -191,6 +192,8 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "phash INTEGER", // perceptual hash (dHash) pra "buscar por imagem" (similaridade)
         "health_level TEXT", // diagnóstico em cache: red/yellow/green (Briefing 6, saúde da biblioteca)
         "health_flags TEXT", // flags do diagnóstico: vfr,banding,proxy,8bitlog,mono... (CSV)
+        "seq_frames INTEGER", // nº de frames se este asset REPRESENTA uma image sequence
+        "seq_member INTEGER NOT NULL DEFAULT 0", // 1 = frame interno de uma sequence (escondido)
     ] {
         let _ = conn.execute(&format!("ALTER TABLE assets ADD COLUMN {col}"), []);
     }
@@ -755,17 +758,21 @@ fn row_to_asset(r: &rusqlite::Row) -> rusqlite::Result<Asset> {
         proxy_path: r.get("proxy_path")?,
         health_level: r.get("health_level")?,
         health_flags: r.get("health_flags")?,
+        seq_frames: r.get("seq_frames")?,
     })
 }
 
 const SELECT_COLS: &str = "id, path, filename, name, ext, type, size, modified_at, width, height,
     duration, rating, notes, dominant_color, color_bucket, thumbnail_path, proxy_path,
-    health_level, health_flags";
+    health_level, health_flags, seq_frames";
 
 /// Busca/filtra com filtros combinados. Tudo via SQLite -> instantaneo.
 pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     let mut sql = format!("SELECT {SELECT_COLS} FROM assets a WHERE 1=1");
     let mut args: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+
+    // Image sequences: esconde os frames internos; só o representante aparece.
+    sql.push_str(" AND seq_member=0");
 
     // Lixeira: por padrão esconde os trashed; a view de lixeira mostra só eles.
     if f.trashed {
@@ -1352,6 +1359,66 @@ pub fn set_board_item(
         params![collection_id, asset_id, x, y, w, z],
     )?;
     Ok(())
+}
+
+/// Detecta image sequences numa pasta: agrupa imagens com mesmo prefixo+extensão e
+/// sufixo numérico (≥4 dígitos, ex. render_0001.png). Grupos com ≥12 frames viram UMA
+/// sequence: o menor número é o REPRESENTANTE (seq_frames=N) e o resto vira seq_member=1
+/// (escondido na grade). Conservador de propósito pra nunca sumir imagem solta por engano.
+/// Não-destrutivo: só metadado, nenhum arquivo é tocado. Retorna nº de sequences achadas.
+pub fn detect_sequences(conn: &Connection, dir: &str) -> rusqlite::Result<usize> {
+    use std::collections::HashMap;
+    let like = format!("{dir}\\%");
+    let mut stmt = conn.prepare(
+        "SELECT id, dir, filename FROM assets WHERE (dir=?1 OR dir LIKE ?2) \
+         AND type='image' AND seq_member=0 AND seq_frames IS NULL",
+    )?;
+    let rows: Vec<(i64, String, String)> = stmt
+        .query_map(params![dir, like], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+        .filter_map(|x| x.ok())
+        .collect();
+
+    // chave = (dir, prefixo, ext, largura dos dígitos) → lista de (id, número)
+    let mut groups: HashMap<(String, String, String, usize), Vec<(i64, i64)>> = HashMap::new();
+    for (id, fdir, fname) in rows {
+        let Some((stem, ext)) = fname.rsplit_once('.') else { continue };
+        let digits: String = stem
+            .chars()
+            .rev()
+            .take_while(|c| c.is_ascii_digit())
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect();
+        if digits.len() < 4 {
+            continue; // exige 0001+ (4 dígitos) — bem conservador
+        }
+        let prefix = stem[..stem.len() - digits.len()].to_string();
+        if prefix.is_empty() {
+            continue;
+        }
+        let Ok(num) = digits.parse::<i64>() else { continue };
+        groups
+            .entry((fdir, prefix, ext.to_ascii_lowercase(), digits.len()))
+            .or_default()
+            .push((id, num));
+    }
+
+    let mut seqs = 0usize;
+    for (_key, mut items) in groups {
+        if items.len() < 12 {
+            continue; // só grupos claramente "sequência"
+        }
+        items.sort_by_key(|(_, n)| *n);
+        let rep = items[0].0;
+        let count = items.len() as i64;
+        conn.execute("UPDATE assets SET seq_frames=?2, seq_member=0 WHERE id=?1", params![rep, count])?;
+        for (id, _) in &items[1..] {
+            conn.execute("UPDATE assets SET seq_member=1 WHERE id=?1", params![id])?;
+        }
+        seqs += 1;
+    }
+    Ok(seqs)
 }
 
 /// Dados de um clipe pro export FCPXML (path, nome, duração, fps, w, h, tipo).

@@ -173,6 +173,12 @@ pub fn index_folder(
         let _ = app.emit("index:dups", &dups);
     }
 
+    // Image sequences: agrupa frames numerados num só asset representante (escondendo o resto).
+    {
+        let conn = db.lock().unwrap();
+        let _ = db::detect_sequences(&conn, &folder);
+    }
+
     let _ = app.emit("index:done", DonePayload { folder, total });
 }
 
