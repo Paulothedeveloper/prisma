@@ -89,6 +89,10 @@ import "./App.css";
 const PAGE = 200;
 // Array vazio ESTÁVEL (mesma referência entre renders) — evita remontar o cabeçalho de pastas.
 const NO_SUBS: SubCard[] = [];
+// Objeto `components` vazio ESTÁVEL pro Virtuoso. NUNCA passar `components={undefined}` — o
+// react-virtuoso faz `components.Footer` e quebra ("Cannot read properties of undefined") →
+// tela preta. Sem cabeçalho de pastas, passamos {} (o padrão), não undefined.
+const EMPTY_COMPONENTS = {};
 
 const CATEGORY_LABELS: Record<string, string> = {
   image: t("cat.image"),
@@ -998,13 +1002,13 @@ export default function App() {
   // Renderizar via components.Header do Virtuoso evita o offset de índice que recicla DOM e
   // causava SOBREPOSIÇÃO de miniaturas (bug visual). Memoizado pra não remontar a cada render.
   const gridHeader = useMemo(() => {
-    if (gridFolders.length === 0) return undefined;
+    if (gridFolders.length === 0) return EMPTY_COMPONENTS;
     const H = () => <div className="grid grid-folders">{gridFolders.map(subCardEl)}</div>;
     return { Header: H };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gridFolders]);
   const listHeader = useMemo(() => {
-    if (gridFolders.length === 0) return undefined;
+    if (gridFolders.length === 0) return EMPTY_COMPONENTS;
     const H = () => (
       <div className="folder-rows">
         {gridFolders.map((s) => (
