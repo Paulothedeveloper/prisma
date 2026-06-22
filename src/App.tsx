@@ -49,6 +49,7 @@ import {
   clipStatus,
   clipIndex,
   clipAutotag,
+  exportContactSheet,
   type Asset,
   type SubCard,
   type Counts,
@@ -873,6 +874,13 @@ export default function App() {
       { label: t("ctx.findSimilar"), icon: "search", onClick: () => setView({ t: "similar", v: a.id, label: a.name || a.filename }) },
       { label: `${t("batch.ai")}${n}`, icon: "sliders", onClick: () => aiAnalyzeMany(ids) },
       { label: `${t("ctx.autotagClip")}${n}`, icon: "sparkles", onClick: () => clipAutotag(ids) },
+      ...(many
+        ? [{
+            label: `${t("ctx.contactSheet")}${n}`,
+            icon: "stack" as const,
+            onClick: () => exportContactSheet(ids).then(onMutate).catch((e) => window.alert(String(e))),
+          }]
+        : []),
       { sep: true, label: "" },
       {
         label: `${t("ctx.trash")}${n}`,

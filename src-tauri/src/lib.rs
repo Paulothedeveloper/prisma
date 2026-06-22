@@ -1491,6 +1491,53 @@ fn open_external(path: String) -> Result<(), String> {
 
 // ---------------- Ecossistema: VELVET + QUARTZO ----------------
 
+/// Designer: exporta um CONTACT SHEET (folha de contato) das imagens selecionadas — compõe as
+/// miniaturas numa grade PNG, salva no Inbox e cataloga. `ids` vazio = nada. Retorna o caminho.
+#[tauri::command]
+fn export_contact_sheet(app: tauri::AppHandle, ids: Vec<i64>) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    if ids.is_empty() {
+        return Err("Selecione ao menos uma imagem.".into());
+    }
+    let thumbs: Vec<std::path::PathBuf> = state
+        .reads
+        .with(|c| {
+            let mut out = Vec::new();
+            for id in &ids {
+                if let Ok(Some(tp)) = c.query_row(
+                    "SELECT thumbnail_path FROM assets WHERE id=?1",
+                    rusqlite::params![id],
+                    |r| r.get::<_, Option<String>>(0),
+                ) {
+                    if !tp.is_empty() {
+                        out.push(std::path::PathBuf::from(tp));
+                    }
+                }
+            }
+            Ok::<_, rusqlite::Error>(out)
+        })
+        .map_err(|e| e.to_string())?;
+    if thumbs.is_empty() {
+        return Err("Os itens selecionados não têm miniatura.".into());
+    }
+    let cols = (thumbs.len() as f64).sqrt().ceil() as u32;
+    let cols = cols.clamp(2, 10);
+    let inbox = state.data_dir.join("Inbox");
+    std::fs::create_dir_all(&inbox).map_err(|e| e.to_string())?;
+    let mut out = inbox.join("contact_sheet.png");
+    let mut k = 1;
+    while out.exists() {
+        out = inbox.join(format!("contact_sheet_{k}.png"));
+        k += 1;
+    }
+    thumbs::make_contact_sheet(&thumbs, cols, 320, 12, &out).ok_or("falha ao montar a folha")?;
+    let db = state.db.clone();
+    let thumbs_dir = state.thumbs_dir.clone();
+    indexer::index_one(&db, &thumbs_dir, &out).ok_or("montou mas falhou ao catalogar")?;
+    tracing::info!(n = thumbs.len(), dest = %out.display(), "export_contact_sheet");
+    Ok(out.to_string_lossy().to_string())
+}
+
 /// VELVET: exporta o catálogo de LUTs (por humor) pro contrato estável `velvet_luts.json`
 /// no diretório de dados. O VELVET (no DaVinci) lê esse arquivo pra escolher a LUT.
 #[tauri::command]
@@ -2166,6 +2213,7 @@ pub fn run() {
             clip_index,
             clip_search,
             clip_autotag,
+            export_contact_sheet,
             export_velvet_catalog,
             velvet_apply_cst,
             quartzo_get_vault,

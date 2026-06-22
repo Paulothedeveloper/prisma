@@ -72,8 +72,10 @@
 - [ ] **Marcadores in/out** num clipe (mandar só um trecho)
 - [ ] **Coleções ↔ bins** do Resolve (sincronizar)
 
-## 0.11.1 — Designer
-- [ ] **Contact sheet / export de moodboard** (PNG/PDF)
+## 0.9.7 / 0.11.1 — Designer
+- [x] **Contact sheet** (0.9.7): botão-direito em vários itens → folha de contato PNG (grade das
+      miniaturas) salva no Inbox e catalogada. `thumbs::make_contact_sheet` (crate image).
+- [ ] Export de moodboard como PDF
 - [ ] **Paleta → .cube** (LUT/swatches pro Resolve/Photoshop)
 
 ## 0.12.0 — Painel "Color (VELVET)" dentro do PRISMA (Nível 3)

@@ -200,6 +200,37 @@ fn font_thumb(src: &Path, out: &Path) -> Option<(u32, u32)> {
     Some((w, h))
 }
 
+/// Contact sheet (folha de contato, designer): compõe as miniaturas numa grade PNG só.
+/// `cell` = tamanho de cada célula; `cols` = colunas. Centraliza cada thumb na célula
+/// preservando proporção. Puro Rust (crate image). Retorna (largura, altura) da folha.
+pub fn make_contact_sheet(thumbs: &[PathBuf], cols: u32, cell: u32, gap: u32, out: &Path) -> Option<(u32, u32)> {
+    use image::{imageops, GenericImageView, Rgba, RgbaImage};
+    if thumbs.is_empty() {
+        return None;
+    }
+    let cols = cols.max(1);
+    let n = thumbs.len() as u32;
+    let rows = n.div_ceil(cols);
+    let w = cols * cell + (cols + 1) * gap;
+    let h = rows * cell + (rows + 1) * gap;
+    if w == 0 || h == 0 || (w as u64) * (h as u64) > 80_000_000 {
+        return None; // guarda contra folha gigante demais
+    }
+    let mut sheet = RgbaImage::from_pixel(w, h, Rgba([22, 22, 24, 255]));
+    for (i, p) in thumbs.iter().enumerate() {
+        let Ok(img) = image::open(p) else { continue };
+        let thumb = img.thumbnail(cell, cell); // mantém proporção, cabe em cell×cell
+        let (tw, th) = thumb.dimensions();
+        let col = (i as u32) % cols;
+        let row = (i as u32) / cols;
+        let cx = gap + col * (cell + gap) + (cell - tw) / 2;
+        let cy = gap + row * (cell + gap) + (cell - th) / 2;
+        imageops::overlay(&mut sheet, &thumb.to_rgba8(), cx as i64, cy as i64);
+    }
+    sheet.save(out).ok()?;
+    Some((w, h))
+}
+
 /// Extrai o maior JPEG embutido num arquivo RAW e gera a miniatura dele.
 /// Quase todo RAW de câmera carrega um preview JPEG (às vezes em resolução cheia);
 /// achamos o maior bloco FFD8…FFD9 que decodifica. Puro Rust, offline, sem decodificar Bayer.

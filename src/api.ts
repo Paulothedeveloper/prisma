@@ -473,6 +473,9 @@ export interface QuartzoNote {
   name: string;
 }
 export const exportVelvetCatalog = () => invoke<string>("export_velvet_catalog");
+// Designer: contact sheet (folha de contato) das imagens selecionadas → PNG no Inbox
+export const exportContactSheet = (ids: number[]) =>
+  invoke<string>("export_contact_sheet", { ids });
 // VELVET: aplicar CST no DaVinci (PRISMA decide a arvore de nos + grava o request)
 export interface VelvetApplyResult {
   summary: string;
