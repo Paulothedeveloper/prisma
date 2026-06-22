@@ -836,10 +836,17 @@ pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     }
     if let Some(folder) = &f.folder {
         if !folder.is_empty() {
-            // SÓ a mídia DIRETA da pasta (não herda das subpastas). As subpastas aparecem
-            // como cards-capa em cima da grade. Assim a pasta-só-de-subpastas mostra só elas.
-            sql.push_str(" AND dir = ?");
-            args.push(Box::new(folder.clone()));
+            if f.query.trim().is_empty() {
+                // NAVEGANDO a pasta: só a mídia DIRETA (não herda das subpastas). As
+                // subpastas aparecem como cards-capa. Pasta só-de-subpastas mostra só elas.
+                sql.push_str(" AND dir = ?");
+                args.push(Box::new(folder.clone()));
+            } else {
+                // BUSCANDO dentro da pasta: recursivo, acha também nas subpastas.
+                sql.push_str(" AND (dir = ? OR dir LIKE ?)");
+                args.push(Box::new(folder.clone()));
+                args.push(Box::new(format!("{folder}\\%")));
+            }
         }
     }
     if let Some(e) = &f.ext {
