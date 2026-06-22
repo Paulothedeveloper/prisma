@@ -48,6 +48,7 @@ import {
   clipSearch,
   clipStatus,
   clipIndex,
+  clipAutotag,
   type Asset,
   type SubCard,
   type Counts,
@@ -613,6 +614,11 @@ export default function App() {
       clipStatus().then(setClipStat).catch(() => {});
       runSearch(true);
     }).then((u) => unl.push(u));
+    // Auto-tag CLIP terminou → atualiza tags + grade.
+    listen<number>("clip:tagdone", () => {
+      refreshMeta();
+      runSearch(true);
+    }).then((u) => unl.push(u));
     // Proxies automáticos (ao importar): progresso + fim → atualiza a grade pra já tocar.
     listen<{ done: number; total: number; made: number }>("proxy:progress", (e) =>
       setProxyProgress(e.payload),
@@ -866,6 +872,7 @@ export default function App() {
       ...(a.type === "image" || a.type === "gif" ? [{ label: t("ctx.markup"), icon: "pencil" as const, onClick: () => setMarkup(a) }] : []),
       { label: t("ctx.findSimilar"), icon: "search", onClick: () => setView({ t: "similar", v: a.id, label: a.name || a.filename }) },
       { label: `${t("batch.ai")}${n}`, icon: "sliders", onClick: () => aiAnalyzeMany(ids) },
+      { label: `${t("ctx.autotagClip")}${n}`, icon: "sparkles", onClick: () => clipAutotag(ids) },
       { sep: true, label: "" },
       {
         label: `${t("ctx.trash")}${n}`,

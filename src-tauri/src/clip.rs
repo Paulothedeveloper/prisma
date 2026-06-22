@@ -169,6 +169,81 @@ pub fn cosine(a: &[f32], b: &[f32]) -> f32 {
     a.iter().zip(b).map(|(x, y)| x * y).sum()
 }
 
+/// Vocabulário pro AUTO-TAG zero-shot: (prompt em inglês pro CLIP, etiqueta em PT que é gravada).
+/// CLIP é treinado em inglês — o prompt "a photo of X" rende melhor; a tag fica em PT pro Paulo.
+/// Focado na biblioteca de um editor (overlays/backgrounds/footage/elementos).
+pub const DEFAULT_VOCAB: &[(&str, &str)] = &[
+    ("a photo of a person", "pessoa"),
+    ("a group of people", "pessoas"),
+    ("a face close up", "rosto"),
+    ("a landscape with nature", "natureza"),
+    ("a city street", "cidade"),
+    ("a building or architecture", "arquitetura"),
+    ("the sky with clouds", "céu"),
+    ("the ocean or sea water", "água"),
+    ("a beach", "praia"),
+    ("a forest with trees", "floresta"),
+    ("mountains", "montanha"),
+    ("a sunset or sunrise", "pôr do sol"),
+    ("food on a plate", "comida"),
+    ("an animal", "animal"),
+    ("a dog", "cachorro"),
+    ("a cat", "gato"),
+    ("a car or vehicle", "carro"),
+    ("fire or flames", "fogo"),
+    ("smoke", "fumaça"),
+    ("an explosion effect", "explosão"),
+    ("water splash", "respingo"),
+    ("particles or sparkles", "partículas"),
+    ("light leaks or lens flare", "light leak"),
+    ("a glowing neon light", "neon"),
+    ("an abstract background", "abstrato"),
+    ("a geometric pattern", "geométrico"),
+    ("a gradient background", "gradiente"),
+    ("a texture or grunge", "textura"),
+    ("a green screen chroma key", "chroma key"),
+    ("a transparent png overlay", "overlay"),
+    ("text or typography", "texto"),
+    ("a logo", "logo"),
+    ("an icon", "ícone"),
+    ("a user interface screenshot", "interface"),
+    ("a chart or graph", "gráfico"),
+    ("a dark moody scene", "escuro"),
+    ("a bright high key scene", "claro"),
+    ("a black and white image", "preto e branco"),
+    ("a colorful vibrant image", "colorido"),
+    ("a vintage retro look", "vintage"),
+    ("a cinematic film still", "cinematográfico"),
+    ("a portrait of a person", "retrato"),
+    ("an indoor room", "interior"),
+    ("an outdoor scene", "externa"),
+    ("night time", "noturno"),
+    ("a snow or winter scene", "neve"),
+    ("flowers or plants", "flores"),
+    ("hands", "mãos"),
+    ("a paper or document", "documento"),
+    ("a map", "mapa"),
+];
+
+/// Embeda todo o vocabulário (uma vez) → (tag_pt, embedding).
+pub fn vocab_embeddings(enc: &mut TextEncoder) -> Vec<(String, Vec<f32>)> {
+    DEFAULT_VOCAB
+        .iter()
+        .filter_map(|(prompt, tag)| embed_text(enc, prompt).ok().map(|e| (tag.to_string(), e)))
+        .collect()
+}
+
+/// Dado o embedding de uma imagem, escolhe as etiquetas acima do limiar (cosseno), no máx `max`.
+pub fn autotag_for(img_embed: &[f32], vocab: &[(String, Vec<f32>)], threshold: f32, max: usize) -> Vec<String> {
+    let mut scored: Vec<(&str, f32)> = vocab
+        .iter()
+        .map(|(tag, e)| (tag.as_str(), cosine(img_embed, e)))
+        .filter(|(_, c)| *c >= threshold)
+        .collect();
+    scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    scored.into_iter().take(max).map(|(t, _)| t.to_string()).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

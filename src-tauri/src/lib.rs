@@ -481,6 +481,78 @@ fn clip_search(app: tauri::AppHandle, query: String, limit: i64) -> Result<Vec<d
     state.reads.with(|c| db::assets_by_ids(c, &ids)).map_err(|e| e.to_string())
 }
 
+/// Auto-tag ZERO-SHOT com CLIP (sem gastar API): compara cada imagem com um vocabulário de
+/// conceitos e grava as etiquetas que casam. `ids` vazio = todas as imagens. Roda em background.
+#[tauri::command]
+fn clip_autotag(app: tauri::AppHandle, ids: Vec<i64>) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let targets: Vec<(i64, String)> = if ids.is_empty() {
+        state
+            .reads
+            .with(|c| {
+                let mut s = c.prepare(
+                    "SELECT id, path FROM assets WHERE trashed=0 AND seq_member=0 AND live_member=0 AND type IN ('image','gif')",
+                )?;
+                let rows = s.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+                rows.collect::<rusqlite::Result<Vec<_>>>()
+            })
+            .map_err(|e| e.to_string())?
+    } else {
+        state
+            .reads
+            .with(|c| {
+                let mut out = Vec::new();
+                for id in &ids {
+                    if let Ok(p) = c.query_row("SELECT path FROM assets WHERE id=?1", rusqlite::params![id], |r| r.get::<_, String>(0)) {
+                        out.push((*id, p));
+                    }
+                }
+                Ok::<_, rusqlite::Error>(out)
+            })
+            .map_err(|e| e.to_string())?
+    };
+    let n = targets.len();
+    if n == 0 {
+        let _ = app.emit("clip:tagdone", 0u64);
+        return Ok(0);
+    }
+    let data_dir = state.data_dir.clone();
+    let db = state.db.clone();
+    let app2 = app.clone();
+    std::thread::spawn(move || {
+        let mut enc = match clip::text_encoder(&data_dir) {
+            Ok(e) => e,
+            Err(e) => { let _ = app2.emit("clip:error", e); return; }
+        };
+        let vocab = clip::vocab_embeddings(&mut enc);
+        let mut vis = match clip::vision_session(&data_dir) {
+            Ok(s) => s,
+            Err(e) => { let _ = app2.emit("clip:error", e); return; }
+        };
+        let mut done = 0u64;
+        for (id, path) in targets {
+            if let Ok(emb) = clip::embed_image(&mut vis, std::path::Path::new(&path)) {
+                let tags = clip::autotag_for(&emb, &vocab, 0.215, 6);
+                if let Ok(conn) = db.lock() {
+                    // aproveita e guarda o embedding (serve pra busca semântica também)
+                    let _ = db::set_clip_embed(&conn, id, &clip::embed_to_blob(&emb));
+                    for tag in &tags {
+                        if let Ok(tid) = db::create_tag(&conn, tag, None) {
+                            let _ = db::assign_tag(&conn, id, tid);
+                        }
+                    }
+                }
+            }
+            done += 1;
+            if done % 5 == 0 {
+                let _ = app2.emit("clip:tagprogress", done);
+            }
+        }
+        let _ = app2.emit("clip:tagdone", done);
+    });
+    Ok(n)
+}
+
 /// Auto-tag: marca todos os assets da pasta com o nome dela (Briefing 4 #7).
 #[tauri::command]
 fn autotag_folder(app: tauri::AppHandle, dir: String) -> Result<i64, String> {
@@ -2093,6 +2165,7 @@ pub fn run() {
             clip_status,
             clip_index,
             clip_search,
+            clip_autotag,
             export_velvet_catalog,
             velvet_apply_cst,
             quartzo_get_vault,

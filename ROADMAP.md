@@ -59,10 +59,12 @@
 - [ ] AI Eraser (apagar objeto, inpainting LaMa)
 - [ ] MCP Server (expor a biblioteca via MCP)
 
-## 0.10.1 — CLIP++
+## 0.9.6 / 0.10.1 — CLIP++
+- [x] **Auto-tag zero-shot** com CLIP (0.9.6): vocabulário de ~50 conceitos (prompt EN → tag PT),
+      cosseno imagem×conceito, grava tags acima do limiar; botão-direito "Auto-tag com IA (CLIP, grátis)".
+      Aproveita e guarda o embedding (serve pra busca semântica).
 - [ ] Busca semântica em **vídeo** (embedding do frame do meio)
 - [ ] Busca por **imagem-exemplo** ("ache parecidas com esta")
-- [ ] **Auto-tag zero-shot** com CLIP (sem gastar API)
 
 ## 0.11.0 — Fluxo de editor
 - [ ] Export **Premiere XML** (além do FCPXML)
