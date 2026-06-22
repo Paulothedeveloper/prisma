@@ -249,6 +249,9 @@ export const setBoardItem = (
 // ----- Export pro NLE (FCPXML) -----
 export const exportNle = (assetIds: number[], dest: string) =>
   invoke<number>("export_nle", { assetIds, dest });
+
+// ----- Catálogo de drives offline -----
+export const offlineDirs = () => invoke<string[]>("offline_dirs");
 export const saveAnnotated = (nearPath: string, data: number[]) =>
   invoke<string>("save_annotated", { nearPath, data });
 

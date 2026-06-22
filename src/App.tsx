@@ -26,6 +26,7 @@ import {
   pasteImage,
   addFromUrl,
   exportNle,
+  offlineDirs,
   duplicateAsset,
   emptyTrash,
   dedupeKeepOne,
@@ -74,6 +75,7 @@ import { UpdateBanner } from "./UpdateBanner";
 import { onTip, fireTip, isFirstLaunch, markWelcomed } from "./tips";
 import { t } from "./i18n";
 import { sfx } from "./sfx";
+import { setOfflineRoots } from "./offline";
 import { PopupButton } from "./Menu";
 import { TrafficLights } from "./TrafficLights";
 import "./App.css";
@@ -338,6 +340,7 @@ export default function App() {
     setCollections(await listCollections());
     setSmartFolders(await listSmart());
     healthCounts().then(setHCounts).catch(() => {});
+    offlineDirs().then(setOfflineRoots).catch(() => {});
   }, []);
 
   // Filtro/busca/ordenação: recarrega EM LUGAR (sem cascata — pra não reanimar enquanto digita).

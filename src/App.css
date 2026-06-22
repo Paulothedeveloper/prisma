@@ -824,6 +824,15 @@ body {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+.badge-offline {
+  bottom: 7px;
+  left: 7px;
+  background: rgba(255, 69, 58, 0.85);
+  color: #fff;
+  font-weight: 600;
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+}
 .badge-rating {
   top: 7px;
   left: 7px;

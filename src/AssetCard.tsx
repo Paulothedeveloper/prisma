@@ -4,6 +4,7 @@ import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import { Icon, type IconName } from "./Icons";
 import { dragIcon, type Asset } from "./api";
 import { hoverAutoplayOn } from "./prefs";
+import { isOffline } from "./offline";
 import { t } from "./i18n";
 
 // Caminho do ícone de fallback de arrasto, carregado uma vez.
@@ -161,6 +162,11 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
             SEQ · {asset.seq_frames}
           </span>
         ) : null}
+        {isOffline(asset.path) && (
+          <span className="badge badge-offline" title={t("card.offline")}>
+            OFFLINE
+          </span>
+        )}
         {dur && <span className="badge badge-dur">{dur}</span>}
         {asset.rating > 0 && (
           <span className="badge badge-rating">

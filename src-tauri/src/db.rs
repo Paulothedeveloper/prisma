@@ -1361,6 +1361,13 @@ pub fn set_board_item(
     Ok(())
 }
 
+/// Raízes indexadas (pastas que o usuário adicionou) — pra detectar drives offline.
+pub fn folder_roots(conn: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare("SELECT path FROM folders")?;
+    let rows = stmt.query_map([], |r| r.get(0))?;
+    rows.collect()
+}
+
 /// Detecta image sequences numa pasta: agrupa imagens com mesmo prefixo+extensão e
 /// sufixo numérico (≥4 dígitos, ex. render_0001.png). Grupos com ≥12 frames viram UMA
 /// sequence: o menor número é o REPRESENTANTE (seq_frames=N) e o resto vira seq_member=1

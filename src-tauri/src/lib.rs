@@ -805,6 +805,19 @@ fn export_nle(app: tauri::AppHandle, asset_ids: Vec<i64>, dest: String) -> Resul
     Ok(n)
 }
 
+/// Raízes indexadas que estão OFFLINE agora (HD/drive desconectado). Barato: checa só as
+/// pastas-raiz, não cada arquivo. O frontend marca como offline os assets sob essas raízes
+/// — eles seguem navegáveis pelas miniaturas em cache (catálogo de drives, estilo NeoFinder).
+#[tauri::command]
+fn offline_dirs(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let state = app.state::<AppState>();
+    let roots = state.reads.with(|c| db::folder_roots(c)).map_err(|e| e.to_string())?;
+    Ok(roots
+        .into_iter()
+        .filter(|p| !std::path::Path::new(p).exists())
+        .collect())
+}
+
 // ---------- Moodboard (quadro livre de uma coleção) ----------
 
 #[tauri::command]
@@ -1700,6 +1713,7 @@ pub fn run() {
             board_layout,
             set_board_item,
             export_nle,
+            offline_dirs,
             resolve_dup,
             drag_icon,
             remove_asset,
