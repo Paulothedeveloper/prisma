@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.2",
-    "notes":  "Exclusao consertada: confirmacao propria (animada + som) no lugar do aviso do navegador; excluir pasta anima + toca som; apaga proxy/miniatura do disco junto; pasta que nao excluia por caixa de maiusculas corrigida.",
-    "pub_date":  "2026-06-22T16:47:29Z",
+    "version":  "0.9.3",
+    "notes":  "Rede de seguranca contra tela preta: se a interface quebrar, agora mostra o erro real + Recarregar/Copiar em vez de tela preta. Guarda o ultimo erro pra diagnostico.",
+    "pub_date":  "2026-06-22T21:53:10Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXc0YkNxRDliWWZyRUlWYUMwMEFwMGp1Ri9PamNhR3ZENjQ5MmNyNUR5eUoxUHZTY3Nwc1djMHF0TFRNNjdKZjQ3OEdkL3B2YUNvL1NDNXpHcGFOb0FNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTQ2ODMyCWZpbGU6UFJJU01BXzAuOS4yX3g2NC1zZXR1cC5leGUKbW9QU0tRSE5MMlMwb3Fzb3YwVkt4NnNZdzEyN3l5QS90aUhicjRBZ01sU0ozQ0hJZktCUThtM0UyanRTNkdjcUJvVncyM3pTTnJ4cmdtQ1FGSk0rQkE9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.2/PRISMA_0.9.2_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXlTS29XZm1LY2Yzd0JRRVdBWFB4YklqWUVJbkFPMVhRcDNoaXZNTG1Hd2FGQzVFbjNiYXZsSk1aUEl4cEloWmZMaXpUVnZlenlHYUFJa0tFOXpWendrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTY1MTYxCWZpbGU6UFJJU01BXzAuOS4zX3g2NC1zZXR1cC5leGUKQ3Y1NDE2QVJBekQ2Y0R2dTQyK3BHZER6R3VJSm5lcnFkalBwa0E4Rk9vL0FLb0M4STVEbndEeTlSUlJiN040WjV3NzNzb2VNTjB3K1U1cWdkdVlmQWc9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.3/PRISMA_0.9.3_x64-setup.exe"
                                          }
                   }
 }
