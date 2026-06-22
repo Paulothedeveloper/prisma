@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.3",
-    "notes":  "Rede de seguranca contra tela preta: se a interface quebrar, agora mostra o erro real + Recarregar/Copiar em vez de tela preta. Guarda o ultimo erro pra diagnostico.",
-    "pub_date":  "2026-06-22T21:53:10Z",
+    "version":  "0.9.5",
+    "notes":  "Conserto da TELA PRETA (causa-raiz: a grade passava um valor invalido pro componente da lista quando nao havia pastas na visao). Tambem: VELVET \u0027Aplicar CST no DaVinci\u0027 (botao no Detalhes gera a arvore de nos pro plugin VELVET montar no Resolve).",
+    "pub_date":  "2026-06-22T22:34:29Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXlTS29XZm1LY2Yzd0JRRVdBWFB4YklqWUVJbkFPMVhRcDNoaXZNTG1Hd2FGQzVFbjNiYXZsSk1aUEl4cEloWmZMaXpUVnZlenlHYUFJa0tFOXpWendrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTY1MTYxCWZpbGU6UFJJU01BXzAuOS4zX3g2NC1zZXR1cC5leGUKQ3Y1NDE2QVJBekQ2Y0R2dTQyK3BHZER6R3VJSm5lcnFkalBwa0E4Rk9vL0FLb0M4STVEbndEeTlSUlJiN040WjV3NzNzb2VNTjB3K1U1cWdkdVlmQWc9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.3/PRISMA_0.9.3_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTJqSXdpazF1TEVjSzlzM2VVUUtwNWU3YmE4eUpoOUxnem5hS0dOZU1mU200NXpXTkZRYklUNnJ0VXpXZmJpemtSbkJNRGF0ckhRc09KV1Y5b3JjSVFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTY3NjM1CWZpbGU6UFJJU01BXzAuOS41X3g2NC1zZXR1cC5leGUKbjJnM2hVeE5tejJ3dFZibnVFUzg0WkNZaVh0Tmp6QnNJUDNRQm4xTmhtamIwdjBVQnNWNDEvNWNrVzRsSjdHTnFMYVN6TVpsQ0M4ZjdaZ0c5aFVXQ2c9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.5/PRISMA_0.9.5_x64-setup.exe"
                                          }
                   }
 }
