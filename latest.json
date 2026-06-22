@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.6",
-    "notes":  "Auto-tag com IA de graca (CLIP): botao-direito numa imagem \u003e Auto-tag com IA (CLIP, gratis). Etiqueta sozinho por ~50 conceitos sem gastar API, e guarda o vetor pra busca semantica.",
-    "pub_date":  "2026-06-22T22:59:28Z",
+    "version":  "0.9.7",
+    "notes":  "Contact sheet (designer): selecione varias imagens \u003e botao-direito \u003e Contact sheet. O PRISMA monta uma folha PNG com a grade das miniaturas, salva no Inbox e cataloga.",
+    "pub_date":  "2026-06-22T23:12:31Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTJaRTM5UklodGY4d0VtdWJpSEYxV01aR0RCd2kzd09OT0tnNlNPWjJZbGhieC9jSGs2dGlFTHBxYVp1QWlhWklic2JFOGlmSGRVVFN5RDRRUHRXUlFFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTY5MDc2CWZpbGU6UFJJU01BXzAuOS42X3g2NC1zZXR1cC5leGUKRFJjQnU1RDJZQXBCSjMrN09TWUwzYzJvU0RQajlIRXloMWNwZXllZDFZclNwQXNWdG9pS1crN3Y4aFA0dXRWSzNvU0R3Tm5KN3FEUVRad3JhOW5qRHc9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.6/PRISMA_0.9.6_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTIybTd0WDJaMVVnaFhaQ3pyd3cvUzFjMTBiYklidnI3NityYlhDVnVGK25jU1Z2Z0NrYUwrK1lWQjVqZE9XYmMreGNFOVlqaE9Da3ZCVFRWYjhDQ0FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTY5OTM0CWZpbGU6UFJJU01BXzAuOS43X3g2NC1zZXR1cC5leGUKcURkZzFuVjZIcTBrUHVNY2k2SXZTUUtCS0M2YVpEc2MwNHg1b2thL242NWYrV2o1Rm12MGhYbnBqMWhWeEFaVXNmR3hlOFR3eUNuZWJGd3d0RFZTQ1E9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.7/PRISMA_0.9.7_x64-setup.exe"
                                          }
                   }
 }
