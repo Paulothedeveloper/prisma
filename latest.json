@@ -1,11 +1,11 @@
 {
-    "version":  "0.7.1",
-    "notes":  "Formatos: RAW de camera (CR2/CR3/NEF/ARW/DNG/RAF/RW2/ORF...) com miniatura do preview embutido; JXL e HEIC reconhecidos. Preview de RAW/HEIC/TIFF/EXR/DPX/JXL mostra a miniatura + abrir externo.",
-    "pub_date":  "2026-06-22T11:25:21Z",
+    "version":  "0.7.2",
+    "notes":  "Live Photo (foto + .mov irmao toca no hover e no preview, badge LIVE) + AI Action: perguntar a IA sobre a imagem (Descrever / Que texto ha / Sugerir nome / pergunta livre) no Inspetor.",
+    "pub_date":  "2026-06-22T11:54:04Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXlyVjQwbnA4MzQ2eWV4RnUyWkoxSjVoUEFYV01keG1KUitha0tDQkorZm9rdXBtQnJEenRsNjNNNkpuanpkdDZ0QTA3MWhOaWg5bVlnWWdLYTdDNndFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTI3NDk1CWZpbGU6UFJJU01BXzAuNy4xX3g2NC1zZXR1cC5leGUKTmE4dElsK3psSlJXUS9MQ1pkTGk3S0ZySnUrSDFhZXNFRjlHekhoM2w0RXRPenR4NFlBZ05BUHZ5UC91WEZiVEV0YmJiSHBJejN2S2lzTnhCOHE4RFE9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.7.1/PRISMA_0.7.1_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTNac1VqN1FjUGdUaFZvWXpGQnZ6WVlHeWluV3IzeVFVTThsV09lZ2FJSGF0eU9uVFVES21Hem9iZnRuVnAzT2pzNHozR1NONDNDNm9RNi80bmErY0FVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTI5MTg1CWZpbGU6UFJJU01BXzAuNy4yX3g2NC1zZXR1cC5leGUKSjl6ZTh3YkVWYUc4S2Z6Sm11M3BiTm5ja2I1bTk5MEl1K0YxSnQ1MUtTL29NYWU1RGI2bDNlQU5lU1M2a2drKzM0QkwrMEhnZDdrMHBkeEdhMU1aQlE9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.7.2/PRISMA_0.7.2_x64-setup.exe"
                                          }
                   }
 }
