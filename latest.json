@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.0",
-    "notes":  "Busca semantica local com IA (CLIP): ligue o botao \u0027Semantica\u0027 na busca e ache imagens por significado (\u0027por do sol na praia\u0027), 100% offline. Indexa as imagens 1 vez (modelo ~155MB baixado sozinho).",
-    "pub_date":  "2026-06-22T15:58:05Z",
+    "version":  "0.9.1",
+    "notes":  "Correcoes: bug visual de miniaturas se sobrepondo na grade + setas Voltar/Avancar no topo (historico de navegacao). Endurecimento: indices, anti-travamento no lock, export VELVET 1 query, +nucleos, limites maiores.",
+    "pub_date":  "2026-06-22T16:28:24Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTVHQzZmTWZNemVhWTVYQ2dFM3JxUDJxRmJ1aHpoZ0FvSGFrOHU4R3FPMU5pTmtLc3F5eC9LY2FBT3FTOEN2Ym5hQVRlSHhVL1gxaFB4c0s3U0pTQ0FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTM2MzQ1CWZpbGU6UFJJU01BXzAuOS4wX3g2NC1zZXR1cC5leGUKZ0UwemlVWTliNDNuVnIvN0l3YjhQNFgzYVJjZHpKMHZaOXlGaFhpV29DeTRUeWF2RG5IUUFsTzFhU3hOSHNrT1kvYkNVdk4vMkZETUZtU3RKRjc4Qmc9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.0/PRISMA_0.9.0_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWS9lcUxJV0g1ZEtPSStkeHBJdCtrVXFPSldsY01Pb2xGS0pIeHcrdm9FcEpMTWtQRkN1eU9IUm85aTdheVpEalRFWkJ0Y3AwMk85byt5RStkSldKUnc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTQ1NjgwCWZpbGU6UFJJU01BXzAuOS4xX3g2NC1zZXR1cC5leGUKeWY1VnhWNmJtNFZ1WUN2QloycS9YWmh5MWFqa25JeXpNQ2k0c1NvRDhiZktJSlhxZ0lYN1BiWWNha2NrVnhHZlpqQlpaU0VTMlk0ci9OQnRZOWNvRHc9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.1/PRISMA_0.9.1_x64-setup.exe"
                                          }
                   }
 }

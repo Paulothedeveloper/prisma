@@ -31,7 +31,16 @@
 - [x] Concorrência: teto `clamp(1,4)→clamp(1,8)`
 - [ ] UI pra **desparear** Live Photo / image-sequence → adiada (edge case)
 
-## 0.9.2 — VELVET: "Aplicar CST no DaVinci" (1 botão)
+## 0.9.2 — Exclusão & menu de contexto (bug reportado)
+- [ ] **Confirmação in-app** (modal animado + SFX) no lugar de `window.confirm` — que é
+      não-confiável no WebView (causa de "não aparece confirmação" e "pasta não exclui em silêncio")
+- [ ] **Exclusão de pasta** com animação + SFX (hoje passa direto, sem feedback) — unificar com `removeWithAnim`
+- [ ] **Limpar proxy + thumbnail em disco** ao excluir asset / esvaziar lixeira / remover pasta
+      (hoje só apaga a linha do banco; arquivos ficam órfãos em `data_dir/proxies` e `thumbs`)
+- [ ] **"Algumas pastas não excluem"** — robustez do `remove_folder` (case/trailing slash) + confirmar
+- [ ] **Auditar todas as ações do botão direito** (mídia + pasta): garantir feedback, SFX e que cada uma faz o que diz
+
+## 0.9.3 — VELVET: "Aplicar CST no DaVinci" (1 botão)
 - [ ] Botão no Detalhes (vídeo) → PRISMA decide a árvore de nós (CST IN/OUT + Exposição/Balance/
       Saturação/Curva + nó VELVET) e grava um **request** (`velvet_apply.json`) que o plugin VELVET
       (Resolve Python API) consome pra montar e aplicar. Contrato em `docs/INTEGRATION.md`.
