@@ -19,6 +19,9 @@ import {
   setVaultPath,
   reindexVault,
   scanHealth,
+  exportVelvetCatalog,
+  quartzoGetVault,
+  quartzoSetVault,
 } from "./api";
 import { Icon, type IconName } from "./Icons";
 import { loadPrefs, savePrefs, ACCENTS, type Prefs } from "./prefs";
@@ -27,18 +30,19 @@ import { t, LOCALES, getLocale, setLocale } from "./i18n";
 
 // Configurações em TÓPICOS (estilo Eagle, em português, design próprio do PRISMA).
 // Regra: nada de botão morto — cada controle aqui muda algo de verdade.
-type Tab = "geral" | "reproducao" | "importacao" | "ia" | "sync" | "sobre";
+type Tab = "geral" | "reproducao" | "importacao" | "ia" | "ecossistema" | "sync" | "sobre";
 
 const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "geral", key: "tab.general", icon: "sliders" },
   { id: "reproducao", key: "tab.playback", icon: "play" },
   { id: "importacao", key: "tab.import", icon: "inbox" },
   { id: "ia", key: "tab.ai", icon: "search" },
+  { id: "ecossistema", key: "tab.ecosystem", icon: "sparkles" },
   { id: "sync", key: "tab.sync", icon: "refresh" },
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.7.2";
+const APP_VERSION = "0.8.0";
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
 // curto ≈ US$ 0,001/imagem). É só pra dar noção antes de rodar — não é cobrança exata.
@@ -75,6 +79,13 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [confirmN, setConfirmN] = useState<number | null>(null); // lote aguardando confirmação de custo
   const [vault, setVault] = useState<{ path: string | null; count: number }>({ path: null, count: 0 });
   const [vaultMsg, setVaultMsg] = useState("");
+  // ecossistema (VELVET + Quartzo)
+  const [quartzoVault, setQuartzoVault] = useState<string | null>(null);
+  const [ecoMsg, setEcoMsg] = useState("");
+  const ecoRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (tab === "ecossistema") fireTip("ecosystem", ecoRef.current);
+  }, [tab]);
 
   // importação / sync
   const [autotag, setAutotag] = useState(false);
@@ -120,7 +131,30 @@ export function Settings({ onClose }: { onClose: () => void }) {
       if (s.has_key) aiPendingCount().then(setPending).catch(() => {});
     });
     vaultStatus().then(setVault).catch(() => {});
+    quartzoGetVault().then(setQuartzoVault).catch(() => {});
   }, []);
+
+  const pickQuartzo = async () => {
+    const p = await openDialog({ directory: true });
+    if (typeof p === "string") {
+      try {
+        await quartzoSetVault(p);
+        setQuartzoVault(p);
+        setEcoMsg(t("eco.quartzoSaved"));
+      } catch (e) {
+        setEcoMsg(`${t("common.error")}: ${String(e)}`);
+      }
+    }
+  };
+  const doExportVelvet = async () => {
+    setEcoMsg(t("eco.exporting"));
+    try {
+      const path = await exportVelvetCatalog();
+      setEcoMsg(t("eco.velvetDone").replace("{path}", path));
+    } catch (e) {
+      setEcoMsg(`${t("common.error")}: ${String(e)}`);
+    }
+  };
 
   const pickVault = async () => {
     const p = await openDialog({ directory: true });
@@ -527,6 +561,46 @@ export function Settings({ onClose }: { onClose: () => void }) {
                     </div>
                   )}
                 </div>
+              </>
+            )}
+
+            {/* ---------- ECOSSISTEMA (VELVET + QUARTZO) ---------- */}
+            {tab === "ecossistema" && (
+              <>
+                <div className="pref-group" ref={ecoRef}>
+                  <div className="pref-label">{t("eco.title")}</div>
+                  <div className="pref-help">{t("eco.intro")}</div>
+                </div>
+
+                <div className="pref-group">
+                  <div className="pref-label">{t("eco.quartzo")}</div>
+                  <div className="pref-help">{t("eco.quartzoHelp")}</div>
+                  <div className="set-status">
+                    <span className={`set-dot ${quartzoVault ? "on" : ""}`} />
+                    {quartzoVault ? quartzoVault : t("eco.quartzoNone")}
+                  </div>
+                  <div className="set-bulk-row">
+                    <button className="set-bulk-btn" onClick={pickQuartzo}>
+                      <Icon name="folder" size={13} /> {t("eco.quartzoPick")}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pref-group">
+                  <div className="pref-label">{t("eco.velvet")}</div>
+                  <div className="pref-help">{t("eco.velvetHelp")}</div>
+                  <div className="set-bulk-row">
+                    <button className="set-bulk-btn" onClick={doExportVelvet}>
+                      <Icon name="sparkles" size={13} /> {t("eco.velvetExport")}
+                    </button>
+                  </div>
+                </div>
+
+                {ecoMsg && (
+                  <div className="set-status">
+                    <span className="set-dot on" /> {ecoMsg}
+                  </div>
+                )}
               </>
             )}
 

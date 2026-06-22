@@ -36,6 +36,11 @@ import {
   aiAnalyze,
   aiAskImage,
   openExternal,
+  quartzoNotes,
+  quartzoAttach,
+  quartzoNotesForAsset,
+  quartzoOpenNote,
+  type QuartzoNote,
   type Asset,
   type Tag,
   type Collection,
@@ -145,6 +150,12 @@ export function Inspector({
   const [askBusy, setAskBusy] = useState(false);
   const [askAnswer, setAskAnswer] = useState<string | null>(null);
   const [askErr, setAskErr] = useState<string | null>(null);
+  // Quartzo (PKM nosso): notas ligadas ao asset + anexar a uma nota.
+  const [qzOpen, setQzOpen] = useState(false);
+  const [qzNotes, setQzNotes] = useState<QuartzoNote[]>([]);
+  const [qzLinked, setQzLinked] = useState<QuartzoNote[]>([]);
+  const [qzTarget, setQzTarget] = useState("");
+  const [qzMsg, setQzMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setRatingState(asset.rating);
@@ -237,6 +248,36 @@ export function Inspector({
       if (msg.toLowerCase().includes("chave")) onOpenSettings();
     } finally {
       setAskBusy(false);
+    }
+  };
+  const openQuartzo = async () => {
+    const next = !qzOpen;
+    setQzOpen(next);
+    if (next) {
+      setQzMsg(null);
+      try {
+        const [all, linked] = await Promise.all([
+          quartzoNotes(),
+          quartzoNotesForAsset(asset.id),
+        ]);
+        setQzNotes(all);
+        setQzLinked(linked);
+      } catch (e) {
+        setQzMsg(String(e));
+      }
+    }
+  };
+  const doAttach = async () => {
+    const target = qzTarget.trim();
+    if (!target) return;
+    setQzMsg(null);
+    try {
+      await quartzoAttach(asset.id, target);
+      setQzMsg(t("insp.qzAttached").replace("{note}", target));
+      setQzLinked(await quartzoNotesForAsset(asset.id));
+      setQzTarget("");
+    } catch (e) {
+      setQzMsg(String(e));
     }
   };
   const aiAble = ["image", "gif", "video"].includes(asset.type);
@@ -627,6 +668,48 @@ export function Inspector({
                 {askAnswer && <div className="ai-ask-answer">{askAnswer}</div>}
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Quartzo (PKM nosso): ligar este asset às suas notas */}
+      <div className="insp-block">
+        <button className="insp-section-title qz-head" onClick={openQuartzo}>
+          <Icon name="stack" size={13} /> {t("insp.quartzo")}
+          <Icon name={qzOpen ? "chevronUpDown" : "chevronRight"} size={12} />
+        </button>
+        {qzOpen && (
+          <div className="qz-panel">
+            <div className="qz-hint">{t("insp.quartzoHint")}</div>
+            {qzLinked.length > 0 && (
+              <div className="qz-linked">
+                <div className="qz-sub">{t("insp.quartzoLinked")}</div>
+                {qzLinked.map((n) => (
+                  <button key={n.rel} className="qz-note" onClick={() => quartzoOpenNote(n.rel)} title={n.rel}>
+                    <Icon name="document" size={12} /> {n.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <input
+              className="field"
+              placeholder={t("insp.quartzoAttachPh")}
+              value={qzTarget}
+              list="qz-notes-list"
+              onChange={(e) => setQzTarget(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && doAttach()}
+            />
+            <datalist id="qz-notes-list">
+              {qzNotes.map((n) => (
+                <option key={n.rel} value={n.rel}>
+                  {n.name}
+                </option>
+              ))}
+            </datalist>
+            <button className="ai-btn" onClick={doAttach} disabled={!qzTarget.trim()}>
+              <Icon name="plus" size={12} /> {t("insp.quartzoAttach")}
+            </button>
+            {qzMsg && <div className="qz-msg">{qzMsg}</div>}
           </div>
         )}
       </div>

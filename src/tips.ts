@@ -19,6 +19,7 @@ export const TIPS: Record<string, TipDef> = {
   oficina: { title: t("tip.oficina.title"), text: t("tip.oficina.text") },
   settings: { title: t("tip.settings.title"), text: t("tip.settings.text") },
   preview: { title: t("tip.preview.title"), text: t("tip.preview.text") },
+  ecosystem: { title: t("tip.ecosystem.title"), text: t("tip.ecosystem.text") },
 };
 
 const KEY = "prisma.tips.seen";

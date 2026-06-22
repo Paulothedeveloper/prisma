@@ -13,7 +13,8 @@ pub struct Settings {
     pub model: Option<String>,
     pub autotag_on_import: Option<bool>, // workflow: ao importar, marca itens com o nome da pasta
     pub auto_proxy_on_import: Option<bool>, // ao importar, gera proxy H.264 dos vídeos de codec não-web
-    pub vault_path: Option<String>, // pasta do vault Obsidian (base de conhecimento RAG, Briefing 6)
+    pub vault_path: Option<String>, // pasta do vault de conhecimento (RAG, Briefing 6) — pode ser o vault do Quartzo
+    pub quartzo_vault: Option<String>, // pasta do vault do Quartzo (PKM nosso) — integração ler/escrever notas
 }
 
 impl Settings {

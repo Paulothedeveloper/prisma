@@ -42,6 +42,7 @@ Além de catalogar, o PRISMA entende a parte **técnica** do vídeo: lê os meta
 - 🤖 **Assistente de pós com IA** (opcional): lê o seu vault e monta um plano de color citando a fonte.
 - 🛠️ **Oficina** de codificação + **MotionSilk** (estabilização).
 - 📁 **Pastas inteligentes**, **busca por imagem**, **duplicados** e **Lixeira** reversível.
+- 🔗 **Ecossistema integrado**: conversa com o **Quartzo** (nosso PKM — ligar assets às suas notas) e com o **VELVET** (cor no DaVinci Resolve — escolhe a LUT do seu catálogo por humor). Ver [Ecossistema](#-ecossistema--ecosystem).
 
 ### Privacidade e segurança — pode usar sem medo
 
@@ -82,6 +83,7 @@ Beyond cataloging, PRISMA understands the **technical** side of video: it reads 
 - 🤖 **AI post-assistant** (optional): reads your notes vault and builds a color plan, citing the source.
 - 🛠️ **Encoder workshop** + **MotionSilk** (stabilization).
 - 📁 **Smart folders**, **image search**, **duplicates** and a reversible **Trash**.
+- 🔗 **Integrated ecosystem**: talks to **Quartzo** (our PKM — link assets to your notes) and to **VELVET** (color in DaVinci Resolve — picks the LUT from your catalog by mood). See [Ecosystem](#-ecossistema--ecosystem).
 
 ### Privacy & security — use it with confidence
 
@@ -95,6 +97,26 @@ Beyond cataloging, PRISMA understands the **technical** side of video: it reads 
 1. Go to **[Releases](https://github.com/Paulothedeveloper/prisma/releases/latest)**.
 2. Download **`PRISMA_x.y.z_x64-setup.exe`**.
 3. Run it, open PRISMA and add a folder. The installer is self-contained (ffmpeg bundled).
+
+---
+
+## 🔗 Ecossistema · Ecosystem
+
+O PRISMA não vive sozinho — ele é o **almoxarifado de assets** de um ecossistema de softwares
+próprios. *PRISMA doesn't live alone — it's the **asset warehouse** of a suite of in-house tools.*
+
+- **🎨 VELVET** (cor no DaVinci Resolve · color in DaVinci Resolve) — o PRISMA exporta o
+  **catálogo de LUTs com o humor de cada uma** (quente/frio, claro/escuro, vívido) e o VELVET
+  escolhe a LUT certa dentro do Resolve. *PRISMA exports the **LUT catalog tagged by mood** and
+  VELVET picks the right one inside Resolve.* → Configurações › Ecossistema.
+- **📝 QUARTZO** (PKM/notas · notes) — em vez de depender do Obsidian, o PRISMA liga os assets
+  às suas notas no **Quartzo**, que é **software nosso**: anexe um asset a uma nota e veja quais
+  notas o citam. *Instead of relying on Obsidian, PRISMA links assets to your notes in **Quartzo**,
+  our own software.* → painel Detalhes › Quartzo.
+
+Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)**.
+
+> Papéis · Roles: **QUARTZO ensina COMO · PRISMA diz COM O QUÊ · a IA decide · VELVET aplica.**
 
 ---
 

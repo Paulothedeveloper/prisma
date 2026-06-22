@@ -4361,6 +4361,64 @@ body {
   white-space: pre-wrap;
   animation: popIn 0.2s ease;
 }
+/* Quartzo (PKM) no Inspetor */
+.qz-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 0;
+}
+.qz-head :last-child {
+  margin-left: auto;
+}
+.qz-panel {
+  margin-top: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: popIn 0.18s ease;
+}
+.qz-hint {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.qz-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+.qz-linked {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.qz-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-1);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.qz-note:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.qz-msg {
+  font-size: 11.5px;
+  color: var(--text-2);
+  padding: 5px 0;
+}
 .ai-err {
   margin-top: 7px;
   padding: 7px 9px;

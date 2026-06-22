@@ -450,6 +450,22 @@ export const aiAnalyzeMany = (ids: number[]) =>
 // AI Action: pergunta livre sobre uma imagem (descreva, que texto há, sugira nome…)
 export const aiAskImage = (id: number, question: string) =>
   invoke<string>("ai_ask_image", { id, question });
+
+// ----- Ecossistema: VELVET (cor no DaVinci) + QUARTZO (PKM nosso) -----
+export interface QuartzoNote {
+  rel: string;
+  name: string;
+}
+export const exportVelvetCatalog = () => invoke<string>("export_velvet_catalog");
+export const quartzoGetVault = () => invoke<string | null>("quartzo_get_vault");
+export const quartzoSetVault = (path: string) => invoke<void>("quartzo_set_vault", { path });
+export const quartzoNotes = () => invoke<QuartzoNote[]>("quartzo_notes");
+export const quartzoAttach = (assetId: number, noteRel: string) =>
+  invoke<void>("quartzo_attach", { assetId, noteRel });
+export const quartzoNotesForAsset = (assetId: number) =>
+  invoke<QuartzoNote[]>("quartzo_notes_for_asset", { assetId });
+export const quartzoOpenNote = (noteRel: string) =>
+  invoke<void>("quartzo_open_note", { noteRel });
 // Analisa com IA todos os assets SEM descrição ainda (até um limite, pra controlar custo).
 export const aiAnalyzeUntagged = (limit: number) =>
   invoke<number>("ai_analyze_untagged", { limit });

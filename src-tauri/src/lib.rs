@@ -1,6 +1,7 @@
 mod ai;
 mod classify;
 mod db;
+mod ecosystem;
 mod extras;
 mod dbpool;
 mod features;
@@ -1270,6 +1271,93 @@ fn open_external(path: String) -> Result<(), String> {
     Ok(())
 }
 
+// ---------------- Ecossistema: VELVET + QUARTZO ----------------
+
+/// VELVET: exporta o catálogo de LUTs (por humor) pro contrato estável `velvet_luts.json`
+/// no diretório de dados. O VELVET (no DaVinci) lê esse arquivo pra escolher a LUT.
+#[tauri::command]
+fn export_velvet_catalog(app: tauri::AppHandle) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let out = state.data_dir.join("velvet_luts.json");
+    let n = state
+        .reads
+        .with(|conn| ecosystem::export_velvet_catalog(conn, &out))
+        .map_err(|e| e.to_string())?;
+    tracing::info!(luts = n, dest = %out.display(), "velvet: catálogo de LUTs exportado");
+    Ok(out.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn quartzo_get_vault(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let state = app.state::<AppState>();
+    Ok(ai::load_settings(&state.data_dir).quartzo_vault)
+}
+
+#[tauri::command]
+fn quartzo_set_vault(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let mut s = ai::load_settings(&state.data_dir);
+    s.quartzo_vault = if path.trim().is_empty() { None } else { Some(path) };
+    ai::save_settings(&state.data_dir, &s)
+}
+
+fn quartzo_vault_path(state: &AppState) -> Result<std::path::PathBuf, String> {
+    ai::load_settings(&state.data_dir)
+        .quartzo_vault
+        .filter(|p| !p.is_empty())
+        .map(std::path::PathBuf::from)
+        .ok_or_else(|| "Defina a pasta do vault do Quartzo nas Configurações › Ecossistema.".into())
+}
+
+#[tauri::command]
+fn quartzo_notes(app: tauri::AppHandle) -> Result<Vec<ecosystem::QuartzoNote>, String> {
+    let state = app.state::<AppState>();
+    let vault = quartzo_vault_path(&state)?;
+    Ok(ecosystem::list_notes(&vault))
+}
+
+#[tauri::command]
+fn quartzo_attach(app: tauri::AppHandle, asset_id: i64, note_rel: String) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let vault = quartzo_vault_path(&state)?;
+    let (name, path): (String, String) = state
+        .reads
+        .with(|conn| {
+            conn.query_row(
+                "SELECT COALESCE(name, filename), path FROM assets WHERE id=?1",
+                rusqlite::params![asset_id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+        })
+        .map_err(|e| e.to_string())?;
+    ecosystem::attach_asset(&vault, &note_rel, asset_id, &name, &path)
+}
+
+#[tauri::command]
+fn quartzo_notes_for_asset(app: tauri::AppHandle, asset_id: i64) -> Result<Vec<ecosystem::QuartzoNote>, String> {
+    let state = app.state::<AppState>();
+    let vault = quartzo_vault_path(&state)?;
+    let path: String = state
+        .reads
+        .with(|conn| {
+            conn.query_row(
+                "SELECT path FROM assets WHERE id=?1",
+                rusqlite::params![asset_id],
+                |r| r.get(0),
+            )
+        })
+        .map_err(|e| e.to_string())?;
+    Ok(ecosystem::notes_for_asset(&vault, asset_id, &path))
+}
+
+#[tauri::command]
+fn quartzo_open_note(app: tauri::AppHandle, note_rel: String) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let vault = quartzo_vault_path(&state)?;
+    let abs = ecosystem::note_abs_path(&vault, &note_rel);
+    open_external(abs.to_string_lossy().to_string())
+}
+
 // Apaga o CONTEÚDO de uma pasta (arquivos e subpastas), sem remover a pasta em si.
 fn clear_dir(dir: &std::path::Path) -> std::io::Result<()> {
     if dir.exists() {
@@ -1567,6 +1655,7 @@ fn reset_app(app: tauri::AppHandle) -> Result<(), String> {
         autotag_on_import: None,
         auto_proxy_on_import: None,
         vault_path: s.vault_path,
+        quartzo_vault: s.quartzo_vault,
     };
     let _ = ai::save_settings(&state.data_dir, &kept);
     // 4) reinicia o app pra reinicializar tudo do zero (catálogo vazio)
@@ -1817,6 +1906,13 @@ pub fn run() {
             video_download_info,
             fetch_lyrics,
             ai_ask_image,
+            export_velvet_catalog,
+            quartzo_get_vault,
+            quartzo_set_vault,
+            quartzo_notes,
+            quartzo_attach,
+            quartzo_notes_for_asset,
+            quartzo_open_note,
             autotag_folder,
             paste_image,
             add_from_url,
