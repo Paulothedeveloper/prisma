@@ -1,11 +1,11 @@
 {
-    "version":  "0.6.0",
-    "notes":  "Grande leva designer + editor: paletas de cor, preview de SVG e de fontes, coletor da web, moodboard, sidebar redimensionavel; export FCPXML pro NLE; similaridade com tolerancia ajustavel; image sequences; catalogo de drives offline.",
-    "pub_date":  "2026-06-21T22:21:03Z",
+    "version":  "0.6.1",
+    "notes":  "Correcoes: a busca voltou a funcionar (nome/descricao IA/tags) e a pasta agora mostra so a midia direta dela (sem herdar das subpastas).",
+    "pub_date":  "2026-06-22T01:31:55Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTJOL2JUZUs0VGk0SDFSZDNSb0hCbnhsK3hpU1NwVjJXU29DZzFYRUtySnpiblNrMXl2S3FXTFlGdGVTd1c3U2VhVHhoOFI5d2oxSWNlTjdVU0hxNHdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMDk0ODQ1CWZpbGU6UFJJU01BXzAuNi4wX3g2NC1zZXR1cC5leGUKN0F2dDhGYncwWHFjam9YdDVJQXBuOStqd0dxcGRXZUR4UkdMNmNoWVBJd3FGdWhuREQwak4xWEZOQk5xemJHMXVMY1Y0dExoQzZVRlZJUUZ4cUtwQ2c9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.6.0/PRISMA_0.6.0_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTJmZzQ1dTMvZGlvRUVDaTd0WEFVM2RYSEExSHBDRG4zZjJzUGlJOCs0Zm1ZV3JiZXJsTS9TZUN5SmxQQnVhbXBjb0h0cXNoZ1BHTGVUUzJmSEN5YXdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTA2Mjk2CWZpbGU6UFJJU01BXzAuNi4xX3g2NC1zZXR1cC5leGUKT2xIeHFWNWRGOUtnZnJTTlZlSjB5ZDhJUkFuSFFlY0Eya3UycjJXblV5c3g1b3h3NDhCU3ZmRHNyZ3ZYTFhwNDE2SWM4MEpSL2xrNVN0U3M1cVMvQ2c9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.6.1/PRISMA_0.6.1_x64-setup.exe"
                                          }
                   }
 }
