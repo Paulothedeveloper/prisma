@@ -53,6 +53,7 @@ import {
   type Filter,
 } from "./api";
 import { AssetCard } from "./AssetCard";
+import { Moodboard } from "./Moodboard";
 import { AssetRow } from "./AssetRow";
 import { Inspector } from "./Inspector";
 import { Preview } from "./Preview";
@@ -235,6 +236,7 @@ export default function App() {
   const [booted, setBooted] = useState(false);
   const [thumbSize, setThumbSize] = useState(190);
   const [layout, setLayout] = useState<"grid" | "list" | "waterfall">("grid");
+  const [boardMode, setBoardMode] = useState(false); // moodboard (só em coleção)
   const [selected, setSelected] = useState<Asset | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const anchorRef = useRef<number | null>(null);
@@ -370,6 +372,7 @@ export default function App() {
   useEffect(() => {
     setSelectedIds(new Set());
     anchorRef.current = null;
+    setBoardMode(false); // sai do modo quadro ao trocar de view
     gridRef.current?.scrollToIndex?.(0);
     // subpastas como cards-capa (só na visão de pasta)
     if (view.t === "folder") subfolders(view.v).then(setSubCards).catch(() => setSubCards([]));
@@ -945,6 +948,15 @@ export default function App() {
               <Icon name={l === "grid" ? "layoutGrid" : l === "list" ? "layoutList" : "layoutWaterfall"} size={15} />
             </button>
           ))}
+          {view.t === "collection" && (
+            <button
+              className={`layout-btn ${boardMode ? "on" : ""}`}
+              title={t("board.view")}
+              onClick={() => setBoardMode((b) => !b)}
+            >
+              <Icon name="grip" size={15} />
+            </button>
+          )}
         </div>
         <div className="size-control" title={t("app.thumbSize")}>
           <button className="size-ico" onClick={() => setThumbSize(130)}>
@@ -1413,6 +1425,8 @@ export default function App() {
                   {t("empty.add")}
                 </button>
               </div>
+            ) : boardMode && view.t === "collection" ? (
+              <Moodboard collectionId={view.v} assets={assets} />
             ) : layout === "list" ? (
               <Virtuoso
                 ref={gridRef}

@@ -775,6 +775,29 @@ fn collections_for_asset(app: tauri::AppHandle, id: i64) -> Result<Vec<i64>, Str
     state.reads.with(|conn| db::collections_for_asset(conn, id)).map_err(|e| e.to_string())
 }
 
+// ---------- Moodboard (quadro livre de uma coleção) ----------
+
+#[tauri::command]
+fn board_layout(app: tauri::AppHandle, collection_id: i64) -> Result<Vec<db::BoardItem>, String> {
+    let state = app.state::<AppState>();
+    state.reads.with(|c| db::board_layout(c, collection_id)).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn set_board_item(
+    app: tauri::AppHandle,
+    collection_id: i64,
+    asset_id: i64,
+    x: f64,
+    y: f64,
+    w: f64,
+    z: i64,
+) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    db::set_board_item(&conn, collection_id, asset_id, x, y, w, z).map_err(|e| e.to_string())
+}
+
 /// Resolve um duplicado da importação. action: "exclude" (remove o novo da biblioteca),
 /// "replace" (o novo assume tags/nota/coleções do antigo e o antigo sai), "ignore" (mantém os dois).
 #[tauri::command]
@@ -1638,6 +1661,8 @@ pub fn run() {
             remove_from_collection,
             reorder_collection,
             collections_for_asset,
+            board_layout,
+            set_board_item,
             resolve_dup,
             drag_icon,
             remove_asset,

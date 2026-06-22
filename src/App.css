@@ -4913,3 +4913,64 @@ body {
   opacity: 0.5;
   cursor: default;
 }
+
+/* ---------- Moodboard (quadro livre de uma coleção) ---------- */
+.moodboard {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: var(--radius-lg);
+  animation: popIn 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.mb-item {
+  position: absolute;
+  cursor: grab;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--glass-hi), 0 8px 24px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--glass-border);
+  user-select: none;
+}
+.mb-item:active {
+  cursor: grabbing;
+}
+.mb-item img {
+  width: 100%;
+  display: block;
+  pointer-events: none;
+}
+.mb-noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  background: var(--glass);
+  color: var(--text-2);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.mb-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 45%, var(--accent) 45%);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.mb-item:hover .mb-resize {
+  opacity: 0.85;
+}
+.mb-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: 14px;
+}

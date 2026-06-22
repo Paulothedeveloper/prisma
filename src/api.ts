@@ -225,6 +225,25 @@ export const subfolders = (parent: string) => invoke<SubCard[]>("subfolders", { 
 export const autotagFolder = (dir: string) => invoke<number>("autotag_folder", { dir });
 export const pasteImage = (data: number[]) => invoke<string>("paste_image", { data });
 export const addFromUrl = (url: string) => invoke<string>("add_from_url", { url });
+
+// ----- Moodboard (quadro livre de uma coleção) -----
+export interface BoardItem {
+  asset_id: number;
+  x: number;
+  y: number;
+  w: number;
+  z: number;
+}
+export const boardLayout = (collectionId: number) =>
+  invoke<BoardItem[]>("board_layout", { collectionId });
+export const setBoardItem = (
+  collectionId: number,
+  assetId: number,
+  x: number,
+  y: number,
+  w: number,
+  z: number
+) => invoke<void>("set_board_item", { collectionId, assetId, x, y, w, z });
 export const saveAnnotated = (nearPath: string, data: number[]) =>
   invoke<string>("save_annotated", { nearPath, data });
 

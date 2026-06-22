@@ -215,6 +215,10 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "ALTER TABLE collection_items ADD COLUMN position INTEGER NOT NULL DEFAULT 0",
         [],
     );
+    // Moodboard: posição livre (x,y), largura e z de cada item no quadro da coleção.
+    for col in ["bx REAL", "by REAL", "bw REAL", "bz INTEGER"] {
+        let _ = conn.execute(&format!("ALTER TABLE collection_items ADD COLUMN {col}"), []);
+    }
     // Base de conhecimento (RAG): chunks do vault Obsidian por heading (Briefing 6 §1).
     conn.execute(
         "CREATE TABLE IF NOT EXISTS vault_chunks (
@@ -1298,6 +1302,53 @@ pub fn collections_for_asset(conn: &Connection, asset_id: i64) -> rusqlite::Resu
         conn.prepare("SELECT collection_id FROM collection_items WHERE asset_id=?1")?;
     let rows = stmt.query_map(params![asset_id], |r| r.get(0))?;
     rows.collect()
+}
+
+// ---------- Moodboard (posição livre dos itens numa coleção) ----------
+
+#[derive(serde::Serialize)]
+pub struct BoardItem {
+    pub asset_id: i64,
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub z: i64,
+}
+
+/// Layout salvo do quadro de uma coleção (só os itens já posicionados).
+pub fn board_layout(conn: &Connection, collection_id: i64) -> rusqlite::Result<Vec<BoardItem>> {
+    let mut stmt = conn.prepare(
+        "SELECT asset_id, bx, by, bw, bz FROM collection_items \
+         WHERE collection_id=?1 AND bx IS NOT NULL",
+    )?;
+    let rows = stmt.query_map(params![collection_id], |r| {
+        Ok(BoardItem {
+            asset_id: r.get(0)?,
+            x: r.get(1)?,
+            y: r.get(2)?,
+            w: r.get(3)?,
+            z: r.get::<_, Option<i64>>(4)?.unwrap_or(0),
+        })
+    })?;
+    rows.collect()
+}
+
+/// Salva a posição/tamanho de um item no quadro (não-destrutivo — só metadado).
+pub fn set_board_item(
+    conn: &Connection,
+    collection_id: i64,
+    asset_id: i64,
+    x: f64,
+    y: f64,
+    w: f64,
+    z: i64,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE collection_items SET bx=?3, by=?4, bw=?5, bz=?6 \
+         WHERE collection_id=?1 AND asset_id=?2",
+        params![collection_id, asset_id, x, y, w, z],
+    )?;
+    Ok(())
 }
 
 // ---------- Sync (export/import de metadados por hash) ----------
