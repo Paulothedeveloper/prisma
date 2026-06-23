@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.7",
-    "notes":  "Contact sheet (designer): selecione varias imagens \u003e botao-direito \u003e Contact sheet. O PRISMA monta uma folha PNG com a grade das miniaturas, salva no Inbox e cataloga.",
-    "pub_date":  "2026-06-22T23:12:31Z",
+    "version":  "0.9.8",
+    "notes":  "Dois consertos: (1) menu do botao-direito na pasta nao corta mais (mede a altura real e encaixa/rola). (2) arquivos muito grandes que nao removiam: a Lixeira agora marca pelo CAMINHO do arquivo (estavel), robusto a troca de id causada pelo antivirus + re-indexacao.",
+    "pub_date":  "2026-06-23T12:03:52Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTIybTd0WDJaMVVnaFhaQ3pyd3cvUzFjMTBiYklidnI3NityYlhDVnVGK25jU1Z2Z0NrYUwrK1lWQjVqZE9XYmMreGNFOVlqaE9Da3ZCVFRWYjhDQ0FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMTY5OTM0CWZpbGU6UFJJU01BXzAuOS43X3g2NC1zZXR1cC5leGUKcURkZzFuVjZIcTBrUHVNY2k2SXZTUUtCS0M2YVpEc2MwNHg1b2thL242NWYrV2o1Rm12MGhYbnBqMWhWeEFaVXNmR3hlOFR3eUNuZWJGd3d0RFZTQ1E9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.7/PRISMA_0.9.7_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTBPVkNqVTVDMjk1S2JYWEdDNExmaENBVk1mb2tkZ05tOENRNHhaNmM4TkdjTXFIbVZPRjExUVM4bzJKc1RVY05wc0Rkc1Z6STBJZ3B5dnlrZlNOQVFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMjE2MTkwCWZpbGU6UFJJU01BXzAuOS44X3g2NC1zZXR1cC5leGUKL2NKRGhtdTNqb2FGb1Fqd2V0d1FTY29kd1g4dHVUSUFGcGFabTExaVhiT29UMWJiR0pWVG4vZmFDOEVmVmZ5QzdBRE5kRk01VmtxUFVVdStZWDdEQnc9PQo=",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.8/PRISMA_0.9.8_x64-setup.exe"
                                          }
                   }
 }
