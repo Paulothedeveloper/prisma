@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.9",
-    "notes":  "Otimizacao pra biblioteca grande: progresso/numero nao bugam mais (era 1 evento por arquivo, agora ~200); grade mais fluida (memoizacao); tela cheia de video DE VERDADE (janela cobre o monitor); apagar em pasta pesada nao trava (limpeza de cache em background).",
-    "pub_date":  "2026-06-25T22:35:52Z",
+    "version":  "0.9.10",
+    "notes":  "Remover pasta gigante virou INSTANTANEO: a pasta some da barra na hora; a exclusao roda em segundo plano em lotes (nao congela); reconcilia sozinha; e para de monitorar a pasta removida (antes os arquivos voltavam).",
+    "pub_date":  "2026-06-25T22:54:08Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXhlRjFFcUQ3QURxMSsrZDF2WWMzWjdBVWNsdFZtdUExYkRoS0hiREpLRXNwNWZwbEpTWEh0ajBUMFZpOCsrM2FVaGs1ZHNLUkVIZlVjMTFjVnBreGdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDI2OTMzCWZpbGU6UFJJU01BXzAuOS45X3g2NC1zZXR1cC5leGUKRFQ5Zzg3ZXYrSmoyczdlVU9SL09ickY5MDV3a3lWTFB3LzRFcTZVWHliN0NmL0k5aWw0VmtOV29zNFJycEZRTzNNUHlLSWhqQkhMOU90SUNNc2o1QVE9PQo=",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.9/PRISMA_0.9.9_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTl4WC9Pd1RkdzZjSythdWQ3eXdUbGk2Z3lkSnMyVXdYbjBuVG5XdXcvT3BEQkhNeXgwVXRkaEVRZ1EwMTY1ek9GQmpBY1ROZ2h3bW5kMzZXQWtMZHdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDI4MDI3CWZpbGU6UFJJU01BXzAuOS4xMF94NjQtc2V0dXAuZXhlCnB5dmVjSSttVU1wZXgrQ3ZOSHM0dmV1bVQ0VXZGZkI0b2RTN0FiRDBlQzhaVTdHTXBZQnE2bUxhcUtkV1BMOUducWRvc05xNmVQOGVhOXl3a2lpN0FRPT0K",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.10/PRISMA_0.9.10_x64-setup.exe"
                                          }
                   }
 }
