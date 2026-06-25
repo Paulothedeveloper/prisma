@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Icon } from "./Icons";
 import { t } from "./i18n";
 
@@ -57,11 +58,32 @@ export function VideoPlayer({ src, fps = 30, aspect }: { src: string; fps?: numb
     setShowSpeed(false);
   }, []);
 
-  const toggleFullscreen = useCallback(() => {
-    const w = wrapRef.current;
-    if (!w) return;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else w.requestFullscreen?.();
+  // Tela cheia REAL = a JANELA do Tauri vai pra fullscreen (cobre o monitor inteiro). O
+  // `element.requestFullscreen()` no WebView só preenchia a janela atual, não o monitor.
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      const win = getCurrentWindow();
+      await win.setFullscreen(!(await win.isFullscreen()));
+    } catch {
+      const w = wrapRef.current;
+      if (w) {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else w.requestFullscreen?.();
+      }
+    }
+  }, []);
+
+  // Ao fechar o player (desmontar), garante que a janela SAIA da tela cheia (senão ficaria
+  // travada em fullscreen com o app normal por baixo).
+  useEffect(() => {
+    return () => {
+      getCurrentWindow()
+        .isFullscreen()
+        .then((fs) => {
+          if (fs) void getCurrentWindow().setFullscreen(false);
+        })
+        .catch(() => {});
+    };
   }, []);
 
   // sincroniza estado com o elemento

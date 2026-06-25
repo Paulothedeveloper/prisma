@@ -594,7 +594,10 @@ fn empty_trash(app: tauri::AppHandle) -> Result<i64, String> {
         let n = db::empty_trash(&conn).map_err(|e| e.to_string())?;
         (n, files)
     };
-    delete_cache_files(&files); // apaga proxy + miniatura órfãos do disco
+    // Apaga proxy+miniatura do disco em BACKGROUND: numa pasta pesada são milhares de remove_file,
+    // que travavam a resposta do comando ("apagar demora pra caramba"). A remoção do catálogo
+    // (que é o que importa pra UI) já foi feita; o cache some atrás sem segurar o app.
+    std::thread::spawn(move || delete_cache_files(&files));
     Ok(n)
 }
 
@@ -1911,8 +1914,10 @@ fn remove_folder_lib(app: tauri::AppHandle, dir: String) -> Result<usize, String
         let n = db::remove_folder(&conn, &dir).map_err(|e| e.to_string())?;
         (n, files)
     };
-    delete_cache_files(&files); // apaga proxy + miniatura órfãos do disco
-    tracing::info!(dir = %dir, removed = n, cache = files.len(), "remove_folder: pasta removida da biblioteca");
+    let cache_n = files.len();
+    // cache (proxy+miniatura) some em background — não trava a UI numa pasta com milhares de arquivos
+    std::thread::spawn(move || delete_cache_files(&files));
+    tracing::info!(dir = %dir, removed = n, cache = cache_n, "remove_folder: pasta removida da biblioteca");
     Ok(n)
 }
 

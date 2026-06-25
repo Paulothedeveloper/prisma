@@ -1694,10 +1694,12 @@ export default function App() {
                 </div>
                 <div className="il-title">{t("app.catalogingAssets")}</div>
                 <div className="il-count">
-                  {progress.done.toLocaleString("pt-BR")} / {progress.total.toLocaleString("pt-BR")} · {pct}%
+                  {progress.total > 0
+                    ? `${progress.done.toLocaleString("pt-BR")} / ${progress.total.toLocaleString("pt-BR")} · ${pct}%`
+                    : t("app.scanningFolder")}
                 </div>
-                <div className="il-bar">
-                  <div className="il-fill" style={{ width: `${pct}%` }} />
+                <div className={`il-bar${progress.total === 0 ? " indeterminate" : ""}`}>
+                  <div className="il-fill" style={{ width: progress.total > 0 ? `${pct}%` : "100%" }} />
                   <div className="il-shimmer" />
                 </div>
                 <div className="il-sub">{t("app.catalogingNote")}</div>

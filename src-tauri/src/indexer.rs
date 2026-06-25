@@ -79,6 +79,10 @@ pub fn index_folder(
         return;
     }
 
+    // Feedback IMEDIATO: a varredura de uma pasta enorme (27k+) leva alguns segundos antes de
+    // saber o total; sem isso a barra ficava parada em 0. total=0 = "catalogando…" (indeterminado).
+    let _ = app.emit("index:start", StartPayload { folder: folder.clone(), total: 0 });
+
     // --- Passo 1: catalogar (rapido, uma transacao) ---
     let folder_id = {
         let conn = db.lock().unwrap_or_else(|p| p.into_inner());
@@ -397,6 +401,10 @@ fn run_thumb_queue(
     pending: Vec<(i64, String, String, String)>,
 ) {
     let total = pending.len();
+    // Throttle do progresso: emitir 1 evento por arquivo numa pasta de 27k = 27k re-renders no
+    // front → barra/número "bugam" (jank). Emite no MÁXIMO ~200 vezes (a cada `step` arquivos),
+    // mais o último. Suave e barato em qualquer tamanho de pasta.
+    let step = (total / 200).max(1);
     let done = Arc::new(AtomicUsize::new(0));
     let queue = Arc::new(Mutex::new(pending.into_iter()));
     let mut handles = Vec::new();
@@ -425,18 +433,20 @@ fn run_thumb_queue(
                 drop(conn);
                 let d = done.fetch_add(1, Ordering::SeqCst) + 1;
                 let _ = app.emit("index:corrupt", id);
-                let _ = app.emit(
-                    "index:thumb",
-                    ThumbPayload {
-                        id,
-                        thumbnail_path: None,
-                        width: None,
-                        height: None,
-                        duration: None,
-                        done: d,
-                        total,
-                    },
-                );
+                if d % step == 0 || d == total {
+                    let _ = app.emit(
+                        "index:thumb",
+                        ThumbPayload {
+                            id,
+                            thumbnail_path: None,
+                            width: None,
+                            height: None,
+                            duration: None,
+                            done: d,
+                            total,
+                        },
+                    );
+                }
                 continue;
             }
 
@@ -471,18 +481,20 @@ fn run_thumb_queue(
                 }
             }
             let d = done.fetch_add(1, Ordering::SeqCst) + 1;
-            let _ = app.emit(
-                "index:thumb",
-                ThumbPayload {
-                    id,
-                    thumbnail_path: thumb,
-                    width: meta.width,
-                    height: meta.height,
-                    duration: meta.duration,
-                    done: d,
-                    total,
-                },
-            );
+            if d % step == 0 || d == total {
+                let _ = app.emit(
+                    "index:thumb",
+                    ThumbPayload {
+                        id,
+                        thumbnail_path: thumb,
+                        width: meta.width,
+                        height: meta.height,
+                        duration: meta.duration,
+                        done: d,
+                        total,
+                    },
+                );
+            }
         }));
     }
     for h in handles {

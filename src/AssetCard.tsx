@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { memo, useRef, useState, useEffect } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import { Icon, type IconName } from "./Icons";
@@ -35,7 +35,10 @@ interface Props {
 // Índice de origem do arrasto de reordenação (módulo: só um arrasto por vez).
 let dragFrom: number | null = null;
 
-export function AssetCard({ asset, selected, onClick, onPreview, onContext, reorder, aspect, animDelayMs }: Props) {
+// memo: numa biblioteca de 27k, sem isto QUALQUER re-render do App (seleção, progresso de
+// indexação, etc.) re-renderizava TODOS os cards visíveis. Com props estáveis (callbacks via
+// useCallback no App), só o card que mudou re-renderiza. Grande ganho de fluidez.
+function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, reorder, aspect, animDelayMs }: Props) {
   const [hover, setHover] = useState(false);
   const [vidReady, setVidReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -205,3 +208,5 @@ export function AssetCard({ asset, selected, onClick, onPreview, onContext, reor
     </div>
   );
 }
+
+export const AssetCard = memo(AssetCardImpl);

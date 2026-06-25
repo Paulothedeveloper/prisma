@@ -2877,6 +2877,15 @@ body {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
   animation: shimmerSweep 1.4s ease-in-out infinite;
 }
+/* Catalogando a pasta (total ainda desconhecido): barra "indeterminada" que desliza. */
+.il-bar.indeterminate .il-fill {
+  width: 40% !important;
+  animation: spectrumShift 2.4s linear infinite, indeterminateSlide 1.3s ease-in-out infinite;
+}
+@keyframes indeterminateSlide {
+  0% { left: -42%; }
+  100% { left: 100%; }
+}
 .il-sub {
   font-size: 12px;
   color: var(--text-3);

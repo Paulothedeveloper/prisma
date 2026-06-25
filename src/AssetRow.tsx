@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import { Icon, type IconName } from "./Icons";
@@ -20,7 +21,7 @@ function fmtSize(b: number) {
 }
 
 // Linha da visão LISTA (compara specs rápido — colunas).
-export function AssetRow({
+function AssetRowImpl({
   asset,
   selected,
   onClick,
@@ -71,3 +72,5 @@ export function AssetRow({
     </div>
   );
 }
+
+export const AssetRow = memo(AssetRowImpl);
