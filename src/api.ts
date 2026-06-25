@@ -324,7 +324,7 @@ export const resetApp = () => invoke<void>("reset_app");
 // Recarrega/gera os proxies que faltam (caso algum tenha falhado). Retorna quantos entraram na fila.
 export const regenProxies = () => invoke<number>("regen_proxies");
 // Remove a pasta da BIBLIOTECA (catálogo) — não apaga do disco. Retorna quantos assets saíram.
-export const removeFolderLib = (dir: string) => invoke<number>("remove_folder_lib", { dir });
+export const removeFolderLib = (dir: string) => invoke<void>("remove_folder_lib", { dir });
 export const setRating = (id: number, rating: number) =>
   invoke<void>("set_rating", { id, rating });
 export const setNotes = (id: number, notes: string) =>

@@ -117,6 +117,12 @@ pub fn watch_root(watcher: &mut RecommendedWatcher, path: &str) {
     let _ = watcher.watch(Path::new(path), RecursiveMode::Recursive);
 }
 
+/// Para de monitorar uma pasta (ao removê-la da biblioteca) — senão o watcher re-indexaria os
+/// arquivos que o DELETE acabou de tirar (eles "voltavam"). Erro = não era raiz monitorada (ok).
+pub fn unwatch_root(watcher: &mut RecommendedWatcher, path: &str) {
+    let _ = watcher.unwatch(Path::new(path));
+}
+
 /// Espera o tamanho do arquivo estabilizar (evita catalogar arquivo ainda copiando).
 fn size_stable(p: &Path) -> bool {
     let s1 = std::fs::metadata(p).map(|m| m.len()).unwrap_or(0);

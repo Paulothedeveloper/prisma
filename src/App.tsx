@@ -620,6 +620,11 @@ export default function App() {
       refreshMeta();
       runSearch(true);
     }).then((u) => unl.push(u));
+    // Remoção de pasta (em lotes no background) terminou → reconcilia barra + grade.
+    listen<string>("folder:removed", () => {
+      refreshMeta();
+      runSearch(true);
+    }).then((u) => unl.push(u));
     // Proxies automáticos (ao importar): progresso + fim → atualiza a grade pra já tocar.
     listen<{ done: number; total: number; made: number }>("proxy:progress", (e) =>
       setProxyProgress(e.payload),
@@ -1437,13 +1442,23 @@ export default function App() {
                     danger: true,
                     confirmLabel: t("fld.remove"),
                     onConfirm: () => {
-                      // Anima a saída da grade (estilo lixeira) + SFX, depois remove e recarrega.
-                      removeWithAnim(async () => {
-                        await removeFolderLib(dir);
-                        if (folderSel === dir || (view.t === "folder" && view.v === dir))
-                          setView({ t: "all" });
-                        refreshMeta();
-                      });
+                      // OTIMISTA: tira a pasta (e subpastas) da barra NA HORA e sai dela — não
+                      // espera o DELETE de 27k linhas (que roda em LOTES no background). O evento
+                      // `folder:removed` reconcilia quando termina. Nada de tela cinza travada.
+                      const low = dir.toLowerCase();
+                      setFolders((prev) =>
+                        prev.filter(
+                          (f) =>
+                            f.dir.toLowerCase() !== low &&
+                            !f.dir.toLowerCase().startsWith(low + "\\")
+                        )
+                      );
+                      sfx.trash();
+                      if (folderSel === dir || (view.t === "folder" && view.v === dir)) {
+                        cascadeOnNextLoad.current = true;
+                        setView({ t: "all" });
+                      }
+                      removeFolderLib(dir).catch((e) => console.warn("removeFolderLib:", e));
                     },
                   })
                 }

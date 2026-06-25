@@ -1906,19 +1906,48 @@ fn health_counts(app: tauri::AppHandle) -> Result<std::collections::HashMap<Stri
 /// Remove uma pasta da BIBLIOTECA (catálogo) — tira os assets dela e das subpastas do
 /// catálogo + metadados. NÃO apaga nada do disco. Para de monitorar a pasta também.
 #[tauri::command]
-fn remove_folder_lib(app: tauri::AppHandle, dir: String) -> Result<usize, String> {
+fn remove_folder_lib(app: tauri::AppHandle, dir: String) -> Result<(), String> {
     let state = app.state::<AppState>();
-    let (n, files) = {
-        let conn = state.db.lock().map_err(|e| e.to_string())?;
-        let files = db::folder_cache_files(&conn, &dir).unwrap_or_default();
-        let n = db::remove_folder(&conn, &dir).map_err(|e| e.to_string())?;
-        (n, files)
-    };
-    let cache_n = files.len();
-    // cache (proxy+miniatura) some em background — não trava a UI numa pasta com milhares de arquivos
-    std::thread::spawn(move || delete_cache_files(&files));
-    tracing::info!(dir = %dir, removed = n, cache = cache_n, "remove_folder: pasta removida da biblioteca");
-    Ok(n)
+    // Para de monitorar a pasta ANTES de apagar — senão o watcher re-indexaria os arquivos que o
+    // DELETE vai tirar (eles voltavam pra biblioteca).
+    if let Ok(mut w) = state.watcher.lock() {
+        if let Some(watcher) = w.as_mut() {
+            watcher::unwatch_root(watcher, &dir);
+        }
+    }
+    let db = state.db.clone();
+    let app2 = app.clone();
+    // TUDO em background: a pasta-raiz do Paulo tem 27.844 arquivos. O DELETE em massa + a coleta
+    // de milhares de caminhos de cache travava a UI por segundos (tela cinza, "demora pra caramba")
+    // e a pasta ficava na barra até terminar. Agora o comando RETORNA NA HORA; o front remove a
+    // pasta da barra otimisticamente; aqui apagamos em LOTES (liberando o lock entre eles, pra não
+    // congelar nenhuma outra operação) e emitimos `folder:removed` no fim pra reconciliar.
+    std::thread::spawn(move || {
+        let files = {
+            let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+            db::folder_cache_files(&conn, &dir).unwrap_or_default()
+        };
+        let mut total = 0usize;
+        loop {
+            let removed = {
+                let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+                db::remove_folder_batch(&conn, &dir, 2000).unwrap_or(0)
+            };
+            total += removed;
+            if removed == 0 {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(4)); // respiro pro lock
+        }
+        {
+            let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+            db::remove_folder_meta(&conn, &dir);
+        }
+        delete_cache_files(&files);
+        let _ = app2.emit("folder:removed", &dir);
+        tracing::info!(dir = %dir, removed = total, cache = files.len(), "remove_folder (background) concluído");
+    });
+    Ok(())
 }
 
 /// Recarrega/gera os proxies que faltam (caso algum tenha falhado). Roda em segundo plano.

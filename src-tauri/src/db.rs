@@ -748,6 +748,29 @@ pub fn remove_folder(conn: &Connection, root: &str) -> rusqlite::Result<usize> {
     Ok(n)
 }
 
+/// Apaga ATÉ `limit` assets sob a pasta (1 lote). Pra remover pastas gigantes (27k+) sem segurar
+/// o lock de escrita por segundos — o chamador roda em loop liberando o lock entre lotes, então
+/// o app não congela. Retorna quantos saíram neste lote (0 = acabou).
+pub fn remove_folder_batch(conn: &Connection, root: &str, limit: i64) -> rusqlite::Result<usize> {
+    let r = root.trim_end_matches('\\');
+    let like = format!("{r}\\%");
+    conn.execute(
+        "DELETE FROM assets WHERE id IN \
+         (SELECT id FROM assets WHERE (dir = ?1 COLLATE NOCASE OR dir LIKE ?2) LIMIT ?3)",
+        params![r, like, limit],
+    )
+}
+
+/// Limpa os metadados da pasta (apelido/cor/capa) — depois de remover os assets em lotes.
+pub fn remove_folder_meta(conn: &Connection, root: &str) {
+    let r = root.trim_end_matches('\\');
+    let like = format!("{r}\\%");
+    let _ = conn.execute(
+        "DELETE FROM folder_meta WHERE dir = ?1 COLLATE NOCASE OR dir LIKE ?2",
+        params![r, like],
+    );
+}
+
 /// Arquivos de CACHE (proxy + miniatura) dos assets sob uma pasta — sempre dentro do
 /// diretório de dados do app (nunca o original), seguros pra apagar do disco junto com a
 /// remoção do catálogo (senão ficam órfãos). Coletar ANTES de deletar as linhas.
