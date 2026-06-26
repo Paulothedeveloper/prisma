@@ -34,6 +34,8 @@ export function MiniPlayer({
   const [playing, setPlaying] = useState(true);
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(0);
+  const [vol, setVol] = useState(1);
+  const [muted, setMuted] = useState(false);
   // toca o proxy se houver (vídeo de codec pro); senão o original.
   const src = asset.proxy_path ? convertFileSrc(asset.proxy_path) : convertFileSrc(asset.path);
   const thumb = asset.thumbnail_path ? convertFileSrc(asset.thumbnail_path) : null;
@@ -59,6 +61,19 @@ export function MiniPlayer({
     const el = ref.current;
     if (!el || !dur) return;
     el.currentTime = (Number(e.target.value) / 1000) * dur;
+  };
+  // aplica volume/mute ao elemento sempre que mudam (e ao trocar de faixa).
+  useEffect(() => {
+    const el = ref.current;
+    if (el) {
+      el.volume = vol;
+      el.muted = muted;
+    }
+  }, [vol, muted, asset.id]);
+  const onVol = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = Number(e.target.value) / 100;
+    setVol(v);
+    if (v > 0 && muted) setMuted(false);
   };
 
   return (
@@ -103,6 +118,24 @@ export function MiniPlayer({
         onChange={onSeek}
       />
       <span className="mp-time">{fmt(dur)}</span>
+      <div className="mp-vol">
+        <button
+          className="mp-btn"
+          onClick={() => setMuted((m) => !m)}
+          title={muted || vol === 0 ? t("mp.unmute") : t("mp.mute")}
+        >
+          <Icon name={muted || vol === 0 ? "volumeOff" : "volume"} size={16} />
+        </button>
+        <input
+          className="mp-volslider"
+          type="range"
+          min={0}
+          max={100}
+          value={muted ? 0 : Math.round(vol * 100)}
+          onChange={onVol}
+          title={t("mp.volume")}
+        />
+      </div>
       <button className="mp-btn" onClick={onDetails} title={t("mp.details")}>
         <Icon name="fullscreen" size={16} />
       </button>

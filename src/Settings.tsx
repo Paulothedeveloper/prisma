@@ -42,16 +42,14 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.16";
+const APP_VERSION = "0.9.17";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "NOVO: player de rodapé estilo playlist — clique num áudio e ouça um atrás do outro (anterior/próxima/pausa/detalhes).",
-  "Pré-visualização ao passar o mouse agora também na visão de LISTA (antes só na grade).",
-  "Trocar o modo de visualização ficou suave (com animação), não mais seco.",
-  "Cards de pasta repaginados de novo: aba + capa em moldura + tom azul (cara de pasta de verdade).",
-  "Corrigido: a grade de pastas agora ROLA (tinha conteúdo escondido sem barra de scroll).",
-  "Auditoria funcional completa: 25+ correções — Live Photos não some vídeo, busca via índice FTS5, sem travar o app em falhas, e mais.",
+  "Player de rodapé agora tem CONTROLE DE VOLUME (com mudo).",
+  "Cards de pasta não esticam mais: corrigido o vazão embaixo ao aumentar/diminuir o zoom dos ícones.",
+  "Caixa de download não fecha mais no meio de um download (botão e Esc protegidos).",
+  "Continuação da auditoria: refinamentos de robustez nos modais.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

@@ -2410,6 +2410,10 @@ body {
 .only-subs {
   height: 100%;
   overflow-y: auto;
+  /* align-content:start — sem isto o CSS Grid ESTICA as linhas pra preencher a altura (height:100%),
+     deixando os cards de pasta enormes com um vazão embaixo. Agora cada card tem a altura do conteúdo. */
+  align-content: start;
+  align-items: start;
   padding: 4px 4px 20px;
 }
 /* Pasta na visão de LISTA */
@@ -5908,6 +5912,17 @@ body {
 .mp-seek {
   flex: 1;
   min-width: 80px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.mp-vol {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.mp-volslider {
+  width: 64px;
   accent-color: var(--accent);
   cursor: pointer;
 }

@@ -131,6 +131,11 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.17** — Volume no player + cards de pasta sem esticar
+- 🔊 **Controle de volume (com mudo)** no player de rodapé.
+- 📁 **Cards de pasta não esticam mais** ao mudar o zoom dos ícones (o grid não estica mais as linhas — cada card tem a altura do conteúdo).
+- 🛡️ **Caixa de download** não fecha no meio de um download (botão/X/Esc protegidos).
+
 **0.9.16** — Player playlist, preview na lista, auditoria funcional (25+ correções)
 - 🎵 **Player de rodapé estilo playlist:** clique num áudio e ouça um atrás do outro — anterior / play-pause / próxima / detalhes, com auto-avanço. Ideal para bibliotecas grandes de música/SFX.
 - 🖱️ **Preview no hover também na visão de LISTA** (antes só na grade) + **transição suave** ao trocar o modo de visualização.

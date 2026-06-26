@@ -125,7 +125,7 @@ export function DownloadModal({
         {status && <div className={`dl-status ${status.kind}`}>{status.msg}</div>}
 
         <div className="dl-actions">
-          <button className="dl-cancel" onClick={onClose}>
+          <button className="dl-cancel" onClick={guardClose} disabled={busy === "dl"}>
             {t("dl.close")}
           </button>
           <button className="btn-primary" disabled={!url.trim() || busy !== ""} onClick={download}>
