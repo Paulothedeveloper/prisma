@@ -762,6 +762,45 @@ pub fn remove_folder_batch(conn: &Connection, root: &str, limit: i64) -> rusqlit
     )
 }
 
+/// SQL pra (re)criar os triggers de sincronia do FTS. Usado pra recriá-los depois de uma
+/// remoção em massa com os triggers desligados.
+const FTS_TRIGGERS_SQL: &str = r#"
+    CREATE TRIGGER IF NOT EXISTS assets_fts_ad AFTER DELETE ON assets BEGIN
+        INSERT INTO assets_fts(assets_fts, rowid, filename, name, ai_desc)
+        VALUES('delete', old.id, old.filename, old.name, old.ai_desc);
+    END;
+    CREATE TRIGGER IF NOT EXISTS assets_fts_au AFTER UPDATE ON assets BEGIN
+        INSERT INTO assets_fts(assets_fts, rowid, filename, name, ai_desc)
+        VALUES('delete', old.id, old.filename, old.name, old.ai_desc);
+        INSERT INTO assets_fts(rowid, filename, name, ai_desc)
+        VALUES (new.id, new.filename, new.name, new.ai_desc);
+    END;
+"#;
+
+/// Remove uma pasta GIGANTE rápido: o gargalo era o trigger `assets_fts_ad` disparar uma operação
+/// de FTS POR LINHA (27k linhas = 27k ops = dezenas de segundos). Aqui DESLIGO os triggers de
+/// delete/update, faço o DELETE em massa (instantâneo), reconstruo o índice FTS de uma vez e
+/// religo os triggers. Tudo numa transação. Retorna quantos assets saíram.
+pub fn remove_folder_fast(conn: &Connection, root: &str) -> rusqlite::Result<usize> {
+    let r = root.trim_end_matches('\\');
+    let like = format!("{r}\\%");
+    // desliga os triggers de sincronia do FTS (o de INSERT pode ficar — não dispara em DELETE)
+    conn.execute_batch("DROP TRIGGER IF EXISTS assets_fts_ad; DROP TRIGGER IF EXISTS assets_fts_au;")?;
+    let n = conn.execute(
+        "DELETE FROM assets WHERE dir = ?1 COLLATE NOCASE OR dir LIKE ?2",
+        params![r, like],
+    )?;
+    conn.execute(
+        "DELETE FROM folder_meta WHERE dir = ?1 COLLATE NOCASE OR dir LIKE ?2",
+        params![r, like],
+    )?;
+    conn.execute("DELETE FROM folders WHERE path = ?1 COLLATE NOCASE OR path LIKE ?2", params![r, like])?;
+    // reconstrói o FTS de uma vez (re-sincroniza após o DELETE sem trigger) e religa os triggers
+    let _ = conn.execute("INSERT INTO assets_fts(assets_fts) VALUES('rebuild')", []);
+    let _ = conn.execute_batch(FTS_TRIGGERS_SQL);
+    Ok(n)
+}
+
 /// Limpa os metadados da pasta (apelido/cor/capa) — depois de remover os assets em lotes.
 pub fn remove_folder_meta(conn: &Connection, root: &str) {
     let r = root.trim_end_matches('\\');

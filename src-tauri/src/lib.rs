@@ -1927,22 +1927,12 @@ fn remove_folder_lib(app: tauri::AppHandle, dir: String) -> Result<(), String> {
             let conn = db.lock().unwrap_or_else(|p| p.into_inner());
             db::folder_cache_files(&conn, &dir).unwrap_or_default()
         };
-        let mut total = 0usize;
-        loop {
-            let removed = {
-                let conn = db.lock().unwrap_or_else(|p| p.into_inner());
-                db::remove_folder_batch(&conn, &dir, 2000).unwrap_or(0)
-            };
-            total += removed;
-            if removed == 0 {
-                break;
-            }
-            std::thread::sleep(std::time::Duration::from_millis(4)); // respiro pro lock
-        }
-        {
+        // DELETE em massa com os triggers do FTS desligados (o gargalo real: eram 27k ops de
+        // índice). Vira ~1s em vez de dezenas de segundos, e SEMPRE termina.
+        let total = {
             let conn = db.lock().unwrap_or_else(|p| p.into_inner());
-            db::remove_folder_meta(&conn, &dir);
-        }
+            db::remove_folder_fast(&conn, &dir).unwrap_or(0)
+        };
         delete_cache_files(&files);
         let _ = app2.emit("folder:removed", &dir);
         tracing::info!(dir = %dir, removed = total, cache = files.len(), "remove_folder (background) concluído");
