@@ -131,6 +131,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.19** — Deep-link `prisma://` (fecha o ida-e-volta com Quartzo/VELVET)
+- 🔗 **Clicar um `prisma://asset/<id>`** numa nota (Obsidian/Quartzo) **foca o PRISMA e abre o asset**. O app já escrevia esses links ao anexar; agora eles funcionam de volta. Single-instance (não abre 2ª janela) + esquema registrado no Windows.
+
 **0.9.18** — CLIP++ (buscar parecidas por IA)
 - 🧠 **Busca por exemplo:** clique direito numa imagem/GIF/vídeo → **"Parecidas por IA (CLIP)"** acha os assets visualmente parecidos por **significado** (não por pixel). Requer a busca semântica indexada.
 

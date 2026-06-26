@@ -42,13 +42,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.18";
+const APP_VERSION = "0.9.19";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "NOVO — CLIP++: clique direito numa imagem/vídeo → 'Parecidas por IA (CLIP)' acha os assets visualmente parecidos por significado (não por pixel).",
-  "Precisa da busca semântica indexada (botão 'Indexar' quando você liga a Semântica).",
-  "Volume no player, cards de pasta sem esticar e caixa de download protegida (das versões recentes).",
+  "NOVO — Deep-link prisma://: clicar num link prisma://asset/<id> (que o app grava nas notas do Quartzo/VELVET) FOCA o PRISMA e abre o asset. Fecha o ida-e-volta.",
+  "Funciona com o app aberto (single-instance) ou abrindo do zero. Pode pedir confirmação do Windows na 1ª vez.",
+  "CLIP++ (buscar parecidas por IA) — das versões recentes.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

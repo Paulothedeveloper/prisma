@@ -87,6 +87,39 @@ pub struct Counts {
     by_unknown_ext: Vec<(String, i64)>,
 }
 
+/// Um asset pelo id (usado pelo deep-link pra abrir o asset que a nota aponta).
+#[tauri::command]
+fn get_asset(app: tauri::AppHandle, id: i64) -> Result<Option<db::Asset>, String> {
+    let state = app.state::<AppState>();
+    let mut v = state
+        .reads
+        .with(|c| db::assets_by_ids(c, &[id]))
+        .map_err(|e| e.to_string())?;
+    Ok(v.pop())
+}
+
+/// Trata uma URL `prisma://asset/<id>`: foca a janela e avisa o front pra abrir o asset.
+/// Outros caminhos (ex.: prisma://search/...) podem ser adicionados depois.
+fn handle_deeplink(app: &tauri::AppHandle, url: &str) {
+    if let Some(rest) = url.strip_prefix("prisma://asset/") {
+        // pega só o número do id (ignora barra/query/fragmento finais).
+        let id: i64 = rest
+            .split(['/', '?', '#'])
+            .next()
+            .unwrap_or("")
+            .trim()
+            .parse()
+            .unwrap_or(0);
+        if id > 0 {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
+            let _ = app.emit("deeplink:asset", id);
+        }
+    }
+}
+
 /// Dispara a indexacao de uma pasta numa thread em background. Retorna na hora.
 #[tauri::command]
 fn index_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
@@ -2109,12 +2142,27 @@ pub fn run() {
         .try_init();
 
     tauri::Builder::default()
+        // single-instance PRIMEIRO (recomendação do Tauri): se o usuário clica um prisma:// no
+        // Obsidian e o PRISMA já está aberto, o SO chama isto na instância existente (em vez de
+        // abrir outra) — focamos a janela e processamos a URL do argv.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
+            for arg in &argv {
+                if arg.starts_with("prisma://") {
+                    handle_deeplink(app, arg);
+                }
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_drag::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             // Diretorio de dados do app: banco + thumbs.
             let data_dir = app
@@ -2248,6 +2296,34 @@ pub fn run() {
                     let _ = index_path(handle, path);
                 }
             }
+
+            // Deep-link prisma:// — fecha o ida-e-volta com Quartzo/VELVET: clicar prisma://asset/<id>
+            // numa nota foca o PRISMA e navega até o asset.
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                // registra o esquema no SO pro usuário atual (no Windows também via instalador).
+                let _ = app.deep_link().register_all();
+                // app JÁ rodando recebe a URL (macOS/Linux; Windows usa o single-instance acima).
+                let handle = app.handle().clone();
+                app.deep_link().on_open_url(move |event| {
+                    for url in event.urls() {
+                        handle_deeplink(&handle, url.as_str());
+                    }
+                });
+                // app ABERTO POR um deep link (cold start): processa a URL inicial, com um respiro
+                // pra o front montar os listeners.
+                if let Ok(Some(urls)) = app.deep_link().get_current() {
+                    let handle = app.handle().clone();
+                    let urls: Vec<String> = urls.iter().map(|u| u.as_str().to_string()).collect();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(1500));
+                        for u in urls {
+                            handle_deeplink(&handle, &u);
+                        }
+                    });
+                }
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -2255,6 +2331,7 @@ pub fn run() {
             mutate_asset,
             folder_meta,
             index_path,
+            get_asset,
             count_importable,
             set_import_paused,
             cancel_import,

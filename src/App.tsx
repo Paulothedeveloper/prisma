@@ -10,6 +10,7 @@ import {
   getCounts,
   getFolders,
   indexPath,
+  getAsset,
   countImportable,
   setImportPaused,
   cancelImport,
@@ -668,6 +669,19 @@ export default function App() {
       setProgress((p) => ({ ...p, active: false }));
       runSearch(true);
       refreshMeta();
+    }).then((u) => unl.push(u));
+    // Deep-link prisma://asset/<id> (clicado numa nota do Quartzo/VELVET) → abre o asset.
+    listen<number>("deeplink:asset", async (e) => {
+      try {
+        const a = await getAsset(e.payload);
+        if (a) {
+          setSelected(a);
+          setSelectedIds(new Set([a.id]));
+          setPreviewAsset(a);
+        }
+      } catch {
+        /* ignora */
+      }
     }).then((u) => unl.push(u));
     // Duplicados achados na importação → abre o modal de decisão.
     listen<DupPair[]>("index:dups", (e) => {

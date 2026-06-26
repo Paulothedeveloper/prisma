@@ -211,6 +211,8 @@ export const folderMeta = (dir: string, patch: FolderPatch) =>
   invoke<void>("folder_meta", { dir, patch });
 
 export const indexPath = (path: string) => invoke<void>("index_path", { path });
+// Um asset pelo id (usado pelo deep-link prisma://asset/<id>).
+export const getAsset = (id: number) => invoke<Asset | null>("get_asset", { id });
 // Varre os caminhos antes de catalogar: quantos são mídia compatível e quantos seriam recusados.
 export interface ImportScan {
   compatible: number;
