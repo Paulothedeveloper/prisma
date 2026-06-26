@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.10",
-    "notes":  "Remover pasta gigante virou INSTANTANEO: a pasta some da barra na hora; a exclusao roda em segundo plano em lotes (nao congela); reconcilia sozinha; e para de monitorar a pasta removida (antes os arquivos voltavam).",
-    "pub_date":  "2026-06-25T22:54:08Z",
+    "version":  "0.9.11",
+    "notes":  "A pasta removida nao volta mais: agora ela e escondida da barra e da grade na hora e ignorada em qualquer relistagem ate o apagar (em segundo plano) terminar. Some na hora e fica.",
+    "pub_date":  "2026-06-26T01:58:03Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTl4WC9Pd1RkdzZjSythdWQ3eXdUbGk2Z3lkSnMyVXdYbjBuVG5XdXcvT3BEQkhNeXgwVXRkaEVRZ1EwMTY1ek9GQmpBY1ROZ2h3bW5kMzZXQWtMZHdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDI4MDI3CWZpbGU6UFJJU01BXzAuOS4xMF94NjQtc2V0dXAuZXhlCnB5dmVjSSttVU1wZXgrQ3ZOSHM0dmV1bVQ0VXZGZkI0b2RTN0FiRDBlQzhaVTdHTXBZQnE2bUxhcUtkV1BMOUducWRvc05xNmVQOGVhOXl3a2lpN0FRPT0K",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.10/PRISMA_0.9.10_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXdKejI2ZnpDaUoxcFRZOFkvbmt6MklzUVR0MFpSL2VnREIyNnIzYkE3enprSGNueVdIUmYvQWRqS3dDUytTc3NaOHlYOWdFdXJWNmUyYnB2ZnJ0SXdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDM5MDYyCWZpbGU6UFJJU01BXzAuOS4xMV94NjQtc2V0dXAuZXhlCndCUW9seE85WngrT0xmd3JjM2VXVzIxeUx5OHRmcmIwd21NSzhaU1doVjg3VGhKODhmQ25rKzY5dmdUUjdZdUF5SFg4eHRueVNmN2wwMU9wcCtQcEN3PT0K",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.11/PRISMA_0.9.11_x64-setup.exe"
                                          }
                   }
 }
