@@ -93,10 +93,14 @@ impl Jobs {
                 let done = done.clone();
                 let work = work.clone();
                 let cancel = cancel.clone();
-                handles.push(std::thread::spawn(move || loop {
+                handles.push(std::thread::spawn(move || {
+                    // Lotes (IA / saúde) também em modo background: não roubam CPU/IO do PC.
+                    crate::sys::begin_background();
+                    loop {
                     if cancel.load(Ordering::Relaxed) {
                         break;
                     }
+                    crate::sys::wait_if_paused();
                     let i = next.fetch_add(1, Ordering::SeqCst);
                     if i >= items.len() {
                         break;
@@ -107,6 +111,7 @@ impl Jobs {
                         &format!("{kind}:progress"),
                         serde_json::json!({ "done": d, "total": total }),
                     );
+                    }
                 }));
             }
             for h in handles {

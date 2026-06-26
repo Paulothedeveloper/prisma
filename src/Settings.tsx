@@ -42,15 +42,16 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.13";
+const APP_VERSION = "0.9.14";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Remoção de pasta agora é PERMANENTE: não volta mais ao renomear/mexer em pastas vizinhas.",
-  "Ao remover, os índices e proxies que ligavam a pasta ao app são apagados de verdade.",
-  "Busca por imagem (CLIP) muito mais rápida: uma consulta só em vez de uma por resultado.",
-  "Ordenar por tamanho, contadores da barra lateral e proxies otimizados para bibliotecas grandes.",
-  "Indicador de carregamento premium ao remover uma pasta (com ✓ ao concluir).",
+  "Importação não trava mais o PC: as tarefas pesadas rodam em modo background (prioridade baixa de CPU e disco).",
+  "Importar com DaVinci/edição aberta ficou seguro — o PRISMA cede a vez pro primeiro plano.",
+  "Só mídia: agora importa apenas vídeo, áudio e imagem/GIF. Documentos, LUTs, fontes e desconhecidos são recusados com aviso.",
+  "Caixa de duplicados pausa o trabalho de fundo enquanto está aberta (abre instantânea, sem engasgo).",
+  "Aviso de importação grande: acima de 1000 arquivos de uma vez, o app confirma antes.",
+  "Auditoria funcional completa: contrato front↔back 100% íntegro (zero função quebrada).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

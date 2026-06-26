@@ -10,6 +10,8 @@ import {
   getCounts,
   getFolders,
   indexPath,
+  countImportable,
+  setImportPaused,
   listTags,
   listCollections,
   createCollection,
@@ -89,6 +91,8 @@ import { TrafficLights } from "./TrafficLights";
 import "./App.css";
 
 const PAGE = 200;
+// Acima disto, a importação pede confirmação (evita travar o PC com lotes enormes de uma vez).
+const IMPORT_WARN_LIMIT = 1000;
 // Array vazio ESTÁVEL (mesma referência entre renders) — evita remontar o cabeçalho de pastas.
 const NO_SUBS: SubCard[] = [];
 // Objeto `components` vazio ESTÁVEL pro Virtuoso. NUNCA passar `components={undefined}` — o
@@ -254,6 +258,12 @@ export default function App() {
   const [smartBuilder, setSmartBuilder] = useState<{ editing: SmartFolder | null } | null>(null);
   const [editingColl, setEditingColl] = useState<number | null>(null);
   const [dupPairs, setDupPairs] = useState<DupPair[] | null>(null);
+  // Caixa de duplicados aberta → pausa o trabalho pesado de fundo (proxies/IA/etc.) pra a caixa
+  // aparecer instantânea e o PC não engasgar. Fecha → retoma. (Pedido do Paulo: parar de anexar
+  // enquanto a caixa está aberta.)
+  useEffect(() => {
+    setImportPaused(!!dupPairs).catch(() => {});
+  }, [dupPairs]);
   const [showSettings, setShowSettings] = useState(false);
   const [aiProgress, setAiProgress] = useState<{ done: number; total: number } | null>(null);
   const [proxyProgress, setProxyProgress] = useState<{ done: number; total: number; made: number } | null>(null);
@@ -777,17 +787,64 @@ export default function App() {
       setAddPos(null);
     }
   }, [addMenu]);
+  // Importa os caminhos escolhidos, mas SÓ mídia (vídeo, áudio, imagem/GIF). Antes de catalogar,
+  // varre e: (a) se houver arquivos incompatíveis, avisa; (b) se não houver NENHUMA mídia, recusa;
+  // (c) se for importação grande (>limite), confirma — roda em segundo plano sem travar o PC.
+  const importPaths = async (paths: string[]) => {
+    if (!paths.length) return;
+    let scan = { compatible: 0, skipped: 0 };
+    try {
+      scan = await countImportable(paths);
+    } catch {
+      scan = { compatible: 0, skipped: 0 };
+    }
+    const run = async () => {
+      for (const p of paths) await indexPath(p);
+    };
+    // Nada de mídia: só recusa, com aviso.
+    if (scan.compatible === 0) {
+      setConfirmDlg({
+        title: t("imp.noneTitle"),
+        message: t("imp.noneMsg").replace("{s}", scan.skipped.toLocaleString()),
+        confirmLabel: t("common.ok"),
+        onConfirm: () => {},
+      });
+      sfx.error?.();
+      return;
+    }
+    const big = scan.compatible > IMPORT_WARN_LIMIT;
+    // Precisa confirmar se há incompatíveis a ignorar OU se é importação grande.
+    if (scan.skipped > 0 || big) {
+      let msg = t("imp.importN").replace("{c}", scan.compatible.toLocaleString());
+      if (scan.skipped > 0) {
+        msg = t("imp.skipPart").replace("{s}", scan.skipped.toLocaleString()) + " " + msg;
+      }
+      if (big) {
+        msg += " " + t("imp.bigPart").replace("{lim}", IMPORT_WARN_LIMIT.toLocaleString());
+      }
+      setConfirmDlg({
+        title: t("imp.reviewTitle"),
+        message: msg,
+        confirmLabel: t("imp.doImport"),
+        onConfirm: () => {
+          void run();
+        },
+      });
+    } else {
+      await run();
+    }
+  };
   const addFolders = async () => {
     setAddMenu(false);
     const sel = await open({ directory: true, multiple: true });
     const dirs = Array.isArray(sel) ? sel : sel ? [sel] : [];
-    for (const d of dirs) await indexPath(d);
+    await importPaths(dirs);
   };
   const addFiles = async () => {
     setAddMenu(false);
     const sel = await open({ directory: false, multiple: true });
     const files = Array.isArray(sel) ? sel : sel ? [sel] : [];
-    for (const f of files) await indexPath(f);
+    await importPaths(files);
   };
   // Coletor da web (designer): cola uma URL, baixa pro Inbox e cataloga.
   const [showDownload, setShowDownload] = useState(false);

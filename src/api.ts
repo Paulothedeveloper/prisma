@@ -211,6 +211,16 @@ export const folderMeta = (dir: string, patch: FolderPatch) =>
   invoke<void>("folder_meta", { dir, patch });
 
 export const indexPath = (path: string) => invoke<void>("index_path", { path });
+// Varre os caminhos antes de catalogar: quantos são mídia compatível e quantos seriam recusados.
+export interface ImportScan {
+  compatible: number;
+  skipped: number;
+}
+export const countImportable = (paths: string[]) =>
+  invoke<ImportScan>("count_importable", { paths });
+// Pausa/retoma o trabalho pesado de fundo (a UI pausa ao abrir caixas de diálogo).
+export const setImportPaused = (paused: boolean) =>
+  invoke<void>("set_import_paused", { paused });
 export const searchAssets = (filter: Filter) =>
   invoke<Asset[]>("search_assets", { filter });
 export const getCounts = () => invoke<Counts>("get_counts");

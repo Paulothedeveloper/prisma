@@ -12,6 +12,7 @@ mod jobs;
 mod mediainfo;
 mod nle;
 mod oficina;
+mod sys;
 mod thumbs;
 mod vault;
 mod watcher;
@@ -123,6 +124,29 @@ fn index_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
         }
     });
     Ok(())
+}
+
+/// Resultado da varredura prévia da importação: quantos arquivos são mídia compatível e quantos
+/// seriam recusados (não-mídia). A UI usa pra avisar antes de catalogar.
+#[derive(serde::Serialize)]
+struct ImportScan {
+    compatible: usize,
+    skipped: usize,
+}
+
+/// Conta, sem catalogar, quantos arquivos de mídia compatível há nos caminhos escolhidos e quantos
+/// seriam recusados. A UI usa pra avisar (incompatíveis) e confirmar (importação grande).
+#[tauri::command]
+fn count_importable(paths: Vec<String>) -> ImportScan {
+    let (compatible, skipped) = indexer::scan_importable(&paths);
+    ImportScan { compatible, skipped }
+}
+
+/// Pausa/retoma o trabalho pesado de fundo (importação, proxies, IA, saúde). A UI liga isto
+/// quando abre uma caixa de diálogo bloqueante (ex.: modal de duplicados) pra não engasgar o PC.
+#[tauri::command]
+fn set_import_paused(paused: bool) {
+    sys::set_paused(paused);
 }
 
 /// Re-scan de uma pasta: pega arquivos novos + remove os apagados (Briefing 1 §5).
@@ -2172,6 +2196,8 @@ pub fn run() {
             mutate_asset,
             folder_meta,
             index_path,
+            count_importable,
+            set_import_paused,
             search_assets,
             get_counts,
             get_folders,

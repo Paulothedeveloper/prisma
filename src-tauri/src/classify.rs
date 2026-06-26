@@ -60,3 +60,9 @@ pub fn is_raw(ext: &str) -> bool {
 pub fn is_audio(ext: &str) -> bool {
     matches!(categorize(ext), "audio")
 }
+
+/// Mídia "de verdade" que a biblioteca aceita: vídeo, áudio, imagem e GIF. Tudo o mais
+/// (LUT, fonte, documento/projeto/zip, e extensões desconhecidas) é recusado na importação.
+pub fn is_media(ext: &str) -> bool {
+    matches!(categorize(ext), "image" | "gif" | "video" | "audio")
+}

@@ -182,12 +182,16 @@ pub fn run_proxy_batch(
     paths: Vec<String>,
 ) {
     std::thread::spawn(move || {
+        // Modo background: baixa prioridade de CPU e de I/O (encode de proxy não trava o PC).
+        crate::sys::begin_background();
         let _ = std::fs::create_dir_all(&proxy_dir);
         let total = paths.len();
         let mut made = 0usize;
         // throttle do progresso: no máx ~200 emissões na fila inteira (evita inundar o front).
         let step = (total / 200).max(1);
         for (i, input) in paths.into_iter().enumerate() {
+            // Pausa enquanto a UI tiver um diálogo aberto (ex.: modal de duplicados na importação).
+            crate::sys::wait_if_paused();
             let in_path = Path::new(&input);
             if !in_path.exists() {
                 continue;

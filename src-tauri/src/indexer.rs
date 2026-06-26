@@ -17,8 +17,10 @@ use walkdir::WalkDir;
 /// chama ffmpeg, que sozinho já usa vários núcleos) — junto com a prioridade reduzida do
 /// ffmpeg, evita congelar o PC em bibliotecas grandes. Teto 4 (igual antes).
 fn concurrency() -> usize {
+    // Import é trabalho de FUNDO: prioriza manter o PC fluido (UI + DaVinci) em vez de velocidade
+    // máxima. Teto baixo (4) + as threads em modo background (sys::begin_background) = sem travar.
     std::thread::available_parallelism()
-        .map(|n| n.get().saturating_sub(2).clamp(1, 8))
+        .map(|n| n.get().saturating_sub(2).clamp(1, 4))
         .unwrap_or(2)
 }
 
@@ -33,6 +35,42 @@ fn is_junk(name: &str) -> bool {
         || lower == "desktop.ini"
         || lower == ".localized"
         || lower == "icon\r" // ícone custom do macOS
+}
+
+/// Varre rápido (sem tocar no banco) os caminhos escolhidos e devolve
+/// `(compatíveis, incompatíveis)`: quantos são mídia que entra na biblioteca e quantos arquivos
+/// "de verdade" (não-lixo de SO) seriam recusados por não serem mídia. A UI usa pra avisar antes.
+pub fn scan_importable(paths: &[String]) -> (usize, usize) {
+    let mut ok = 0usize;
+    let mut skip = 0usize;
+    let mut tally = |p: &Path, name: &str| {
+        if is_junk(name) {
+            return; // lixo de SO não conta como "recusado" — é silencioso
+        }
+        let ext = p
+            .extension()
+            .map(|s| s.to_string_lossy().to_ascii_lowercase())
+            .unwrap_or_default();
+        if classify::is_media(&ext) {
+            ok += 1;
+        } else {
+            skip += 1;
+        }
+    };
+    for p in paths {
+        let path = Path::new(p);
+        if path.is_file() {
+            let name = path.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+            tally(path, &name);
+        } else if path.is_dir() {
+            for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
+                if entry.file_type().is_file() {
+                    tally(entry.path(), &entry.file_name().to_string_lossy());
+                }
+            }
+        }
+    }
+    (ok, skip)
 }
 
 /// true se `path_low` (minúsculo) está dentro de — ou é — alguma pasta excluída.
@@ -127,6 +165,11 @@ pub fn index_folder(
                 .extension()
                 .map(|s| s.to_string_lossy().to_ascii_lowercase())
                 .unwrap_or_default();
+            // Só mídia (vídeo/áudio/imagem/GIF). Documentos, LUTs, fontes e extensões
+            // desconhecidas NÃO entram na biblioteca (a UI já avisou o usuário antes).
+            if !classify::is_media(&ext) {
+                continue;
+            }
             let kind = classify::categorize(&ext).to_string();
             let dir = p
                 .parent()
@@ -242,6 +285,10 @@ pub fn rescan_folder(
                 continue;
             }
             let ext = p.extension().map(|s| s.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
+            // Só mídia entra (mesma regra do import).
+            if !classify::is_media(&ext) {
+                continue;
+            }
             let kind = classify::categorize(&ext).to_string();
             let dir = p.parent().map(|d| d.to_string_lossy().to_string()).unwrap_or_default();
             let md = entry.metadata().ok();
@@ -441,7 +488,12 @@ fn run_thumb_queue(
         let thumbs_dir = thumbs_dir.to_path_buf();
         let queue = queue.clone();
         let done = done.clone();
-        handles.push(std::thread::spawn(move || loop {
+        handles.push(std::thread::spawn(move || {
+            // Modo background: baixa prioridade de CPU e de I/O desta thread (não trava o PC).
+            crate::sys::begin_background();
+            loop {
+            // Pausa enquanto a UI tiver uma caixa de diálogo aberta (ex.: modal de duplicados).
+            crate::sys::wait_if_paused();
             let item = {
                 let mut q = queue.lock().unwrap_or_else(|p| p.into_inner());
                 q.next()
@@ -520,6 +572,7 @@ fn run_thumb_queue(
                         total,
                     },
                 );
+            }
             }
         }));
     }
