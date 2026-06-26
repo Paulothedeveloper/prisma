@@ -221,6 +221,8 @@ export const countImportable = (paths: string[]) =>
 // Pausa/retoma o trabalho pesado de fundo (a UI pausa ao abrir caixas de diálogo).
 export const setImportPaused = (paused: boolean) =>
   invoke<void>("set_import_paused", { paused });
+// Cancela a importação/processamento em andamento (o que já foi catalogado permanece).
+export const cancelImport = () => invoke<void>("cancel_import");
 export const searchAssets = (filter: Filter) =>
   invoke<Asset[]>("search_assets", { filter });
 export const getCounts = () => invoke<Counts>("get_counts");

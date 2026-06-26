@@ -146,6 +146,10 @@ pub fn index_folder(
         let mut conn = db.lock().unwrap_or_else(|p| p.into_inner());
         let tx = conn.transaction().unwrap();
         for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+            // Cancelou no meio da varredura → para de catalogar o resto.
+            if crate::sys::is_cancelled() {
+                break;
+            }
             if !entry.file_type().is_file() {
                 continue;
             }
@@ -228,6 +232,13 @@ pub fn index_folder(
     );
 
     run_thumb_queue(&app, &db, &thumbs_dir, pending);
+
+    // Cancelado pelo usuário: para por aqui (não detecta duplicados, não gera proxies). O que já
+    // foi catalogado fica — é leve; o usuário pode remover a pasta se quiser. Avisa a UI.
+    if crate::sys::is_cancelled() {
+        let _ = app.emit("index:cancelled", folder.clone());
+        return;
+    }
 
     // Duplicados na importação: avisa o usuário pra ele decidir (excluir/substituir/ignorar).
     let dups = {
@@ -494,6 +505,10 @@ fn run_thumb_queue(
             loop {
             // Pausa enquanto a UI tiver uma caixa de diálogo aberta (ex.: modal de duplicados).
             crate::sys::wait_if_paused();
+            // Cancelou → este worker para imediatamente.
+            if crate::sys::is_cancelled() {
+                break;
+            }
             let item = {
                 let mut q = queue.lock().unwrap_or_else(|p| p.into_inner());
                 q.next()

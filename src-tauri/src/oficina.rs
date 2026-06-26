@@ -192,6 +192,10 @@ pub fn run_proxy_batch(
         for (i, input) in paths.into_iter().enumerate() {
             // Pausa enquanto a UI tiver um diálogo aberto (ex.: modal de duplicados na importação).
             crate::sys::wait_if_paused();
+            // Cancelou a importação → para de gerar proxies.
+            if crate::sys::is_cancelled() {
+                break;
+            }
             let in_path = Path::new(&input);
             if !in_path.exists() {
                 continue;

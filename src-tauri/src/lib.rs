@@ -107,11 +107,13 @@ fn index_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
     let proxy_dir = state.data_dir.join("proxies");
     let app2 = app.clone();
     let path2 = path.clone();
+    // Novo import → zera qualquer pedido de cancelamento anterior.
+    sys::reset_cancel();
     std::thread::spawn(move || {
         indexer::index_folder(app2.clone(), db.clone(), thumbs_dir, path, autotag);
         // Após indexar, gera proxies dos vídeos de codec não-web (ProRes/.mov etc.)
         // pra eles tocarem no hover/preview. Em segundo plano, sem tocar os originais.
-        if auto_proxy {
+        if auto_proxy && !sys::is_cancelled() {
             let vids = db
                 .lock()
                 .ok()
@@ -147,6 +149,13 @@ fn count_importable(paths: Vec<String>) -> ImportScan {
 #[tauri::command]
 fn set_import_paused(paused: bool) {
     sys::set_paused(paused);
+}
+
+/// Cancela a importação/processamento em andamento (catalogar, miniaturas, proxies). O que já
+/// foi catalogado permanece; só para o trabalho pesado que resta. A UI chama pelo botão Cancelar.
+#[tauri::command]
+fn cancel_import() {
+    sys::cancel();
 }
 
 /// Re-scan de uma pasta: pega arquivos novos + remove os apagados (Briefing 1 §5).
@@ -2198,6 +2207,7 @@ pub fn run() {
             index_path,
             count_importable,
             set_import_paused,
+            cancel_import,
             search_assets,
             get_counts,
             get_folders,

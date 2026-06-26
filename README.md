@@ -131,6 +131,13 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.14** — Importação leve, só mídia, auditoria funcional
+- ⚡ **A importação não trava mais o PC.** As threads de trabalho (importar, proxies, IA, saúde) agora rodam em **modo background do Windows** — prioridade baixa de **CPU e de disco** — então o PRISMA cede a vez pro primeiro plano (a UI, o DaVinci). Concorrência de import reduzida para mais suavidade.
+- 🎯 **Só mídia entra:** importa apenas **vídeo, áudio, imagem e GIF**. Documentos, LUTs, fontes e extensões desconhecidas são recusados, com **aviso** de quantos foram ignorados.
+- ⏸️ **Caixas de diálogo pausam o trabalho pesado** (ex.: modal de duplicados) — aparecem instantâneas, sem engasgo.
+- 🛑 Acima de **1000 arquivos** numa importação, o app confirma antes.
+- 🔍 **Auditoria funcional completa:** contrato frontend↔backend 100% íntegro (108 comandos, 107 chamadas, 21 eventos — zero quebrado).
+
 **0.9.13** — Remoção definitiva + desempenho
 - 🩹 **Remover pasta agora é permanente.** Antes, uma pasta removida podia "voltar" ao renomear/mexer numa pasta vizinha (o monitor re-catalogava os arquivos que continuavam no disco). Agora a pasta removida vai para uma **lista de exclusão** persistente — o monitor e qualquer re-escaneamento a ignoram, e os índices/proxies dela são apagados de verdade. Re-adicionar a pasta cancela a exclusão.
 - ⚡ **Desempenho em bibliotecas grandes (27 mil+):** busca por imagem/CLIP em uma só consulta (era N+1), índice para ordenar por tamanho, contadores da barra lateral em uma varredura só, *throttle* nos eventos de proxy, e sidebar/inspetor memoizados.

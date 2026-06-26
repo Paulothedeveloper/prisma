@@ -16,6 +16,24 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// Quando `true`, os loops de trabalho pesado pausam (checado entre itens).
 static PAUSED: AtomicBool = AtomicBool::new(false);
 
+/// Quando `true`, os loops de trabalho pesado (catalogar/thumbs/proxies) abortam o quanto antes.
+/// A UI liga via `cancel_import`; cada novo import o zera (reset_cancel no index_path).
+static CANCEL: AtomicBool = AtomicBool::new(false);
+
+/// Pede o cancelamento do trabalho pesado em andamento (importação/thumbs/proxies).
+pub fn cancel() {
+    CANCEL.store(true, Ordering::SeqCst);
+}
+
+/// Zera o pedido de cancelamento (chamado quando um novo import começa).
+pub fn reset_cancel() {
+    CANCEL.store(false, Ordering::SeqCst);
+}
+
+pub fn is_cancelled() -> bool {
+    CANCEL.load(Ordering::SeqCst)
+}
+
 /// Liga/desliga a pausa global do trabalho pesado (chamado pela UI ao abrir/fechar diálogos).
 pub fn set_paused(p: bool) {
     PAUSED.store(p, Ordering::SeqCst);

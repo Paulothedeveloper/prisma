@@ -42,16 +42,16 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.14";
+const APP_VERSION = "0.9.15";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Importação não trava mais o PC: as tarefas pesadas rodam em modo background (prioridade baixa de CPU e disco).",
-  "Importar com DaVinci/edição aberta ficou seguro — o PRISMA cede a vez pro primeiro plano.",
-  "Só mídia: agora importa apenas vídeo, áudio e imagem/GIF. Documentos, LUTs, fontes e desconhecidos são recusados com aviso.",
-  "Caixa de duplicados pausa o trabalho de fundo enquanto está aberta (abre instantânea, sem engasgo).",
-  "Aviso de importação grande: acima de 1000 arquivos de uma vez, o app confirma antes.",
-  "Auditoria funcional completa: contrato front↔back 100% íntegro (zero função quebrada).",
+  "NOVO: botão Cancelar na barra de importação — para o processamento na hora (o que já entrou fica).",
+  "Barra de progresso não fica mais subindo e descendo: a porcentagem virou monotônica (só avança).",
+  "Acabou o flicker: a grade de pastas não pisca mais alternando com a tela de carregamento.",
+  "Cards de pasta repaginados: agora têm cara de pasta (aba + moldura + tom azulado), não de mídia.",
+  "Tela cheia: duplo-clique em qualquer mídia abre o visualizador; vídeo tem botão de tela cheia real.",
+  "Importação leve (modo background de CPU/disco) + só mídia + pausa em diálogos (das versões recentes).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

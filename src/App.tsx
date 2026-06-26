@@ -12,6 +12,7 @@ import {
   indexPath,
   countImportable,
   setImportPaused,
+  cancelImport,
   listTags,
   listCollections,
   createCollection,
@@ -612,10 +613,28 @@ export default function App() {
   useEffect(() => {
     const unl: Array<() => void> = [];
     listen<{ total: number }>("index:start", (e) =>
-      setProgress({ active: true, done: 0, total: e.payload.total })
+      setProgress((prev) => {
+        // total 0 = "escaneando" (indeterminado): só mostra se NÃO há progresso real em curso,
+        // senão a barra ficava piscando pra indeterminado a cada pasta/operação concorrente.
+        if (e.payload.total === 0) {
+          return prev.active && prev.total > 0 ? prev : { active: true, done: 0, total: 0 };
+        }
+        // já ativo: não reinicia (evita a barra "voltar" quando outra operação começa).
+        if (prev.active && prev.total > 0) return prev;
+        return { active: true, done: 0, total: e.payload.total };
+      })
     ).then((u) => unl.push(u));
     listen<{ done: number; total: number }>("index:thumb", (e) => {
-      setProgress({ active: true, done: e.payload.done, total: e.payload.total });
+      setProgress((prev) => {
+        // MONOTÔNICO: com várias operações em paralelo os eventos vêm fora de ordem e faziam a
+        // barra/porcentagem subir e descer. Só aceita o evento se NÃO recuar a porcentagem.
+        const inc = e.payload.total ? e.payload.done / e.payload.total : 0;
+        const cur = prev.total ? prev.done / prev.total : 0;
+        if (!prev.active || inc >= cur) {
+          return { active: true, done: e.payload.done, total: e.payload.total };
+        }
+        return prev;
+      });
       // refresh throttleado (2s) pra não piscar a grade a cada thumb durante a indexação
       if (refetchTimer.current === null) {
         refetchTimer.current = window.setTimeout(() => {
@@ -630,6 +649,12 @@ export default function App() {
       runSearch(true);
       refreshMeta();
       sfx.notify(); // notificação ao terminar de catalogar
+    }).then((u) => unl.push(u));
+    // Importação cancelada pelo usuário → some a barra e reconcilia (o que entrou fica).
+    listen("index:cancelled", () => {
+      setProgress((p) => ({ ...p, active: false }));
+      runSearch(true);
+      refreshMeta();
     }).then((u) => unl.push(u));
     // Duplicados achados na importação → abre o modal de decisão.
     listen<DupPair[]>("index:dups", (e) => {
@@ -1377,6 +1402,17 @@ export default function App() {
           <span className="progress-label">
             {t("app.cataloging")} {progress.done.toLocaleString("pt-BR")}/{progress.total.toLocaleString("pt-BR")} · {pct}%
           </span>
+          <button
+            className="progress-cancel"
+            title={t("app.cancelImport")}
+            onClick={() => {
+              cancelImport().catch(() => {});
+              setProgress((p) => ({ ...p, active: false }));
+              sfx.tap();
+            }}
+          >
+            <Icon name="close" size={13} /> {t("common.cancel")}
+          </button>
         </div>
       )}
 
@@ -1808,7 +1844,7 @@ export default function App() {
             </div>
           )}
           <div className={`view-fade${switching ? " anim-in" : ""}${clearing ? " clearing" : ""}`}>
-            {progress.active && assets.length === 0 ? (
+            {progress.active && assets.length === 0 && subN === 0 ? (
               <div className="indexing-loader">
                 <div className="il-prism">
                   <span className="il-rays" />
@@ -1825,6 +1861,16 @@ export default function App() {
                   <div className="il-shimmer" />
                 </div>
                 <div className="il-sub">{t("app.catalogingNote")}</div>
+                <button
+                  className="il-cancel"
+                  onClick={() => {
+                    cancelImport().catch(() => {});
+                    setProgress((p) => ({ ...p, active: false }));
+                    sfx.tap();
+                  }}
+                >
+                  <Icon name="close" size={13} /> {t("app.cancelImport")}
+                </button>
               </div>
             ) : assets.length === 0 && subN > 0 ? (
               // Pasta que só contém subpastas (ou busca que só achou pastas): mostra os
