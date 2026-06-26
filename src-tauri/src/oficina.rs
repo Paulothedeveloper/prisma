@@ -171,6 +171,39 @@ fn proxy_stem(path: &str) -> String {
     format!("{:016x}", h.finish())
 }
 
+/// Gera o proxy H.264 (720p) de UM vídeo sob demanda (ex.: ao abrir no preview um ProRes que
+/// ainda não tem proxy). Bloqueante — rode num comando/thread. Devolve o caminho do proxy ou None.
+/// Não toca no original.
+pub fn make_one_proxy(ffmpeg: &Path, proxy_dir: &Path, input: &str) -> Option<String> {
+    let _ = std::fs::create_dir_all(proxy_dir);
+    let out = proxy_dir.join(format!("{}.mp4", proxy_stem(input)));
+    if out.exists() {
+        return Some(out.to_string_lossy().to_string());
+    }
+    let mut cmd = Command::new(ffmpeg);
+    cmd.args(["-y", "-i", input]);
+    cmd.args([
+        "-map", "0:v:0", "-map", "0:a?", "-c:v", "libx264", "-crf", "24",
+        "-preset", "veryfast", "-vf", "scale=-2:720", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-movflags", "+faststart",
+    ]);
+    cmd.arg(out.to_string_lossy().to_string());
+    #[cfg(windows)]
+    cmd.creation_flags(BG_HEAVY);
+    let ok = cmd
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+    if ok && out.exists() {
+        Some(out.to_string_lossy().to_string())
+    } else {
+        None
+    }
+}
+
 /// Gera proxies H.264 leves (720p) pros vídeos de codec NÃO-web (ProRes, DNxHR, etc.)
 /// que ainda não têm proxy. Roda em segundo plano, um por vez (não trava o app).
 /// Os proxies ficam no cache do app — os ORIGINAIS nunca são tocados.

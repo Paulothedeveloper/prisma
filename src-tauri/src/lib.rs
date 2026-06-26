@@ -87,6 +87,31 @@ pub struct Counts {
     by_unknown_ext: Vec<(String, i64)>,
 }
 
+/// Gera o proxy de UM vídeo sob demanda e devolve o caminho do proxy (pro preview tocar inline,
+/// sem obrigar player externo). Bloqueia até terminar — pode demorar em vídeo longo.
+#[tauri::command]
+fn make_proxy(app: tauri::AppHandle, id: i64) -> Result<Option<String>, String> {
+    let state = app.state::<AppState>();
+    let path: Option<String> = state.reads.with(|c| {
+        c.query_row(
+            "SELECT path FROM assets WHERE id=?1 AND type='video'",
+            rusqlite::params![id],
+            |r| r.get(0),
+        )
+        .ok()
+    });
+    let path = path.ok_or("vídeo não encontrado")?;
+    let ffmpeg = thumbs::bin_path("ffmpeg");
+    let proxy_dir = state.data_dir.join("proxies");
+    let out = oficina::make_one_proxy(&ffmpeg, &proxy_dir, &path);
+    if let Some(ref p) = out {
+        if let Ok(conn) = state.db.lock() {
+            let _ = db::set_proxy(&conn, &path, p);
+        }
+    }
+    Ok(out)
+}
+
 /// Um asset pelo id (usado pelo deep-link pra abrir o asset que a nota aponta).
 #[tauri::command]
 fn get_asset(app: tauri::AppHandle, id: i64) -> Result<Option<db::Asset>, String> {
@@ -2332,6 +2357,7 @@ pub fn run() {
             folder_meta,
             index_path,
             get_asset,
+            make_proxy,
             count_importable,
             set_import_paused,
             cancel_import,

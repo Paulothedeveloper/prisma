@@ -42,13 +42,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.19";
+const APP_VERSION = "0.9.20";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "NOVO — Deep-link prisma://: clicar num link prisma://asset/<id> (que o app grava nas notas do Quartzo/VELVET) FOCA o PRISMA e abre o asset. Fecha o ida-e-volta.",
-  "Funciona com o app aberto (single-instance) ou abrindo do zero. Pode pedir confirmação do Windows na 1ª vez.",
-  "CLIP++ (buscar parecidas por IA) — das versões recentes.",
+  "Vídeo toca DENTRO do app: ProRes/.mov (codec pro) agora reproduz inline pelo proxy — o player externo virou OPCIONAL.",
+  "Botão 'Tocar aqui' no visualizador: gera o proxy na hora se ainda não existir, e toca sem sair do PRISMA.",
+  "Deep-link prisma:// e CLIP++ (das versões recentes).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

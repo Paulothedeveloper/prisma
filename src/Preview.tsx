@@ -3,7 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { Icon } from "./Icons";
 import { VideoPlayer } from "./VideoPlayer";
 import { AudioPlayer } from "./AudioPlayer";
-import { probeMedia, revealInExplorer, openExternal, type Asset } from "./api";
+import { probeMedia, revealInExplorer, openExternal, makeProxy, type Asset } from "./api";
 import { t } from "./i18n";
 import { sfx } from "./sfx";
 
@@ -27,6 +27,31 @@ export function Preview({ asset, onClose, onNav }: Props) {
   const [playable, setPlayable] = useState<boolean | null>(null);
   const [fps, setFps] = useState(30);
   const [rot, setRot] = useState(0);
+  // proxy gerado SOB DEMANDA (botão "Tocar aqui") quando o original não é web e não tem proxy.
+  const [madeProxy, setMadeProxy] = useState<string | null>(null);
+  const [genning, setGenning] = useState(false);
+
+  useEffect(() => {
+    setMadeProxy(null);
+    setGenning(false);
+  }, [asset.id]);
+
+  // proxy H.264 (gerado pelo app pros codecs pro como ProRes): toca INLINE quando o original
+  // não é web-compatível, em vez de obrigar o player externo. Usa o proxy já existente OU o
+  // que acabamos de gerar sob demanda.
+  const proxyUrl = asset.proxy_path
+    ? convertFileSrc(asset.proxy_path)
+    : madeProxy
+      ? convertFileSrc(madeProxy)
+      : null;
+  const doMakeProxy = () => {
+    setGenning(true);
+    makeProxy(asset.id)
+      .then((p) => {
+        if (p) setMadeProxy(p);
+      })
+      .finally(() => setGenning(false));
+  };
 
   useEffect(() => {
     if (asset.type !== "video") return;
@@ -89,16 +114,34 @@ export function Preview({ asset, onClose, onNav }: Props) {
         {isVideo ? (
           playable === true ? (
             <VideoPlayer src={url} fps={fps} aspect={aspect} />
+          ) : playable === false && proxyUrl ? (
+            // Original não-web (ex.: ProRes) MAS tem proxy → toca o proxy aqui dentro.
+            <VideoPlayer src={proxyUrl} fps={fps} aspect={aspect} />
           ) : (
             <div className="preview-unsupported">
               {thumbUrl && <img src={thumbUrl} className="preview-media" alt="" />}
               {playable === false && (
-                <button
-                  className="preview-openext"
-                  onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
-                >
-                  <Icon name="play" size={16} /> {t("prev.openExternal")}
-                </button>
+                <div className="preview-vidactions">
+                  {/* Tocar AQUI dentro: gera o proxy H.264 na hora (codec pro não toca no WebView).
+                      O player externo vira OPCIONAL. */}
+                  <button className="preview-openext primary" onClick={doMakeProxy} disabled={genning}>
+                    {genning ? (
+                      <>
+                        <span className="spin" /> {t("prev.making")}
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="play" size={16} /> {t("prev.playHere")}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    className="preview-openext"
+                    onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
+                  >
+                    {t("prev.openExternal")}
+                  </button>
+                </div>
               )}
             </div>
           )

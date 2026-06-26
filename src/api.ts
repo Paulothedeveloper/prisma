@@ -401,6 +401,8 @@ export const openGyroflow = (path: string) =>
 
 export const getProxy = (path: string) =>
   invoke<string | null>("get_proxy", { path });
+// Gera o proxy de UM vídeo sob demanda (pro preview tocar inline). Devolve o caminho do proxy.
+export const makeProxy = (id: number) => invoke<string | null>("make_proxy", { id });
 
 // ----- Coleções (organização livre) -----
 export const listCollections = () => invoke<Collection[]>("list_collections");

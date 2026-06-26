@@ -131,6 +131,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.20** — Vídeo toca dentro do app (player externo opcional)
+- ▶️ **ProRes/.mov tocam inline** pelo proxy H.264 (o WebView não decodifica codec pro). Se o vídeo ainda não tem proxy, o botão **"Tocar aqui"** gera na hora e toca. O "Abrir no player externo" virou opcional.
+
 **0.9.19** — Deep-link `prisma://` (fecha o ida-e-volta com Quartzo/VELVET)
 - 🔗 **Clicar um `prisma://asset/<id>`** numa nota (Obsidian/Quartzo) **foca o PRISMA e abre o asset**. O app já escrevia esses links ao anexar; agora eles funcionam de volta. Single-instance (não abre 2ª janela) + esquema registrado no Windows.
 

@@ -1901,6 +1901,27 @@ body {
 .preview-openext:hover {
   filter: brightness(1.1);
 }
+/* dois botões (Tocar aqui + Abrir externo) centralizados sobre a miniatura */
+.preview-vidactions {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 2;
+}
+.preview-vidactions .preview-openext {
+  position: static;
+}
+.preview-openext.primary {
+  background: rgba(10, 132, 255, 0.95);
+}
+.preview-vidactions .preview-openext:not(.primary) {
+  background: rgba(30, 32, 38, 0.85);
+  border-color: rgba(255, 255, 255, 0.18);
+}
 @keyframes fadeIn {
   from {
     opacity: 0;
