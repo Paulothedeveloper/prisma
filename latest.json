@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.11",
-    "notes":  "A pasta removida nao volta mais: agora ela e escondida da barra e da grade na hora e ignorada em qualquer relistagem ate o apagar (em segundo plano) terminar. Some na hora e fica.",
-    "pub_date":  "2026-06-26T01:58:03Z",
+    "version":  "0.9.12",
+    "notes":  "Causa real do delete lento de pasta: um gatilho do indice de busca disparava 1 operacao por arquivo (27k = dezenas de seg). Agora apaga com o gatilho desligado (~1s) e reconstroi o indice de uma vez. Remove pasta gigante = some na hora, ~1s, e nao volta.",
+    "pub_date":  "2026-06-26T02:11:45Z",
     "platforms":  {
                       "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXdKejI2ZnpDaUoxcFRZOFkvbmt6MklzUVR0MFpSL2VnREIyNnIzYkE3enprSGNueVdIUmYvQWRqS3dDUytTc3NaOHlYOWdFdXJWNmUyYnB2ZnJ0SXdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDM5MDYyCWZpbGU6UFJJU01BXzAuOS4xMV94NjQtc2V0dXAuZXhlCndCUW9seE85WngrT0xmd3JjM2VXVzIxeUx5OHRmcmIwd21NSzhaU1doVjg3VGhKODhmQ25rKzY5dmdUUjdZdUF5SFg4eHRueVNmN2wwMU9wcCtQcEN3PT0K",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.11/PRISMA_0.9.11_x64-setup.exe"
+                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTdGejlPdzQ3bjJNS2EyaGIyWVpyRHhlbW45ekZCdlhkZm9VOG41VkVHYVlMSGRvenBJZXdIcitnN2k5cXhaci9jcGs0U0ZzaHZVZjI0d2NPRGVmb0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDM5ODgyCWZpbGU6UFJJU01BXzAuOS4xMl94NjQtc2V0dXAuZXhlCmxjYzBqY3pHdk5OS3hiTldHU2orUGkyRWJXL0hEUUVPSjRrTFJIeTZGdGtmSE1NVHJENzBxYUx3NlBoZDVpMm4vTXRQeC8wSmo0T3VtVHh2RGtSOEN3PT0K",
+                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.12/PRISMA_0.9.12_x64-setup.exe"
                                          }
                   }
 }
