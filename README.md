@@ -131,6 +131,13 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.15** — Cancelar importação + barra estável + cards de pasta
+- 🛑 **Botão Cancelar** na barra de importação (e no carregamento): para o processamento na hora; o que já foi catalogado fica.
+- 📊 **Barra de progresso monotônica:** acabou o "sobe e desce" da porcentagem quando há operações em paralelo.
+- ✨ **Fim do flicker:** a grade de pastas não pisca mais alternando com a tela de carregamento.
+- 📁 **Cards de pasta repaginados:** aba + capa embutida em moldura + tom azulado — leem como pasta, não como mídia.
+- 🔳 **Tela cheia:** duplo-clique em qualquer mídia abre o visualizador; vídeo tem botão de tela cheia real do sistema.
+
 **0.9.14** — Importação leve, só mídia, auditoria funcional
 - ⚡ **A importação não trava mais o PC.** As threads de trabalho (importar, proxies, IA, saúde) agora rodam em **modo background do Windows** — prioridade baixa de **CPU e de disco** — então o PRISMA cede a vez pro primeiro plano (a UI, o DaVinci). Concorrência de import reduzida para mais suavidade.
 - 🎯 **Só mídia entra:** importa apenas **vídeo, áudio, imagem e GIF**. Documentos, LUTs, fontes e extensões desconhecidas são recusados, com **aviso** de quantos foram ignorados.
