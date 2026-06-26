@@ -131,6 +131,12 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.16** — Player playlist, preview na lista, auditoria funcional (25+ correções)
+- 🎵 **Player de rodapé estilo playlist:** clique num áudio e ouça um atrás do outro — anterior / play-pause / próxima / detalhes, com auto-avanço. Ideal para bibliotecas grandes de música/SFX.
+- 🖱️ **Preview no hover também na visão de LISTA** (antes só na grade) + **transição suave** ao trocar o modo de visualização.
+- 📁 **Cards de pasta** repaginados (aba + capa em moldura + tom azul) e **scroll da grade de pastas corrigido** (havia conteúdo escondido).
+- 🔍 **Auditoria funcional profunda (6 agentes):** Live Photos não esconde vídeos independentes; vídeo só-áudio não é apagado como corrompido; busca via **índice FTS5**; importação não congela o app (varredura sem segurar o banco); **path traversal** bloqueado; **restore** valida e faz backup antes de trocar; sem panic quando o banco está ocupado; pastas inteligentes escondem frames de sequência; chave da API protegida; cancelar importação interrompe o proxy no meio; modais mais robustos.
+
 **0.9.15** — Cancelar importação + barra estável + cards de pasta
 - 🛑 **Botão Cancelar** na barra de importação (e no carregamento): para o processamento na hora; o que já foi catalogado fica.
 - 📊 **Barra de progresso monotônica:** acabou o "sobe e desce" da porcentagem quando há operações em paralelo.
