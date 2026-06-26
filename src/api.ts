@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 export interface Asset {
   id: number;
   path: string;
+  dir: string | null;
   filename: string;
   name: string | null;
   ext: string;

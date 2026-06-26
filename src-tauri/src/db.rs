@@ -8,6 +8,7 @@ use std::path::Path;
 pub struct Asset {
     pub id: i64,
     pub path: String,
+    pub dir: Option<String>,
     pub filename: String,
     pub name: Option<String>,
     pub ext: String,
@@ -820,6 +821,7 @@ fn row_to_asset(r: &rusqlite::Row) -> rusqlite::Result<Asset> {
     Ok(Asset {
         id: r.get("id")?,
         path: r.get("path")?,
+        dir: r.get("dir")?,
         filename: r.get("filename")?,
         name: r.get("name")?,
         ext: r.get("ext")?,
@@ -842,7 +844,7 @@ fn row_to_asset(r: &rusqlite::Row) -> rusqlite::Result<Asset> {
     })
 }
 
-const SELECT_COLS: &str = "id, path, filename, name, ext, type, size, modified_at, width, height,
+const SELECT_COLS: &str = "id, path, dir, filename, name, ext, type, size, modified_at, width, height,
     duration, rating, notes, dominant_color, color_bucket, thumbnail_path, proxy_path,
     health_level, health_flags, seq_frames, live_motion";
 

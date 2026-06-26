@@ -227,6 +227,25 @@ export default function App() {
   const [othersOpen, setOthersOpen] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [folders, setFolders] = useState<FolderRow[]>([]);
+  // Pastas em REMOÇÃO (o DELETE de 27k roda no background): o front esconde elas da barra E da
+  // grade até o backend confirmar (folder:removed). Sem isso, qualquer refreshMeta no meio
+  // trazia a pasta + os arquivos de volta ("some e logo depois volta"). Caminhos em minúsculo.
+  const [removingDirs, setRemovingDirs] = useState<Set<string>>(new Set());
+  const removingDirsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    removingDirsRef.current = removingDirs;
+  }, [removingDirs]);
+  const isRemoving = useCallback(
+    (dir: string | null | undefined) => {
+      if (!dir || removingDirs.size === 0) return false;
+      const low = dir.toLowerCase();
+      for (const r of removingDirs) {
+        if (low === r || low.startsWith(r + "\\")) return true;
+      }
+      return false;
+    },
+    [removingDirs]
+  );
   const [showHidden, setShowHidden] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [smartFolders, setSmartFolders] = useState<SmartFolder[]>([]);
@@ -362,7 +381,19 @@ export default function App() {
       const offset = reset ? 0 : offsetRef.current;
       const rows = await searchAssets(buildFilter(offset));
       offsetRef.current = offset + rows.length;
-      setAssets((prev) => (reset ? rows : [...prev, ...rows]));
+      // Esconde da grade os assets de pastas em remoção (DELETE rodando no background) — senão
+      // ficavam aparecendo em "Tudo" e voltavam.
+      const rem = removingDirsRef.current;
+      const kept =
+        rem.size === 0
+          ? rows
+          : rows.filter((a) => {
+              const low = a.dir?.toLowerCase();
+              if (!low) return true;
+              for (const r of rem) if (low === r || low.startsWith(r + "\\")) return false;
+              return true;
+            });
+      setAssets((prev) => (reset ? kept : [...prev, ...kept]));
       fireCascade();
     },
     [buildFilter, view, simThreshold, clipMode, query]
@@ -620,8 +651,16 @@ export default function App() {
       refreshMeta();
       runSearch(true);
     }).then((u) => unl.push(u));
-    // Remoção de pasta (em lotes no background) terminou → reconcilia barra + grade.
-    listen<string>("folder:removed", () => {
+    // Remoção de pasta (em lotes no background) terminou → desmarca "em remoção" (o DB já está
+    // limpo, então não volta) e reconcilia barra + grade.
+    listen<string>("folder:removed", (e) => {
+      const low = (e.payload || "").toLowerCase();
+      setRemovingDirs((prev) => {
+        if (!prev.has(low)) return prev;
+        const n = new Set(prev);
+        n.delete(low);
+        return n;
+      });
       refreshMeta();
       runSearch(true);
     }).then((u) => unl.push(u));
@@ -993,6 +1032,9 @@ export default function App() {
     ? subCards
     : NO_SUBS;
   const subN = gridFolders.length;
+  // Esconde da barra as pastas em remoção (e subpastas) — assim não "voltam".
+  const visibleFolders =
+    removingDirs.size === 0 ? folders : folders.filter((f) => !isRemoving(f.dir));
   const subCardEl = (s: SubCard) => {
     const cover = s.cover ? convertFileSrc(s.cover) : null;
     return (
@@ -1411,7 +1453,7 @@ export default function App() {
             ))}
           </div>
 
-          {folders.length > 0 && (
+          {visibleFolders.length > 0 && (
             <div className="side-group">
               <div className="side-title side-title-row">
                 {t("app.folders")}
@@ -1424,7 +1466,7 @@ export default function App() {
                 </button>
               </div>
               <FolderTree
-                dirs={folders}
+                dirs={visibleFolders}
                 selected={folderSel}
                 showHidden={showHidden}
                 onSelect={(p) =>
@@ -1442,17 +1484,17 @@ export default function App() {
                     danger: true,
                     confirmLabel: t("fld.remove"),
                     onConfirm: () => {
-                      // OTIMISTA: tira a pasta (e subpastas) da barra NA HORA e sai dela — não
-                      // espera o DELETE de 27k linhas (que roda em LOTES no background). O evento
-                      // `folder:removed` reconcilia quando termina. Nada de tela cinza travada.
+                      // OTIMISTA: a pasta sai da barra E da grade NA HORA, e fica MARCADA como
+                      // "em remoção" — assim, mesmo que um refreshMeta rode enquanto o DELETE de
+                      // 27k roda no background, ela NÃO volta. `folder:removed` desmarca no fim.
                       const low = dir.toLowerCase();
-                      setFolders((prev) =>
-                        prev.filter(
-                          (f) =>
-                            f.dir.toLowerCase() !== low &&
-                            !f.dir.toLowerCase().startsWith(low + "\\")
-                        )
-                      );
+                      const under = (d?: string | null) => {
+                        const x = d?.toLowerCase();
+                        return !!x && (x === low || x.startsWith(low + "\\"));
+                      };
+                      setRemovingDirs((prev) => new Set(prev).add(low));
+                      setFolders((prev) => prev.filter((f) => !under(f.dir)));
+                      setAssets((prev) => prev.filter((a) => !under(a.dir)));
                       sfx.trash();
                       if (folderSel === dir || (view.t === "folder" && view.v === dir)) {
                         cascadeOnNextLoad.current = true;
