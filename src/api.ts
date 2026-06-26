@@ -480,6 +480,9 @@ export const clipStatus = () => invoke<ClipStatus>("clip_status");
 export const clipIndex = (limit: number) => invoke<number>("clip_index", { limit });
 export const clipSearch = (query: string, limit: number) =>
   invoke<Asset[]>("clip_search", { query, limit });
+// CLIP++ — busca por exemplo: acha os assets visualmente/semanticamente parecidos com este.
+export const clipSearchImage = (id: number, limit: number) =>
+  invoke<Asset[]>("clip_search_image", { id, limit });
 // Auto-tag zero-shot com CLIP (sem gastar API). ids vazio = todas as imagens.
 export const clipAutotag = (ids: number[]) => invoke<number>("clip_autotag", { ids });
 

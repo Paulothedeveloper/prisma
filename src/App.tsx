@@ -49,6 +49,7 @@ import {
   subfolders,
   searchFolders,
   clipSearch,
+  clipSearchImage,
   clipStatus,
   clipIndex,
   clipAutotag,
@@ -202,6 +203,7 @@ type View =
   | { t: "ext"; v: string; label: string }
   | { t: "collection"; v: number; label: string }
   | { t: "similar"; v: number; label: string }
+  | { t: "clipimg"; v: number; label: string }
   | { t: "health"; v: string; label: string }
   | { t: "smart"; v: number; label: string };
 
@@ -382,6 +384,14 @@ export default function App() {
       }
       if (view.t === "similar") {
         const rows = await similarAssets(view.v, 60, simThreshold);
+        offsetRef.current = rows.length;
+        setAssets(rows);
+        fireCascade();
+        return;
+      }
+      // CLIP++ — parecidas por IA (busca por exemplo), ranqueadas por significado visual.
+      if (view.t === "clipimg") {
+        const rows = await clipSearchImage(view.v, 80);
         offsetRef.current = rows.length;
         setAssets(rows);
         fireCascade();
@@ -1024,6 +1034,9 @@ export default function App() {
       { sep: true, label: "" },
       ...(a.type === "image" || a.type === "gif" ? [{ label: t("ctx.markup"), icon: "pencil" as const, onClick: () => setMarkup(a) }] : []),
       { label: t("ctx.findSimilar"), icon: "search", onClick: () => setView({ t: "similar", v: a.id, label: a.name || a.filename }) },
+      ...(a.type === "image" || a.type === "gif" || a.type === "video"
+        ? [{ label: t("ctx.findSimilarAI"), icon: "sparkles" as const, onClick: () => setView({ t: "clipimg", v: a.id, label: a.name || a.filename }) }]
+        : []),
       { label: `${t("batch.ai")}${n}`, icon: "sliders", onClick: () => aiAnalyzeMany(ids) },
       { label: `${t("ctx.autotagClip")}${n}`, icon: "sparkles", onClick: () => clipAutotag(ids) },
       ...(many
@@ -1853,6 +1866,14 @@ export default function App() {
                 />
                 <span>{t("ban.simLoose")}</span>
               </label>
+              <button className="trash-empty similar-back" onClick={() => setView({ t: "all" })}>
+                <Icon name="chevronLeft" size={13} /> {t("ban.back")}
+              </button>
+            </div>
+          )}
+          {view.t === "clipimg" && (
+            <div className="trash-banner similar-banner">
+              <span><Icon name="sparkles" size={13} /> {t("ban.clipimg")} <b>{view.label}</b></span>
               <button className="trash-empty similar-back" onClick={() => setView({ t: "all" })}>
                 <Icon name="chevronLeft" size={13} /> {t("ban.back")}
               </button>

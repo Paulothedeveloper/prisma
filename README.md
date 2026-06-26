@@ -131,6 +131,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.18** — CLIP++ (buscar parecidas por IA)
+- 🧠 **Busca por exemplo:** clique direito numa imagem/GIF/vídeo → **"Parecidas por IA (CLIP)"** acha os assets visualmente parecidos por **significado** (não por pixel). Requer a busca semântica indexada.
+
 **0.9.17** — Volume no player + cards de pasta sem esticar
 - 🔊 **Controle de volume (com mudo)** no player de rodapé.
 - 📁 **Cards de pasta não esticam mais** ao mudar o zoom dos ícones (o grid não estica mais as linhas — cada card tem a altura do conteúdo).

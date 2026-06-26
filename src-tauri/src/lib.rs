@@ -514,6 +514,36 @@ fn clip_search(app: tauri::AppHandle, query: String, limit: i64) -> Result<Vec<d
     state.reads.with(|c| db::assets_by_ids(c, &ids)).map_err(|e| e.to_string())
 }
 
+/// CLIP++ — busca por EXEMPLO: dado um asset, acha os visualmente/semanticamente mais parecidos
+/// (diferente de `similar`, que é por hash perceptual/pixel). Embeda a thumb do exemplo na hora e
+/// ranqueia por cosseno contra os embeddings já indexados. Exclui o próprio asset.
+#[tauri::command]
+fn clip_search_image(app: tauri::AppHandle, id: i64, limit: i64) -> Result<Vec<db::Asset>, String> {
+    let state = app.state::<AppState>();
+    // usa a miniatura (≤512px) quando houver — embedding mais rápido e suficiente; senão o original.
+    let src: Option<String> = state.reads.with(|c| {
+        c.query_row(
+            "SELECT COALESCE(thumbnail_path, path) FROM assets WHERE id=?1",
+            rusqlite::params![id],
+            |r| r.get(0),
+        )
+        .ok()
+    });
+    let src = src.ok_or("asset não encontrado")?;
+    let mut sess = clip::vision_session(&state.data_dir)?;
+    let q = clip::embed_image(&mut sess, std::path::Path::new(&src))?;
+    let embeds = state.reads.with(|c| db::all_clip_embeds(c)).map_err(|e| e.to_string())?;
+    let mut scored: Vec<(i64, f32)> = embeds
+        .iter()
+        .filter(|(eid, _)| *eid != id) // não devolve o próprio exemplo
+        .map(|(eid, blob)| (*eid, clip::cosine(&q, &clip::blob_to_embed(blob))))
+        .collect();
+    scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    let n = if limit > 0 { limit as usize } else { 60 };
+    let ids: Vec<i64> = scored.into_iter().take(n).map(|(id, _)| id).collect();
+    state.reads.with(|c| db::assets_by_ids(c, &ids)).map_err(|e| e.to_string())
+}
+
 /// Auto-tag ZERO-SHOT com CLIP (sem gastar API): compara cada imagem com um vocabulário de
 /// conceitos e grava as etiquetas que casam. `ids` vazio = todas as imagens. Roda em background.
 #[tauri::command]
@@ -2307,6 +2337,7 @@ pub fn run() {
             clip_status,
             clip_index,
             clip_search,
+            clip_search_image,
             clip_autotag,
             export_contact_sheet,
             export_velvet_catalog,

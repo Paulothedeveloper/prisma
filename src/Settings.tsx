@@ -42,14 +42,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.17";
+const APP_VERSION = "0.9.18";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Player de rodapé agora tem CONTROLE DE VOLUME (com mudo).",
-  "Cards de pasta não esticam mais: corrigido o vazão embaixo ao aumentar/diminuir o zoom dos ícones.",
-  "Caixa de download não fecha mais no meio de um download (botão e Esc protegidos).",
-  "Continuação da auditoria: refinamentos de robustez nos modais.",
+  "NOVO — CLIP++: clique direito numa imagem/vídeo → 'Parecidas por IA (CLIP)' acha os assets visualmente parecidos por significado (não por pixel).",
+  "Precisa da busca semântica indexada (botão 'Indexar' quando você liga a Semântica).",
+  "Volume no player, cards de pasta sem esticar e caixa de download protegida (das versões recentes).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
