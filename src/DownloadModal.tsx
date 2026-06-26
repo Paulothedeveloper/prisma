@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { videoDownloadInfo, videoDownload, type DownloadInfo } from "./api";
 import { Icon } from "./Icons";
 import { t } from "./i18n";
@@ -18,6 +18,19 @@ export function DownloadModal({
   const [audioOnly, setAudioOnly] = useState(false);
   const [busy, setBusy] = useState<"" | "check" | "dl">("");
   const [status, setStatus] = useState<{ kind: "ok" | "err" | "first"; msg: string } | null>(null);
+
+  // Não fecha enquanto o download está rodando (evita interromper o yt-dlp no meio). Esc fecha
+  // só quando não está baixando.
+  const guardClose = () => {
+    if (busy !== "dl") onClose();
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && busy !== "dl") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [busy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fmtDur = (s: number | null) => {
     if (!s) return "";
@@ -61,14 +74,14 @@ export function DownloadModal({
   };
 
   return (
-    <div className="dup-overlay" onClick={onClose}>
+    <div className="dup-overlay" onClick={guardClose}>
       <div className="dup-modal dl-modal" onClick={(e) => e.stopPropagation()}>
         <div className="dup-head">
           <div className="dup-title">
             <Icon name="video" size={17} />
             {t("dl.title")}
           </div>
-          <button className="dup-x" onClick={onClose}>
+          <button className="dup-x" onClick={guardClose}>
             <Icon name="close" size={14} />
           </button>
         </div>

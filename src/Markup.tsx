@@ -15,6 +15,7 @@ export function Markup({ asset, onClose, onSaved }: { asset: Asset; onClose: () 
   const [color, setColor] = useState("#FF3B30");
   const [width, setWidth] = useState(5);
   const [busy, setBusy] = useState(false);
+  const [loadErr, setLoadErr] = useState(false);
   const url = convertFileSrc(asset.path);
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export function Markup({ asset, onClose, onSaved }: { asset: Asset; onClose: () 
       const ctx = c.getContext("2d");
       ctx?.drawImage(img, 0, 0, c.width, c.height);
     };
+    img.onerror = () => setLoadErr(true); // imagem ilegível → não deixa "salvar" anotação vazia
     img.src = url;
   }, [url]);
 
@@ -57,13 +59,19 @@ export function Markup({ asset, onClose, onSaved }: { asset: Asset; onClose: () 
   const up = () => (drawing.current = false);
 
   const save = async () => {
+    if (loadErr || !canvasRef.current) return; // imagem não carregou → não salva nada
     setBusy(true);
     try {
-      const blob: Blob = await new Promise((res) => canvasRef.current!.toBlob((b) => res(b!), "image/png"));
+      const blob = await new Promise<Blob | null>((res) =>
+        canvasRef.current!.toBlob((b) => res(b), "image/png"),
+      );
+      if (!blob) throw new Error("toBlob falhou");
       const buf = new Uint8Array(await blob.arrayBuffer());
       await saveAnnotated(asset.path, Array.from(buf));
       onSaved();
       onClose();
+    } catch {
+      setLoadErr(true); // não trava o botão em "salvando"
     } finally {
       setBusy(false);
     }

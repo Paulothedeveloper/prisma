@@ -1701,7 +1701,7 @@ fn quartzo_notes_for_asset(app: tauri::AppHandle, asset_id: i64) -> Result<Vec<e
 fn quartzo_open_note(app: tauri::AppHandle, note_rel: String) -> Result<(), String> {
     let state = app.state::<AppState>();
     let vault = quartzo_vault_path(&state)?;
-    let abs = ecosystem::note_abs_path(&vault, &note_rel);
+    let abs = ecosystem::note_abs_path(&vault, &note_rel)?;
     open_external(abs.to_string_lossy().to_string())
 }
 
@@ -2113,15 +2113,35 @@ pub fn run() {
                     }
                 }
             }
-            // Restauração de backup pendente: troca o arquivo do banco ANTES de abrir.
+            // Restauração de backup pendente: troca o arquivo do banco ANTES de abrir. Agora com
+            // rede de segurança: VALIDA o backup (integrity_check) e faz BACKUP do banco atual
+            // antes de sobrescrever — se o backup for inválido/corrompido, o catálogo atual é
+            // preservado (antes ele era sobrescrito às cegas e podia ser perdido).
             let pending = data_dir.join("pending_restore.txt");
             if pending.exists() {
                 if let Ok(src) = std::fs::read_to_string(&pending) {
-                    let src = src.trim();
-                    if !src.is_empty() && std::path::Path::new(src).exists() {
-                        let _ = std::fs::copy(src, &db_path);
-                        let _ = std::fs::remove_file(data_dir.join("prisma.db-wal"));
-                        let _ = std::fs::remove_file(data_dir.join("prisma.db-shm"));
+                    let src = src.trim().to_string();
+                    if !src.is_empty() && std::path::Path::new(&src).exists() {
+                        let valid = rusqlite::Connection::open_with_flags(
+                            &src,
+                            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+                        )
+                        .ok()
+                        .and_then(|c| {
+                            c.query_row("PRAGMA integrity_check", [], |r| r.get::<_, String>(0)).ok()
+                        })
+                        .map(|s| s == "ok")
+                        .unwrap_or(false);
+                        if valid {
+                            if db_path.exists() {
+                                let _ = std::fs::copy(&db_path, data_dir.join("prisma.db.bak"));
+                            }
+                            if std::fs::copy(&src, &db_path).is_ok() {
+                                let _ = std::fs::remove_file(data_dir.join("prisma.db-wal"));
+                                let _ = std::fs::remove_file(data_dir.join("prisma.db-shm"));
+                            }
+                        }
+                        // backup inválido → não toca no banco atual (mantém o bom).
                     }
                 }
                 let _ = std::fs::remove_file(&pending);

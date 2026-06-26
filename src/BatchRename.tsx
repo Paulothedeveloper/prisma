@@ -36,6 +36,7 @@ export function BatchRename({ assets, onClose, onDone }: { assets: Asset[]; onCl
   const [find, setFind] = useState("");
   const [replace, setReplace] = useState("");
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
   const [undo, setUndo] = useState<{ id: number; new_name: string }[] | null>(null);
 
   const preview = useMemo(
@@ -45,11 +46,15 @@ export function BatchRename({ assets, onClose, onDone }: { assets: Asset[]; onCl
 
   const apply = async () => {
     setBusy(true);
+    setErr("");
     const olds = assets.map((a) => ({ id: a.id, new_name: a.filename }));
     try {
       await renameFiles(preview.map((p) => ({ id: p.a.id, new_name: p.neu })));
       setUndo(olds);
       onDone();
+    } catch (e) {
+      // antes a falha era engolida em silêncio — o usuário não sabia se renomeou.
+      setErr(String(e));
     } finally {
       setBusy(false);
     }
@@ -113,6 +118,7 @@ export function BatchRename({ assets, onClose, onDone }: { assets: Asset[]; onCl
           </div>
         </div>
 
+        {err && <div className="dl-status err" style={{ margin: "0 16px" }}>{err}</div>}
         <div className="dup-foot">
           {undo ? (
             <button className="dup-cancel" onClick={doUndo} disabled={busy}>{t("br.undo")}</button>

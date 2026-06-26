@@ -189,6 +189,25 @@ fn walk_md(root: &Path, dir: &Path, out: &mut Vec<QuartzoNote>) {
     }
 }
 
+/// Resolve uma nota DENTRO do vault com segurança (anti path traversal): rejeita componentes
+/// `..`, raiz e prefixo de disco (`C:\`) — qualquer um deles escaparia da pasta do vault e
+/// permitiria ler/escrever arquivo arbitrário no PC. Garante a extensão `.md`.
+fn safe_note_path(vault: &Path, note_rel: &str) -> Result<PathBuf, String> {
+    use std::path::Component;
+    let rel = note_rel.trim_start_matches(['/', '\\']);
+    if Path::new(rel)
+        .components()
+        .any(|c| matches!(c, Component::ParentDir | Component::RootDir | Component::Prefix(_)))
+    {
+        return Err("caminho de nota inválido".into());
+    }
+    let mut full = vault.join(rel);
+    if full.extension().is_none() {
+        full.set_extension("md");
+    }
+    Ok(full)
+}
+
 /// Anexa um asset do PRISMA numa nota do Quartzo (cria a nota se não existir).
 /// Escreve um bloco markdown com link de arquivo + deep-link prisma://asset/<id>.
 pub fn attach_asset(
@@ -198,11 +217,7 @@ pub fn attach_asset(
     asset_name: &str,
     asset_path: &str,
 ) -> Result<(), String> {
-    let safe_rel = note_rel.trim_start_matches(['/', '\\']);
-    let mut full = vault.join(safe_rel);
-    if full.extension().is_none() {
-        full.set_extension("md");
-    }
+    let full = safe_note_path(vault, note_rel)?;
     if let Some(parent) = full.parent() {
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
@@ -236,14 +251,9 @@ pub fn notes_for_asset(vault: &Path, asset_id: i64, asset_path: &str) -> Vec<Qua
     out
 }
 
-/// Caminho absoluto de uma nota (pra abrir no Quartzo/editor).
-pub fn note_abs_path(vault: &Path, note_rel: &str) -> PathBuf {
-    let safe = note_rel.trim_start_matches(['/', '\\']);
-    let mut p = vault.join(safe);
-    if p.extension().is_none() {
-        p.set_extension("md");
-    }
-    p
+/// Caminho absoluto de uma nota (pra abrir no Quartzo/editor). Seguro contra path traversal.
+pub fn note_abs_path(vault: &Path, note_rel: &str) -> Result<PathBuf, String> {
+    safe_note_path(vault, note_rel)
 }
 
 fn path_to_file_url(p: &str) -> String {

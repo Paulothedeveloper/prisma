@@ -42,16 +42,16 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.15";
+const APP_VERSION = "0.9.16";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "NOVO: botão Cancelar na barra de importação — para o processamento na hora (o que já entrou fica).",
-  "Barra de progresso não fica mais subindo e descendo: a porcentagem virou monotônica (só avança).",
-  "Acabou o flicker: a grade de pastas não pisca mais alternando com a tela de carregamento.",
-  "Cards de pasta repaginados: agora têm cara de pasta (aba + moldura + tom azulado), não de mídia.",
-  "Tela cheia: duplo-clique em qualquer mídia abre o visualizador; vídeo tem botão de tela cheia real.",
-  "Importação leve (modo background de CPU/disco) + só mídia + pausa em diálogos (das versões recentes).",
+  "NOVO: player de rodapé estilo playlist — clique num áudio e ouça um atrás do outro (anterior/próxima/pausa/detalhes).",
+  "Pré-visualização ao passar o mouse agora também na visão de LISTA (antes só na grade).",
+  "Trocar o modo de visualização ficou suave (com animação), não mais seco.",
+  "Cards de pasta repaginados de novo: aba + capa em moldura + tom azul (cara de pasta de verdade).",
+  "Corrigido: a grade de pastas agora ROLA (tinha conteúdo escondido sem barra de scroll).",
+  "Auditoria funcional completa: 25+ correções — Live Photos não some vídeo, busca via índice FTS5, sem travar o app em falhas, e mais.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
@@ -133,13 +133,16 @@ export function Settings({ onClose }: { onClose: () => void }) {
   };
 
   useEffect(() => {
-    aiStatus().then((s) => {
-      setHasKey(s.has_key);
-      setModel(s.model);
-      setAutotag(s.autotag_on_import);
-      setAutoProxy(s.auto_proxy_on_import);
-      if (s.has_key) aiPendingCount().then(setPending).catch(() => {});
-    });
+    aiStatus()
+      .then((s) => {
+        setHasKey(s.has_key);
+        setModel(s.model);
+        setAutotag(s.autotag_on_import);
+        setAutoProxy(s.auto_proxy_on_import);
+        if (s.has_key) aiPendingCount().then(setPending).catch(() => {});
+      })
+      .catch(() => {}); // falha de backend não deixa a aba IA em estado default sem feedback
+
     vaultStatus().then(setVault).catch(() => {});
     quartzoGetVault().then(setQuartzoVault).catch(() => {});
   }, []);

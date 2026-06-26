@@ -244,13 +244,29 @@ pub fn run_proxy_batch(
             cmd.arg(out.to_string_lossy().to_string());
             #[cfg(windows)]
             cmd.creation_flags(BG_HEAVY);
-            let ok = cmd
+            // spawn + poll: permite MATAR o ffmpeg no meio quando o usuário cancela (antes era
+            // `.status()` bloqueante e o cancelamento só agia depois do encode terminar).
+            let ok = match cmd
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
-                .status()
-                .map(|s| s.success())
-                .unwrap_or(false);
+                .spawn()
+            {
+                Ok(mut child) => loop {
+                    if crate::sys::is_cancelled() {
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        let _ = std::fs::remove_file(&out); // não deixa proxy pela metade
+                        break false;
+                    }
+                    match child.try_wait() {
+                        Ok(Some(status)) => break status.success(),
+                        Ok(None) => std::thread::sleep(std::time::Duration::from_millis(150)),
+                        Err(_) => break false,
+                    }
+                },
+                Err(_) => false,
+            };
             if ok && out.exists() {
                 if let Ok(conn) = db.lock() {
                     let _ = db::set_proxy(&conn, &input, &out.to_string_lossy());
@@ -326,7 +342,16 @@ fn build_encode(
             return ("REWRAP".into(), ext, "Reencapsular (sem recodificar)".into(), sv(&["-map", "0", "-c", "copy"]));
         }
         Some("extract_audio") => {
-            return ("AUDIO".into(), "wav".into(), "Extrair áudio (WAV)".into(), sv(&["-vn", "-c:a", "pcm_s16le"]));
+            // Respeita o container escolhido (antes forçava WAV/PCM sempre, gerando arquivos
+            // gigantes mesmo quando o usuário pediu mp3/m4a).
+            let (ext, codec): (String, &str) = match o.container.as_deref() {
+                Some("mp3") => ("mp3".into(), "libmp3lame"),
+                Some("m4a") | Some("aac") => ("m4a".into(), "aac"),
+                Some("flac") => ("flac".into(), "flac"),
+                Some(other) if !other.is_empty() && other != "wav" => (other.to_string(), "aac"),
+                _ => ("wav".into(), "pcm_s16le"),
+            };
+            return ("AUDIO".into(), ext, "Extrair áudio".into(), sv(&["-vn", "-c:a", codec]));
         }
         Some("trim") => {
             let mut a = Vec::new();
@@ -351,9 +376,13 @@ fn build_encode(
         }
         Some("watermark") => {
             if let Some(wm) = &o.watermark_path {
+                // Mapa explícito: vídeo do overlay [v] + áudio OPCIONAL (`0:a?`). Antes era
+                // `-c:a copy` sem -map: com filter_complex o ffmpeg NÃO mapeia o áudio sozinho, e
+                // se a fonte não tivesse áudio o comando falhava. Agora o áudio entra se existir.
                 let a = sv(&[
                     "-i", wm,
-                    "-filter_complex", "overlay=W-w-24:H-h-24:format=auto",
+                    "-filter_complex", "[0][1]overlay=W-w-24:H-h-24:format=auto[v]",
+                    "-map", "[v]", "-map", "0:a?",
                     "-c:a", "copy",
                     "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p",
                 ]);
@@ -752,28 +781,32 @@ pub fn run_gyroflow(
     let mut cmd = Command::new(&gf);
     cmd.arg(&input).args(["--stdout-progress", "-f"]);
 
-    // Gyroflow Fase 2: preset COMPLETO de estabilização via CLI do engine embutido.
-    let mut stab: Vec<String> = Vec::new();
+    // Gyroflow Fase 2: preset COMPLETO de estabilização via CLI do engine embutido. JSON montado
+    // com serde_json (aspas DUPLAS, válido) — antes era string com aspas simples, que o parser
+    // estrito do engine podia recusar em silêncio (estabilização não acontecia, erro genérico).
+    use serde_json::json;
+    let mut stab = serde_json::Map::new();
     if let Some(sm) = opts.smoothness {
-        stab.push(format!("'smoothness':{}", sm.clamp(0.0, 1.0)));
+        stab.insert("smoothness".into(), json!(sm.clamp(0.0, 1.0)));
     }
     if let Some(f) = opts.fov {
-        stab.push(format!("'fov':{}", f.clamp(0.5, 2.0)));
+        stab.insert("fov".into(), json!(f.clamp(0.5, 2.0)));
     }
     if let Some(h) = opts.horizon_lock {
         if h > 0.0 {
-            stab.push(format!("'horizon_lock_amount':{}", h.clamp(0.0, 100.0)));
+            stab.insert("horizon_lock_amount".into(), json!(h.clamp(0.0, 100.0)));
         }
     }
-    let mut preset: Vec<String> = Vec::new();
+    let mut preset = serde_json::Map::new();
     if !stab.is_empty() {
-        preset.push(format!("'stabilization':{{{}}}", stab.join(",")));
+        preset.insert("stabilization".into(), serde_json::Value::Object(stab));
     }
     if let Some(lc) = opts.lens_correction {
-        preset.push(format!("'lens_correction_amount':{}", (lc.clamp(0.0, 100.0) / 100.0)));
+        preset.insert("lens_correction_amount".into(), json!(lc.clamp(0.0, 100.0) / 100.0));
     }
     if !preset.is_empty() {
-        cmd.arg("--preset").arg(format!("{{'version':2,{}}}", preset.join(",")));
+        preset.insert("version".into(), json!(2));
+        cmd.arg("--preset").arg(serde_json::Value::Object(preset).to_string());
     }
     // codec do render (out-params)
     if let Some(c) = &opts.gyro_codec {
@@ -782,11 +815,12 @@ pub fn run_gyroflow(
             "prores" => "ProRes",
             _ => "H.264/AVC",
         };
-        cmd.arg("-p").arg(format!("{{'codec':'{codec}','use_gpu':true,'audio':true}}"));
+        cmd.arg("-p")
+            .arg(json!({"codec": codec, "use_gpu": true, "audio": true}).to_string());
     }
     // sincronização (sync-params)
     if let Some(ss) = opts.sync_search {
-        cmd.arg("-s").arg(format!("{{'search_size':{ss}}}"));
+        cmd.arg("-s").arg(json!({ "search_size": ss }).to_string());
     }
 
     cmd.stdout(Stdio::piped()).stderr(Stdio::null()).stdin(Stdio::null());

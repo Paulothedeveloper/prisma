@@ -45,7 +45,18 @@ impl ReadPool {
         let pooled = self.idle.lock().ok().and_then(|mut v| v.pop());
         let conn = match pooled {
             Some(c) => c,
-            None => open_reader(&self.path).expect("falha ao abrir conexão de leitura"),
+            // Antes um `.expect` aqui derrubava o app inteiro se o banco estivesse travado/ausente
+            // num instante (ex.: durante restore). Agora: tenta de novo e, em último caso, usa uma
+            // conexão em memória — a consulta retorna Err (que a UI trata) em vez de PANIC.
+            None => open_reader(&self.path)
+                .or_else(|_| {
+                    std::thread::sleep(std::time::Duration::from_millis(60));
+                    open_reader(&self.path)
+                })
+                .or_else(|_| Connection::open_in_memory())
+                .unwrap_or_else(|_| {
+                    Connection::open_in_memory().expect("conexão em memória sempre abre")
+                }),
         };
         let out = f(&conn);
         if let Ok(mut v) = self.idle.lock() {

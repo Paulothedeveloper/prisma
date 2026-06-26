@@ -71,6 +71,7 @@ import { Preview } from "./Preview";
 import { DupModal } from "./DupModal";
 import { DownloadModal } from "./DownloadModal";
 import { ConfirmModal, type ConfirmOpts } from "./ConfirmModal";
+import { MiniPlayer } from "./MiniPlayer";
 import { Settings } from "./Settings";
 import { SmartBuilder } from "./SmartBuilder";
 import { BatchRename } from "./BatchRename";
@@ -259,6 +260,8 @@ export default function App() {
   const [smartBuilder, setSmartBuilder] = useState<{ editing: SmartFolder | null } | null>(null);
   const [editingColl, setEditingColl] = useState<number | null>(null);
   const [dupPairs, setDupPairs] = useState<DupPair[] | null>(null);
+  // Player de rodapé (playlist): índice do item tocando dentro de `assets`.
+  const [playerIdx, setPlayerIdx] = useState<number | null>(null);
   // Caixa de duplicados aberta → pausa o trabalho pesado de fundo (proxies/IA/etc.) pra a caixa
   // aparecer instantânea e o PC não engasgar. Fecha → retoma. (Pedido do Paulo: parar de anexar
   // enquanto a caixa está aberta.)
@@ -683,10 +686,24 @@ export default function App() {
       clipStatus().then(setClipStat).catch(() => {});
       runSearch(true);
     }).then((u) => unl.push(u));
+    // Progresso do auto-tag CLIP (era emitido pelo backend mas ninguém ouvia).
+    listen<number>("clip:tagprogress", (e) =>
+      setClipStat((s) => (s ? { ...s, done: e.payload } : s)),
+    ).then((u) => unl.push(u));
     // Auto-tag CLIP terminou → atualiza tags + grade.
     listen<number>("clip:tagdone", () => {
       refreshMeta();
       runSearch(true);
+    }).then((u) => unl.push(u));
+    // Erro do CLIP (download/carga do modelo) — antes ficava invisível pro usuário.
+    listen<string>("clip:error", (e) => {
+      setClipBusy(false);
+      setConfirmDlg({
+        title: t("clip.errTitle"),
+        message: e.payload || t("clip.errMsg"),
+        confirmLabel: t("common.ok"),
+        onConfirm: () => {},
+      });
     }).then((u) => unl.push(u));
     // Remoção de pasta (em lotes no background) terminou → desmarca "em remoção" (o DB já está
     // limpo, então não volta) e reconcilia barra + grade.
@@ -956,6 +973,9 @@ export default function App() {
         setSelectedIds(new Set([asset.id]));
         setSelected(asset);
         anchorRef.current = index;
+        // Clique simples num ÁUDIO inicia o player de rodapé (estilo playlist) — ideal pra
+        // bibliotecas grandes de música/SFX: dá pra ouvir um atrás do outro com avançar/voltar.
+        if (asset.type === "audio") setPlayerIdx(index);
       }
     },
     [assets]
@@ -1106,6 +1126,27 @@ export default function App() {
   }, [refreshMeta]);
 
   const inCollection = view.t === "collection" ? view.v : null;
+
+  // --- Player de rodapé (playlist de áudio/vídeo) ---
+  const playerAsset = playerIdx !== null ? assets[playerIdx] ?? null : null;
+  const playableAt = useCallback(
+    (start: number, dir: 1 | -1): number => {
+      for (let i = start; i >= 0 && i < assets.length; i += dir) {
+        const a = assets[i];
+        if (a && (a.type === "audio" || a.type === "video")) return i;
+      }
+      return -1;
+    },
+    [assets],
+  );
+  const playerNext = useCallback(() => {
+    setPlayerIdx((cur) => (cur === null ? cur : (playableAt(cur + 1, 1) >= 0 ? playableAt(cur + 1, 1) : cur)));
+  }, [playableAt]);
+  const playerPrev = useCallback(() => {
+    setPlayerIdx((cur) => (cur === null ? cur : (playableAt(cur - 1, -1) >= 0 ? playableAt(cur - 1, -1) : cur)));
+  }, [playableAt]);
+  const playerHasNext = playerIdx !== null && playableAt(playerIdx + 1, 1) >= 0;
+  const playerHasPrev = playerIdx !== null && playableAt(playerIdx - 1, -1) >= 0;
 
   const isView = (v: View) => JSON.stringify(v) === JSON.stringify(view);
   const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -1357,7 +1398,16 @@ export default function App() {
               key={l}
               className={`layout-btn ${layout === l ? "on" : ""}`}
               title={l === "grid" ? t("app.layoutGrid") : l === "list" ? t("app.layoutList") : t("app.layoutWaterfall")}
-              onClick={() => setLayout(l)}
+              onClick={() => {
+                if (l === layout) return;
+                // Transição suave ao trocar o modo: reaproveita a cascata de entrada dos cards
+                // (antes a troca era seca, sem animação).
+                setSwitching(true);
+                if (cascadeTimer.current) window.clearTimeout(cascadeTimer.current);
+                cascadeTimer.current = window.setTimeout(() => setSwitching(false), 650);
+                setLayout(l);
+                sfx.tap();
+              }}
             >
               <Icon name={l === "grid" ? "layoutGrid" : l === "list" ? "layoutList" : "layoutWaterfall"} size={15} />
             </button>
@@ -2009,6 +2059,18 @@ export default function App() {
       )}
       {confirmDlg && (
         <ConfirmModal opts={confirmDlg} onClose={() => setConfirmDlg(null)} />
+      )}
+
+      {playerAsset && (
+        <MiniPlayer
+          asset={playerAsset}
+          hasPrev={playerHasPrev}
+          hasNext={playerHasNext}
+          onPrev={playerPrev}
+          onNext={playerNext}
+          onClose={() => setPlayerIdx(null)}
+          onDetails={() => setPreviewAsset(playerAsset)}
+        />
       )}
 
       {/* Toast premium de remoção de pasta: "Removendo…" com spinner → "Pasta removida ✓". */}

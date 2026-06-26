@@ -55,14 +55,12 @@ fn chunk_md(content: &str) -> Vec<(String, String)> {
 
 /// Reindexa o vault inteiro. Retorna o número de chunks indexados.
 pub fn index_vault(db: &Arc<Mutex<Connection>>, dir: &Path) -> usize {
-    let conn = match db.lock() {
-        Ok(c) => c,
-        Err(_) => return 0,
-    };
-    let _ = db::clear_vault(&conn);
+    // Coleta + parse dos .md FORA do lock do writer (I/O lento). Antes o lock ficava retido
+    // durante a varredura inteira do filesystem, congelando TODA escrita do app (importação,
+    // watcher de mídia, IA) — e o watcher do vault dispara isto a cada edição de nota.
     let mut files = Vec::new();
     collect_md(dir, &mut files);
-    let mut total = 0usize;
+    let mut parsed: Vec<(String, String, String)> = Vec::new(); // (note, heading, text)
     for p in files {
         if let Ok(content) = std::fs::read_to_string(&p) {
             let note = p
@@ -70,10 +68,22 @@ pub fn index_vault(db: &Arc<Mutex<Connection>>, dir: &Path) -> usize {
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_default();
             for (heading, text) in chunk_md(&content) {
-                if text.trim().len() >= 10 && db::insert_vault_chunk(&conn, &note, &heading, &text).is_ok() {
-                    total += 1;
+                if text.trim().len() >= 10 {
+                    parsed.push((note.clone(), heading, text));
                 }
             }
+        }
+    }
+    // Agora sim: lock CURTO só pra gravar os chunks já prontos.
+    let conn = match db.lock() {
+        Ok(c) => c,
+        Err(_) => return 0,
+    };
+    let _ = db::clear_vault(&conn);
+    let mut total = 0usize;
+    for (note, heading, text) in &parsed {
+        if db::insert_vault_chunk(&conn, note, heading, text).is_ok() {
+            total += 1;
         }
     }
     total

@@ -23,7 +23,7 @@ export function UpdateBanner() {
         .then((u) => {
           if (u) {
             setUpdate(u);
-            sfx.notify(); // notificação quando há atualização disponível
+            sfx.notify?.(); // notificação quando há atualização disponível
           }
         })
         .catch((e) => console.warn("update check", e));
@@ -36,6 +36,7 @@ export function UpdateBanner() {
   const install = async () => {
     setInstalling(true);
     setErr("");
+    setPct(0); // zera a barra a cada tentativa (não mantém o valor antigo de uma falha anterior)
     try {
       let total = 0;
       let done = 0;

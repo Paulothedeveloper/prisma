@@ -925,6 +925,18 @@ const SELECT_COLS: &str = "id, path, dir, filename, name, ext, type, size, modif
     duration, rating, notes, dominant_color, color_bucket, thumbnail_path, proxy_path,
     health_level, health_flags, seq_frames, live_motion";
 
+/// Semente pseudo-aleatória estável por execução do app (pra ordem "aleatória" paginável).
+fn random_seed() -> i64 {
+    use std::sync::OnceLock;
+    static SEED: OnceLock<i64> = OnceLock::new();
+    *SEED.get_or_init(|| {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| ((d.as_nanos() as i64) | 1).rem_euclid(1_000_000_007).max(3))
+            .unwrap_or(2_654_435_761)
+    })
+}
+
 /// Busca/filtra com filtros combinados. Tudo via SQLite -> instantaneo.
 pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     let mut sql = format!("SELECT {SELECT_COLS} FROM assets a WHERE 1=1");
@@ -948,21 +960,36 @@ pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     }
 
     if !f.query.trim().is_empty() {
-        // Busca por NOME + descrição da IA + tags. LIKE é robusto e rápido o bastante;
-        // cada termo (separado por espaço) precisa casar em algum campo (AND entre termos).
+        // Busca por NOME + descrição da IA (via índice FTS5, rápido em biblioteca grande) + tags
+        // (LIKE, pois tags não estão no FTS — tabela pequena). Cada termo precisa casar em algum
+        // campo (AND entre termos). Antes era `LIKE '%termo%'` em filename/name/ai_desc = full-scan
+        // da tabela toda por termo; o FTS5 já existia mas nunca era consultado.
         let q = f.query.trim().to_lowercase();
         let terms: Vec<&str> = q.split_whitespace().filter(|t| !t.is_empty()).collect();
         for term in &terms {
+            // só alfanumérico pro MATCH (evita quebrar a sintaxe do FTS com símbolos); prefixo `*`.
+            let clean: String = term.chars().filter(|c| c.is_alphanumeric()).collect();
             let like = format!("%{term}%");
-            sql.push_str(
-                " AND (LOWER(filename) LIKE ? OR LOWER(name) LIKE ? OR LOWER(ai_desc) LIKE ? \
-                   OR EXISTS(SELECT 1 FROM asset_tags at JOIN tags t ON t.id=at.tag_id \
-                   WHERE at.asset_id=a.id AND LOWER(t.name) LIKE ?))",
-            );
-            args.push(Box::new(like.clone()));
-            args.push(Box::new(like.clone()));
-            args.push(Box::new(like.clone()));
-            args.push(Box::new(like));
+            if clean.is_empty() {
+                // termo só de símbolos (raro): cai no LIKE clássico nos campos de texto + tag.
+                sql.push_str(
+                    " AND (LOWER(filename) LIKE ? OR LOWER(name) LIKE ? OR LOWER(ai_desc) LIKE ? \
+                       OR EXISTS(SELECT 1 FROM asset_tags at JOIN tags t ON t.id=at.tag_id \
+                       WHERE at.asset_id=a.id AND LOWER(t.name) LIKE ?))",
+                );
+                args.push(Box::new(like.clone()));
+                args.push(Box::new(like.clone()));
+                args.push(Box::new(like.clone()));
+                args.push(Box::new(like));
+            } else {
+                sql.push_str(
+                    " AND (a.id IN (SELECT rowid FROM assets_fts WHERE assets_fts MATCH ?) \
+                       OR EXISTS(SELECT 1 FROM asset_tags at JOIN tags t ON t.id=at.tag_id \
+                       WHERE at.asset_id=a.id AND LOWER(t.name) LIKE ?))",
+                );
+                args.push(Box::new(format!("{clean}*")));
+                args.push(Box::new(like));
+            }
         }
     }
     if let Some(k) = &f.kind {
@@ -1067,7 +1094,12 @@ pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     }
 
     let order = if f.random {
-        " ORDER BY RANDOM()"
+        // `ORDER BY RANDOM()` re-sorteava a CADA página → com scroll infinito (LIMIT/OFFSET) os
+        // itens repetiam e pulavam. Aqui uma ordem pseudo-aleatória ESTÁVEL: hash multiplicativo
+        // de Knuth com uma semente fixa por execução do app (varia entre aberturas do app, mas é
+        // consistente enquanto ele está aberto, então a paginação funciona).
+        sql.push_str(&format!(" ORDER BY (a.id * {}) % 1000000007", random_seed()));
+        ""
     } else if let Some(c) = f.collection {
         // Dentro de uma coleção respeita a ordem manual do usuário.
         sql.push_str(
@@ -1664,34 +1696,36 @@ pub fn detect_sequences(conn: &Connection, dir: &str) -> rusqlite::Result<usize>
 pub fn detect_live_photos(conn: &Connection, dir: &str) -> rusqlite::Result<usize> {
     use std::collections::HashMap;
     let like = format!("{dir}\\%");
-    // Imagens candidatas (sem par ainda) e vídeos .mov/.mp4 visíveis.
+    // Imagens candidatas e vídeos curtos visíveis (duração entra na decisão).
     let mut stmt = conn.prepare(
-        "SELECT id, dir, filename, type FROM assets \
+        "SELECT id, dir, filename, type, path, duration FROM assets \
          WHERE (dir=?1 OR dir LIKE ?2) AND trashed=0 AND seq_member=0 AND live_member=0 \
            AND (type='image' OR type='video')",
     )?;
-    let rows: Vec<(i64, String, String, String)> = stmt
+    let rows: Vec<(i64, String, String, String, String, Option<f64>)> = stmt
         .query_map(params![dir, like], |r| {
-            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?))
         })?
         .filter_map(|x| x.ok())
         .collect();
 
+    // Limite de duração pra contar como Live Photo. Live Photo do iPhone tem ~1,5–3s; isto evita
+    // tratar um par legítimo imagem+vídeo de mesmo nome (ex.: render.png + render.mp4 de um
+    // designer, ou um clipe longo) como Live Photo e esconder o vídeo da grade.
+    const LIVE_MAX_DUR: f64 = 4.0;
     // chave (dir, stem-minúsculo) → imagens e vídeos
     let mut imgs: HashMap<(String, String), i64> = HashMap::new();
     let mut vids: HashMap<(String, String), (i64, String)> = HashMap::new();
-    for (id, fdir, fname, kind) in &rows {
+    for (id, fdir, fname, kind, path, dur) in &rows {
         let stem = fname.rsplit_once('.').map(|(s, _)| s).unwrap_or(fname).to_lowercase();
         let ext = fname.rsplit_once('.').map(|(_, e)| e.to_lowercase()).unwrap_or_default();
         let key = (fdir.clone(), stem);
         if kind == "image" {
             imgs.entry(key).or_insert(*id);
-        } else if ext == "mov" || ext == "mp4" {
-            // recupera o caminho do vídeo
-            let path: String = conn
-                .query_row("SELECT path FROM assets WHERE id=?1", params![id], |r| r.get(0))
-                .unwrap_or_default();
-            vids.entry(key).or_insert((*id, path));
+        } else if ext == "mov" && dur.map(|d| d > 0.0 && d <= LIVE_MAX_DUR).unwrap_or(false) {
+            // Só .mov CURTO conta como movimento de Live Photo. (.mp4 de mesmo nome é quase sempre
+            // um vídeo independente — não escondemos.)
+            vids.entry(key).or_insert((*id, path.clone()));
         }
     }
 
@@ -1857,7 +1891,7 @@ pub fn list_smart(conn: &Connection) -> rusqlite::Result<Vec<SmartFolder>> {
     let mut out = Vec::new();
     for (id, name, match_mode, rules) in rows {
         let (where_clause, args) = build_smart_where(&rules, &match_mode);
-        let sql = format!("SELECT COUNT(*) FROM assets a WHERE a.trashed=0 AND ({where_clause})");
+        let sql = format!("SELECT COUNT(*) FROM assets a WHERE a.trashed=0 AND a.seq_member=0 AND a.live_member=0 AND ({where_clause})");
         let params: Vec<&dyn rusqlite::types::ToSql> = args.iter().map(|b| b.as_ref()).collect();
         let count: i64 = conn.query_row(&sql, params.as_slice(), |r| r.get(0)).unwrap_or(0);
         out.push(SmartFolder { id, name, match_mode, rules, count });
@@ -1868,7 +1902,7 @@ pub fn list_smart(conn: &Connection) -> rusqlite::Result<Vec<SmartFolder>> {
 /// Conta quantos assets bateriam numa regra (preview ao vivo no construtor).
 pub fn smart_count(conn: &Connection, match_mode: &str, rules: &str) -> rusqlite::Result<i64> {
     let (where_clause, args) = build_smart_where(rules, match_mode);
-    let sql = format!("SELECT COUNT(*) FROM assets a WHERE a.trashed=0 AND ({where_clause})");
+    let sql = format!("SELECT COUNT(*) FROM assets a WHERE a.trashed=0 AND a.seq_member=0 AND a.live_member=0 AND ({where_clause})");
     let params: Vec<&dyn rusqlite::types::ToSql> = args.iter().map(|b| b.as_ref()).collect();
     conn.query_row(&sql, params.as_slice(), |r| r.get(0))
 }
@@ -1909,7 +1943,7 @@ pub fn smart_search(conn: &Connection, id: i64, sort: Option<&str>) -> rusqlite:
         _ => "filename COLLATE NOCASE",
     };
     let sql = format!(
-        "SELECT {SELECT_COLS} FROM assets a WHERE a.trashed=0 AND ({where_clause}) ORDER BY {order} LIMIT 10000"
+        "SELECT {SELECT_COLS} FROM assets a WHERE a.trashed=0 AND a.seq_member=0 AND a.live_member=0 AND ({where_clause}) ORDER BY {order} LIMIT 10000"
     );
     let params: Vec<&dyn rusqlite::types::ToSql> = args.iter().map(|b| b.as_ref()).collect();
     let mut stmt = conn.prepare(&sql)?;

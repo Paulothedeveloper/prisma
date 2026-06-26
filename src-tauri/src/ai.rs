@@ -30,10 +30,28 @@ pub fn settings_path(data_dir: &Path) -> PathBuf {
 }
 
 pub fn load_settings(data_dir: &Path) -> Settings {
-    std::fs::read_to_string(settings_path(data_dir))
-        .ok()
-        .and_then(|t| serde_json::from_str(&t).ok())
-        .unwrap_or_default()
+    let path = settings_path(data_dir);
+    let Some(txt) = std::fs::read_to_string(&path).ok() else {
+        return Settings::default(); // arquivo não existe ainda → default limpo
+    };
+    if let Ok(s) = serde_json::from_str::<Settings>(&txt) {
+        return s;
+    }
+    // O arquivo EXISTE mas não parseou (corrompido / formato inesperado). Antes caía no default
+    // e o próximo `save` apagava a CHAVE DA API em silêncio. Agora: faz backup do arquivo ruim e
+    // tenta resgatar os campos conhecidos via parse genérico (preserva a chave sempre que possível).
+    let _ = std::fs::copy(&path, path.with_extension("json.bad"));
+    let mut out = Settings::default();
+    if let Ok(v) = serde_json::from_str::<serde_json::Value>(&txt) {
+        let s = |k: &str| v.get(k).and_then(|x| x.as_str()).map(String::from);
+        out.anthropic_key = s("anthropic_key");
+        out.model = s("model");
+        out.vault_path = s("vault_path");
+        out.quartzo_vault = s("quartzo_vault");
+        out.autotag_on_import = v.get("autotag_on_import").and_then(|x| x.as_bool());
+        out.auto_proxy_on_import = v.get("auto_proxy_on_import").and_then(|x| x.as_bool());
+    }
+    out
 }
 
 pub fn save_settings(data_dir: &Path, s: &Settings) -> Result<(), String> {

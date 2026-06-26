@@ -1,8 +1,9 @@
-import { memo } from "react";
+import { memo, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import { Icon, type IconName } from "./Icons";
 import type { Asset } from "./api";
+import { hoverAutoplayOn } from "./prefs";
 
 let FALLBACK = "";
 import { dragIcon } from "./api";
@@ -38,16 +39,29 @@ function AssetRowImpl({
 }) {
   const thumb = asset.thumbnail_path ? convertFileSrc(asset.thumbnail_path) : null;
   const name = asset.name || asset.filename;
+  const [hover, setHover] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const onDragStart = (e: React.DragEvent) => {
     e.preventDefault();
     startDrag({ item: [asset.path], icon: asset.thumbnail_path || FALLBACK || asset.path, mode: "copy" }).catch(() => {});
   };
+  // Reproduz ao passar o mouse TAMBÉM na visão de lista (antes só a grade tocava).
+  const origUrl = convertFileSrc(asset.path);
+  const hoverSrc = asset.proxy_path ? convertFileSrc(asset.proxy_path) : origUrl;
+  const liveSrc = asset.live_motion ? convertFileSrc(asset.live_motion) : null;
+  const playHover = hover && hoverAutoplayOn();
+  const isVideo = asset.type === "video";
+  const isGif = asset.type === "gif";
+  const isAudio = asset.type === "audio";
+  const isLive = !!asset.live_motion && asset.type === "image";
   return (
     <div
       className={`lrow ${selected ? "selected" : ""}`}
       style={animDelayMs ? { animationDelay: `${animDelayMs}ms` } : undefined}
       draggable
       onDragStart={onDragStart}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       onClick={(e) => onClick(asset, e)}
       onDoubleClick={() => onPreview(asset)}
       onContextMenu={(e) => {
@@ -60,6 +74,22 @@ function AssetRowImpl({
     >
       <div className="lrow-thumb">
         {thumb ? <img src={thumb} alt="" loading="lazy" /> : <Icon name={(asset.type as IconName) ?? "unknown"} size={18} />}
+        {(isVideo || isLive) && playHover && (
+          <video
+            src={isLive && liveSrc ? liveSrc : hoverSrc}
+            muted
+            autoPlay
+            loop
+            playsInline
+            className="lrow-hovervid"
+            onLoadedData={(e) => e.currentTarget.play().catch(() => {})}
+          />
+        )}
+        {isGif && hover && <img src={origUrl} className="lrow-hovervid" alt="" />}
+        {isAudio && playHover && (
+          <audio ref={audioRef} src={origUrl} autoPlay onLoadedData={() => audioRef.current?.play().catch(() => {})} />
+        )}
+        {isAudio && playHover && <span className="lrow-audioind"><Icon name="audio" size={14} /></span>}
       </div>
       <div className="lrow-name">{name}</div>
       <div className="lrow-col lrow-type">{asset.type}</div>

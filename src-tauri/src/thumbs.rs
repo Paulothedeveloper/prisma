@@ -587,6 +587,36 @@ struct ProbeMeta {
     duration: Option<f64>,
 }
 
+/// true se o ffprobe consegue LER o arquivo (tem duração de formato ou ao menos um stream).
+/// Diferente de `ffprobe_meta`, NÃO filtra por stream de vídeo — serve pra não apagar como
+/// "corrompido" um arquivo válido que apenas não gerou miniatura (ex.: um .mov só com áudio).
+pub fn probe_readable(src: &Path) -> bool {
+    let output = cmd(ffprobe())
+        .args([
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration,nb_streams",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            &src.to_string_lossy(),
+        ])
+        .output();
+    if let Ok(out) = output {
+        for line in String::from_utf8_lossy(&out.stdout).lines() {
+            let t = line.trim();
+            if t.is_empty() || t == "N/A" {
+                continue;
+            }
+            // duração > 0 (float) OU nº de streams >= 1 (int) = arquivo legível
+            if t.parse::<f64>().map(|d| d > 0.0).unwrap_or(false) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 fn ffprobe_meta(src: &Path) -> ProbeMeta {
     let mut m = ProbeMeta {
         width: None,

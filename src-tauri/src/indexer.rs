@@ -141,68 +141,82 @@ pub fn index_folder(
         db::upsert_folder(&conn, &folder, now()).unwrap_or(0)
     };
 
-    let mut pending: Vec<(i64, String, String, String)> = Vec::new(); // (id, path, ext, kind)
-    {
-        let mut conn = db.lock().unwrap_or_else(|p| p.into_inner());
-        let tx = conn.transaction().unwrap();
-        for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
-            // Cancelou no meio da varredura → para de catalogar o resto.
-            if crate::sys::is_cancelled() {
-                break;
-            }
-            if !entry.file_type().is_file() {
-                continue;
-            }
-            let p = entry.path();
-            // Pula arquivos sob qualquer pasta EXCLUÍDA (removida de propósito) — não re-indexa.
-            if under_excluded(&p.to_string_lossy().to_lowercase(), &excluded) {
-                continue;
-            }
-            let filename = p
-                .file_name()
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or_default();
-            if is_junk(&filename) {
-                continue;
-            }
-            let ext = p
-                .extension()
-                .map(|s| s.to_string_lossy().to_ascii_lowercase())
-                .unwrap_or_default();
-            // Só mídia (vídeo/áudio/imagem/GIF). Documentos, LUTs, fontes e extensões
-            // desconhecidas NÃO entram na biblioteca (a UI já avisou o usuário antes).
-            if !classify::is_media(&ext) {
-                continue;
-            }
-            let kind = classify::categorize(&ext).to_string();
-            let dir = p
-                .parent()
-                .map(|d| d.to_string_lossy().to_string())
-                .unwrap_or_default();
-            let md = entry.metadata().ok();
-            let size = md.as_ref().map(|m| m.len() as i64).unwrap_or(0);
-            let modified = md
-                .as_ref()
-                .and_then(|m| m.modified().ok())
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_secs() as i64)
-                .unwrap_or(0);
+    // --- Passo 1a: varrer o disco SEM segurar o lock do DB (a parte LENTA: ler metadados de
+    // milhares de arquivos). Antes a transação ficava aberta durante a varredura inteira e
+    // congelava a UI/watcher por segundos. Aqui só coletamos. ---
+    let mut scanned: Vec<db::NewAsset> = Vec::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        // Cancelou no meio da varredura → para de catalogar o resto.
+        if crate::sys::is_cancelled() {
+            break;
+        }
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let p = entry.path();
+        // Pula arquivos sob qualquer pasta EXCLUÍDA (removida de propósito) — não re-indexa.
+        if under_excluded(&p.to_string_lossy().to_lowercase(), &excluded) {
+            continue;
+        }
+        let filename = p
+            .file_name()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_default();
+        if is_junk(&filename) {
+            continue;
+        }
+        let ext = p
+            .extension()
+            .map(|s| s.to_string_lossy().to_ascii_lowercase())
+            .unwrap_or_default();
+        // Só mídia (vídeo/áudio/imagem/GIF). Documentos, LUTs, fontes e extensões
+        // desconhecidas NÃO entram na biblioteca (a UI já avisou o usuário antes).
+        if !classify::is_media(&ext) {
+            continue;
+        }
+        let kind = classify::categorize(&ext).to_string();
+        let dir = p
+            .parent()
+            .map(|d| d.to_string_lossy().to_string())
+            .unwrap_or_default();
+        let md = entry.metadata().ok();
+        let size = md.as_ref().map(|m| m.len() as i64).unwrap_or(0);
+        let modified = md
+            .as_ref()
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+        scanned.push(db::NewAsset {
+            path: p.to_string_lossy().to_string(),
+            dir,
+            filename,
+            ext,
+            kind,
+            size,
+            modified_at: modified,
+            folder_id,
+        });
+    }
 
-            let na = db::NewAsset {
-                path: p.to_string_lossy().to_string(),
-                dir,
-                filename,
-                ext: ext.clone(),
-                kind: kind.clone(),
-                size,
-                modified_at: modified,
-                folder_id,
-            };
-            // Regra de cache: só (re)gera miniatura pra assets novos ou cujo conteúdo
-            // mudou. Re-adicionar uma pasta já catalogada não regenera tudo de novo.
-            if let Ok((id, needs_thumb)) = db::upsert_asset_cached(&tx, &na) {
+    // --- Passo 1b: gravar em LOTES de 2000, soltando o lock ENTRE os lotes (a UI/watcher
+    // respiram). Sem `.unwrap()` na transação: se o DB estiver ocupado num instante, pula o
+    // lote (um rescan recupera) em vez de derrubar a thread de import. ---
+    let mut pending: Vec<(i64, String, String, String)> = Vec::new(); // (id, path, ext, kind)
+    for chunk in scanned.chunks(2000) {
+        if crate::sys::is_cancelled() {
+            break;
+        }
+        let mut conn = db.lock().unwrap_or_else(|p| p.into_inner());
+        let tx = match conn.transaction() {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+        for na in chunk {
+            // Regra de cache: só (re)gera miniatura pra assets novos ou cujo conteúdo mudou.
+            if let Ok((id, needs_thumb)) = db::upsert_asset_cached(&tx, na) {
                 if needs_thumb {
-                    pending.push((id, na.path, ext, kind));
+                    pending.push((id, na.path.clone(), na.ext.clone(), na.kind.clone()));
                 }
             }
         }
@@ -279,10 +293,10 @@ pub fn rescan_folder(
         db::upsert_folder(&conn, &folder, now()).unwrap_or(0)
     };
 
-    // 1) cataloga (upsert) tudo que existe agora no disco
+    // 1) cataloga (upsert) tudo que existe agora no disco. Varre SEM o lock (parte lenta) e
+    // grava em lotes, soltando o lock entre eles — não congela a UI/watcher.
     if root.exists() {
-        let mut conn = db.lock().unwrap_or_else(|p| p.into_inner());
-        let tx = conn.transaction().unwrap();
+        let mut scanned: Vec<db::NewAsset> = Vec::new();
         for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
             if !entry.file_type().is_file() {
                 continue;
@@ -310,7 +324,7 @@ pub fn rescan_folder(
                 .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
                 .map(|d| d.as_secs() as i64)
                 .unwrap_or(0);
-            let na = db::NewAsset {
+            scanned.push(db::NewAsset {
                 path: p.to_string_lossy().to_string(),
                 dir,
                 filename,
@@ -319,10 +333,19 @@ pub fn rescan_folder(
                 size,
                 modified_at: modified,
                 folder_id,
-            };
-            let _ = db::upsert_asset(&tx, &na);
+            });
         }
-        let _ = tx.commit();
+        for chunk in scanned.chunks(2000) {
+            let mut conn = db.lock().unwrap_or_else(|p| p.into_inner());
+            let tx = match conn.transaction() {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+            for na in chunk {
+                let _ = db::upsert_asset(&tx, na);
+            }
+            let _ = tx.commit();
+        }
     }
 
     // 2) prune: remove do catálogo o que não existe mais no disco
@@ -518,9 +541,16 @@ fn run_thumb_queue(
             let p = Path::new(&path);
             let (thumb, meta) = thumbs::generate(p, &ext, &thumbs_dir, id);
 
-            // Corrompidos: mídia que não abre em NENHUM decodificador sai da biblioteca.
+            // Corrompidos: mídia que não abre em NENHUM decodificador sai da biblioteca. MAS antes
+            // de apagar, confirma com o ffprobe que o arquivo é mesmo ilegível — um vídeo válido
+            // só com trilha de áudio não gera miniatura e cairia aqui por engano.
             let is_media = matches!(kind.as_str(), "image" | "gif" | "video" | "audio");
-            if is_media && thumb.is_none() && meta.width.is_none() && meta.duration.is_none() {
+            if is_media
+                && thumb.is_none()
+                && meta.width.is_none()
+                && meta.duration.is_none()
+                && !thumbs::probe_readable(p)
+            {
                 let conn = db.lock().unwrap_or_else(|p| p.into_inner());
                 let _ = db::delete_asset(&conn, id);
                 drop(conn);
