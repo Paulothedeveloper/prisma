@@ -129,6 +129,13 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 - **Desktop:** [Tauri 2](https://tauri.app) (Rust) · **UI:** React 19 + TypeScript (Vite) · **DB:** SQLite
 - **Media:** ffmpeg / ffprobe · **AI (optional):** Anthropic API (Claude) — user's own key
 
+## 🆕 Histórico de versões · Changelog
+
+**0.9.13** — Remoção definitiva + desempenho
+- 🩹 **Remover pasta agora é permanente.** Antes, uma pasta removida podia "voltar" ao renomear/mexer numa pasta vizinha (o monitor re-catalogava os arquivos que continuavam no disco). Agora a pasta removida vai para uma **lista de exclusão** persistente — o monitor e qualquer re-escaneamento a ignoram, e os índices/proxies dela são apagados de verdade. Re-adicionar a pasta cancela a exclusão.
+- ⚡ **Desempenho em bibliotecas grandes (27 mil+):** busca por imagem/CLIP em uma só consulta (era N+1), índice para ordenar por tamanho, contadores da barra lateral em uma varredura só, *throttle* nos eventos de proxy, e sidebar/inspetor memoizados.
+- ✨ Indicador de carregamento premium ao remover uma pasta (com ✓ ao concluir).
+
 ## Licença · License
 
 Distribuído **gratuitamente** · Distributed **free of charge**.

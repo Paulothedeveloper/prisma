@@ -42,7 +42,16 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.12";
+const APP_VERSION = "0.9.13";
+
+// Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
+const WHATS_NEW: string[] = [
+  "Remoção de pasta agora é PERMANENTE: não volta mais ao renomear/mexer em pastas vizinhas.",
+  "Ao remover, os índices e proxies que ligavam a pasta ao app são apagados de verdade.",
+  "Busca por imagem (CLIP) muito mais rápida: uma consulta só em vez de uma por resultado.",
+  "Ordenar por tamanho, contadores da barra lateral e proxies otimizados para bibliotecas grandes.",
+  "Indicador de carregamento premium ao remover uma pasta (com ✓ ao concluir).",
+];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
 // curto ≈ US$ 0,001/imagem). É só pra dar noção antes de rodar — não é cobrança exata.
@@ -643,6 +652,14 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 <div className="pref-about-name">PRISMA</div>
                 <div className="pref-about-ver">{t("set.version")} {APP_VERSION}</div>
                 <div className="pref-help" style={{ marginTop: 12 }}>{t("set.aboutDesc")}</div>
+                <div className="pref-whatsnew">
+                  <div className="pref-whatsnew-title">{t("set.whatsNew")}</div>
+                  <ul>
+                    {WHATS_NEW.map((n, i) => (
+                      <li key={i}>{n}</li>
+                    ))}
+                  </ul>
+                </div>
                 <button
                   className="set-bulk-btn"
                   style={{ marginTop: 16 }}

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icons";
 import { revealInExplorer, type FolderRow } from "./api";
@@ -279,7 +279,7 @@ function TreeNode({
   );
 }
 
-export function FolderTree({
+function FolderTreeImpl({
   dirs,
   selected,
   showHidden,
@@ -331,3 +331,6 @@ export function FolderTree({
     </div>
   );
 }
+
+// Memoizado: a sidebar não precisa re-renderizar quando só o grid/scroll muda.
+export const FolderTree = memo(FolderTreeImpl);

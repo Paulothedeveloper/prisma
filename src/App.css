@@ -4854,6 +4854,32 @@ body {
   color: var(--text-2);
   margin-top: 2px;
 }
+.pref-whatsnew {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-2);
+}
+.pref-whatsnew-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+.pref-whatsnew ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pref-whatsnew li {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
 
 /* Animações da janela de Configurações (regra do app: abrir/fechar/alternar anima) */
 .pref-modal {
@@ -5131,6 +5157,51 @@ body {
   color: #eaeaec;
   cursor: pointer;
   font-size: 13px;
+}
+
+/* ---------- Toast de remoção de pasta (premium, não-bloqueante) ---------- */
+.remove-toast {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  border-radius: 12px;
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur-strong);
+  -webkit-backdrop-filter: var(--blur-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5), var(--glass-hi);
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 550;
+  animation: removeToastIn 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.remove-toast.done {
+  color: #4ade80;
+}
+.remove-toast.done :last-child {
+  color: var(--text-1);
+}
+.remove-spin {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+  animation: removeSpin 0.7s linear infinite;
+}
+@keyframes removeSpin {
+  to { transform: rotate(360deg); }
+}
+@keyframes removeToastIn {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 /* ---------- Confirmação própria (anima + SFX, no lugar do window.confirm) ---------- */

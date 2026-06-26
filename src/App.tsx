@@ -231,6 +231,8 @@ export default function App() {
   // grade até o backend confirmar (folder:removed). Sem isso, qualquer refreshMeta no meio
   // trazia a pasta + os arquivos de volta ("some e logo depois volta"). Caminhos em minúsculo.
   const [removingDirs, setRemovingDirs] = useState<Set<string>>(new Set());
+  const [removeToast, setRemoveToast] = useState<{ name: string; done: boolean } | null>(null);
+  const removeToastTimer = useRef<number | null>(null);
   const removingDirsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     removingDirsRef.current = removingDirs;
@@ -661,6 +663,10 @@ export default function App() {
         n.delete(low);
         return n;
       });
+      // toast: vira "Pasta removida ✓" e some sozinho depois de ~1,4s (sensação premium).
+      setRemoveToast((t) => (t ? { ...t, done: true } : t));
+      if (removeToastTimer.current) clearTimeout(removeToastTimer.current);
+      removeToastTimer.current = window.setTimeout(() => setRemoveToast(null), 1400);
       refreshMeta();
       runSearch(true);
     }).then((u) => unl.push(u));
@@ -1495,6 +1501,8 @@ export default function App() {
                       setRemovingDirs((prev) => new Set(prev).add(low));
                       setFolders((prev) => prev.filter((f) => !under(f.dir)));
                       setAssets((prev) => prev.filter((a) => !under(a.dir)));
+                      if (removeToastTimer.current) clearTimeout(removeToastTimer.current);
+                      setRemoveToast({ name: dir.split(/[\\/]/).pop() || dir, done: false });
                       sfx.trash();
                       if (folderSel === dir || (view.t === "folder" && view.v === dir)) {
                         cascadeOnNextLoad.current = true;
@@ -1898,6 +1906,22 @@ export default function App() {
       )}
       {confirmDlg && (
         <ConfirmModal opts={confirmDlg} onClose={() => setConfirmDlg(null)} />
+      )}
+
+      {/* Toast premium de remoção de pasta: "Removendo…" com spinner → "Pasta removida ✓". */}
+      {removeToast && (
+        <div className={`remove-toast${removeToast.done ? " done" : ""}`}>
+          {removeToast.done ? (
+            <Icon name="check" size={15} />
+          ) : (
+            <span className="remove-spin" />
+          )}
+          <span>
+            {removeToast.done
+              ? t("fld.removed").replace("{x}", removeToast.name)
+              : t("fld.removing").replace("{x}", removeToast.name)}
+          </span>
+        </div>
       )}
 
       {welcome && (

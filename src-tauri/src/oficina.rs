@@ -185,6 +185,8 @@ pub fn run_proxy_batch(
         let _ = std::fs::create_dir_all(&proxy_dir);
         let total = paths.len();
         let mut made = 0usize;
+        // throttle do progresso: no máx ~200 emissões na fila inteira (evita inundar o front).
+        let step = (total / 200).max(1);
         for (i, input) in paths.into_iter().enumerate() {
             let in_path = Path::new(&input);
             if !in_path.exists() {
@@ -248,10 +250,12 @@ pub fn run_proxy_batch(
                 made += 1;
                 let _ = app.emit("proxy:made", &input);
             }
-            let _ = app.emit(
-                "proxy:progress",
-                serde_json::json!({ "done": i + 1, "total": total, "made": made }),
-            );
+            if (i + 1) % step == 0 || i + 1 == total {
+                let _ = app.emit(
+                    "proxy:progress",
+                    serde_json::json!({ "done": i + 1, "total": total, "made": made }),
+                );
+            }
         }
         let _ = app.emit("proxy:done", made);
     });

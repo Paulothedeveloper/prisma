@@ -68,6 +68,12 @@ pub fn start(
                 continue;
             }
             let mut changed = false;
+            // Pastas removidas de propósito: NUNCA re-indexar arquivos sob elas (eles seguem no
+            // disco; sem isto o watcher os "trazia de volta" ao mexer/renomear pastas vizinhas).
+            let excluded = {
+                let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+                db::excluded_list(&conn)
+            };
             for p in ready {
                 pending.remove(&p);
                 let name = p.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
@@ -76,6 +82,9 @@ pub fn start(
                 }
                 let pstr = p.to_string_lossy().to_string();
                 if p.is_file() {
+                    if indexer::under_excluded(&pstr.to_lowercase(), &excluded) {
+                        continue;
+                    }
                     let already = {
                         let conn = db.lock().unwrap_or_else(|p| p.into_inner());
                         db::path_exists(&conn, &pstr)

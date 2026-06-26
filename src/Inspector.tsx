@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
@@ -113,7 +113,7 @@ interface Props {
   onMutate: () => void;
 }
 
-export function Inspector({
+function InspectorImpl({
   asset,
   collections,
   inCollection,
@@ -880,3 +880,6 @@ export function Inspector({
     </aside>
   );
 }
+
+// Memoizado: não re-renderiza o painel enquanto o usuário rola/filtra o grid (mesmo asset).
+export const Inspector = memo(InspectorImpl);

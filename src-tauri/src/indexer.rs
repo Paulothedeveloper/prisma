@@ -35,6 +35,13 @@ fn is_junk(name: &str) -> bool {
         || lower == "icon\r" // ícone custom do macOS
 }
 
+/// true se `path_low` (minúsculo) está dentro de — ou é — alguma pasta excluída.
+pub fn under_excluded(path_low: &str, excluded: &[String]) -> bool {
+    excluded.iter().any(|e| {
+        path_low == e.as_str() || path_low.starts_with(&format!("{e}\\"))
+    })
+}
+
 #[derive(Serialize, Clone)]
 struct StartPayload {
     folder: String,
@@ -84,6 +91,13 @@ pub fn index_folder(
     let _ = app.emit("index:start", StartPayload { folder: folder.clone(), total: 0 });
 
     // --- Passo 1: catalogar (rapido, uma transacao) ---
+    // Adicionar esta pasta CANCELA qualquer exclusão dela (o usuário quer ela de volta). Depois
+    // carrega as OUTRAS pastas excluídas pra pular arquivos que estejam sob elas.
+    let excluded: Vec<String> = {
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+        db::remove_excluded(&conn, &folder);
+        db::excluded_list(&conn)
+    };
     let folder_id = {
         let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::upsert_folder(&conn, &folder, now()).unwrap_or(0)
@@ -98,6 +112,10 @@ pub fn index_folder(
                 continue;
             }
             let p = entry.path();
+            // Pula arquivos sob qualquer pasta EXCLUÍDA (removida de propósito) — não re-indexa.
+            if under_excluded(&p.to_string_lossy().to_lowercase(), &excluded) {
+                continue;
+            }
             let filename = p
                 .file_name()
                 .map(|s| s.to_string_lossy().to_string())
@@ -197,6 +215,11 @@ pub fn rescan_folder(
     folder: String,
 ) {
     let root = Path::new(&folder);
+    let excluded: Vec<String> = {
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+        db::remove_excluded(&conn, &folder);
+        db::excluded_list(&conn)
+    };
     let folder_id = {
         let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::upsert_folder(&conn, &folder, now()).unwrap_or(0)
@@ -211,6 +234,9 @@ pub fn rescan_folder(
                 continue;
             }
             let p = entry.path();
+            if under_excluded(&p.to_string_lossy().to_lowercase(), &excluded) {
+                continue;
+            }
             let filename = p.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
             if is_junk(&filename) {
                 continue;

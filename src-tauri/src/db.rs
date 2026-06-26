@@ -110,6 +110,13 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
             added_at  INTEGER NOT NULL DEFAULT 0
         );
 
+        -- Pastas REMOVIDAS de propósito pelo usuário. Os arquivos continuam no disco, então sem
+        -- isto o watcher (ou um re-scan) re-indexava e a pasta "voltava". Enquanto estiver aqui,
+        -- NADA sob esse caminho é catalogado de novo. Re-adicionar a pasta a remove daqui.
+        CREATE TABLE IF NOT EXISTS excluded_dirs (
+            dir TEXT PRIMARY KEY
+        );
+
         CREATE TABLE IF NOT EXISTS assets (
             id              INTEGER PRIMARY KEY,
             path            TEXT NOT NULL UNIQUE,
@@ -235,6 +242,8 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "CREATE INDEX IF NOT EXISTS idx_assets_trashed_type ON assets(trashed, type)",
         "CREATE INDEX IF NOT EXISTS idx_assets_dir_type ON assets(dir, type)",
         "CREATE INDEX IF NOT EXISTS idx_assets_sat ON assets(sat)",
+        // ordenar por tamanho fazia full-scan na biblioteca de 27k — index resolve.
+        "CREATE INDEX IF NOT EXISTS idx_assets_size ON assets(size)",
     ] {
         let _ = conn.execute(ix, []);
     }
@@ -795,10 +804,39 @@ pub fn remove_folder_fast(conn: &Connection, root: &str) -> rusqlite::Result<usi
         params![r, like],
     )?;
     conn.execute("DELETE FROM folders WHERE path = ?1 COLLATE NOCASE OR path LIKE ?2", params![r, like])?;
+    // MARCA como excluída: enquanto estiver aqui, o watcher/re-scan NÃO re-indexa (os arquivos
+    // continuam no disco; sem isto a pasta "voltava"). Re-adicionar a pasta remove a exclusão.
+    add_excluded(conn, r);
     // reconstrói o FTS de uma vez (re-sincroniza após o DELETE sem trigger) e religa os triggers
     let _ = conn.execute("INSERT INTO assets_fts(assets_fts) VALUES('rebuild')", []);
     let _ = conn.execute_batch(FTS_TRIGGERS_SQL);
     Ok(n)
+}
+
+/// Marca uma pasta como EXCLUÍDA (não re-indexar).
+pub fn add_excluded(conn: &Connection, dir: &str) {
+    let d = dir.trim_end_matches('\\');
+    let _ = conn.execute("INSERT OR IGNORE INTO excluded_dirs(dir) VALUES(?1)", params![d]);
+}
+
+/// Remove a exclusão de uma pasta (e de qualquer subpasta dela) — chamado ao RE-ADICIONAR a pasta.
+pub fn remove_excluded(conn: &Connection, dir: &str) {
+    let d = dir.trim_end_matches('\\');
+    let like = format!("{d}\\%");
+    let _ = conn.execute(
+        "DELETE FROM excluded_dirs WHERE dir = ?1 COLLATE NOCASE OR dir LIKE ?2 COLLATE NOCASE",
+        params![d, like],
+    );
+}
+
+/// Lista de pastas excluídas (minúsculo, sem barra final) — pra checar em memória durante a indexação.
+pub fn excluded_list(conn: &Connection) -> Vec<String> {
+    let Ok(mut stmt) = conn.prepare("SELECT dir FROM excluded_dirs") else { return Vec::new() };
+    let rows = stmt
+        .query_map([], |r| r.get::<_, String>(0))
+        .map(|it| it.filter_map(|x| x.ok()).map(|s| s.trim_end_matches('\\').to_lowercase()).collect::<Vec<_>>())
+        .unwrap_or_default();
+    rows
 }
 
 /// Limpa os metadados da pasta (apelido/cor/capa) — depois de remover os assets em lotes.
@@ -1076,14 +1114,17 @@ pub fn total(conn: &Connection) -> rusqlite::Result<i64> {
 
 /// Contagens dos tópicos estilo Eagle (sem tags, fora de coleção, lixeira).
 pub fn topic_counts(conn: &Connection) -> rusqlite::Result<(i64, i64, i64)> {
-    let untagged: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM assets a WHERE trashed=0 AND NOT EXISTS (SELECT 1 FROM asset_tags at WHERE at.asset_id=a.id)",
-        [], |r| r.get(0))?;
-    let uncollected: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM assets a WHERE trashed=0 AND NOT EXISTS (SELECT 1 FROM collection_items ci WHERE ci.asset_id=a.id)",
-        [], |r| r.get(0))?;
-    let trash: i64 = conn.query_row("SELECT COUNT(*) FROM assets WHERE trashed=1", [], |r| r.get(0))?;
-    Ok((untagged, uncollected, trash))
+    // Uma única varredura da tabela assets com CASE WHEN, em vez de 3 COUNT(*) separados
+    // (eram 3 full-scans na biblioteca de 27k).
+    conn.query_row(
+        "SELECT
+            COALESCE(SUM(CASE WHEN trashed=0 AND NOT EXISTS (SELECT 1 FROM asset_tags at WHERE at.asset_id=a.id) THEN 1 ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN trashed=0 AND NOT EXISTS (SELECT 1 FROM collection_items ci WHERE ci.asset_id=a.id) THEN 1 ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN trashed=1 THEN 1 ELSE 0 END), 0)
+         FROM assets a",
+        [],
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+    )
 }
 
 /// Quantos assets fazem parte de algum grupo de duplicados (ignora lixeira).
@@ -2029,15 +2070,20 @@ pub fn all_clip_embeds(conn: &Connection) -> rusqlite::Result<Vec<(i64, Vec<u8>)
 
 /// Busca os assets por uma lista ordenada de ids (preserva a ordem do ranking CLIP).
 pub fn assets_by_ids(conn: &Connection, ids: &[i64]) -> rusqlite::Result<Vec<Asset>> {
-    let mut out = Vec::new();
-    for id in ids {
-        if let Ok(a) = conn.query_row(
-            &format!("SELECT {SELECT_COLS} FROM assets a WHERE id=?1"),
-            params![id],
-            row_to_asset,
-        ) {
-            out.push(a);
-        }
+    if ids.is_empty() {
+        return Ok(Vec::new());
     }
-    Ok(out)
+    // Uma única query com IN (...) em vez de N query_row (era N+1: 60 idas ao DB por busca CLIP).
+    let placeholders = ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {SELECT_COLS} FROM assets a WHERE id IN ({placeholders})"
+    ))?;
+    let params: Vec<&dyn rusqlite::ToSql> = ids.iter().map(|i| i as &dyn rusqlite::ToSql).collect();
+    let rows = stmt.query_map(params.as_slice(), row_to_asset)?;
+    // indexa por id e reordena conforme `ids` (a ordem do ranking CLIP precisa ser preservada).
+    let mut by_id: std::collections::HashMap<i64, Asset> = std::collections::HashMap::new();
+    for a in rows.flatten() {
+        by_id.insert(a.id, a);
+    }
+    Ok(ids.iter().filter_map(|id| by_id.remove(id)).collect())
 }
