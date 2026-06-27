@@ -2356,11 +2356,15 @@ body {
    a mídia preenche). Assim a diferença é estrutural, não só um tracinho. */
 .folder-card {
   text-align: left;
-  background: linear-gradient(180deg, rgba(96, 134, 255, 0.22), rgba(96, 134, 255, 0.07));
-  border-color: rgba(120, 150, 255, 0.4);
+  background: linear-gradient(180deg, rgba(96, 134, 255, 0.16), rgba(96, 134, 255, 0.05));
+  /* borda externa SUTIL (como a mídia): a identidade de pasta fica na aba + na moldura interna.
+     Antes a borda azul forte + a moldura interna (duas bordas grossas) pareciam se fundir entre
+     cards vizinhos ao mudar o zoom. */
+  border-color: var(--glass-border);
+  overflow: hidden;
 }
 .folder-card:hover {
-  border-color: rgba(150, 178, 255, 0.7);
+  border-color: var(--hair-strong);
 }
 /* A miniatura vira o "corpo da pasta": espaço no topo p/ a ABA e moldura azulada em volta da
    capa. A aba (::before) é um trapézio horizontal saindo do corpo; o corpo (::after) é um painel
@@ -2369,7 +2373,7 @@ body {
   color: #aebfff;
   padding: 22px 10px 10px;
   background: transparent;
-  overflow: visible;
+  overflow: hidden;
 }
 /* ABA da pasta — trapézio no topo-esquerdo (lado direito desce até o corpo) */
 .folder-card .thumb::before {
@@ -3410,6 +3414,22 @@ body {
   top: 8px;
   left: 8px;
   z-index: 3;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+/* fileira de badges de condição no canto superior-esquerdo (sem áudio, VFR, mono…) */
+.hflags {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+}
+.hflag-dot {
   width: 11px;
   height: 11px;
   border-radius: 50%;

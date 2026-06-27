@@ -603,6 +603,14 @@ fn run_thumb_queue(
                     let _ = db::set_phash(&conn, id, ph as i64);
                 }
             }
+            // Saúde JÁ no import (antes só o scan manual marcava — por isso mídia dentro de pasta
+            // não vinha marcada). Vídeo sem áudio / VFR / etc. saem marcados no card na hora.
+            if kind == "video" {
+                let info = crate::mediainfo::probe(p);
+                let (level, flags) = crate::mediainfo::health_summary(&info);
+                let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+                let _ = db::set_health(&conn, &path, &level, &flags);
+            }
             let d = done.fetch_add(1, Ordering::SeqCst) + 1;
             if d % step == 0 || d == total {
                 let _ = app.emit(

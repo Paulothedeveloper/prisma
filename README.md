@@ -131,6 +131,12 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.24** — Badges de condição + inspetor com toggle + auditoria
+- 🔴 **Badges de condição** no canto do card (sem áudio, VFR, mono, 8-bit…), cada um com cor + tooltip. **Saúde calculada no import** → mídia dentro de pastas também vem marcada.
+- 🪟 **Inspetor com toggle:** clicar um card só seleciona (dá pra arrastar sem o painel pular). Detalhes abre pelo botão da barra ou menu de contexto.
+- 🟦 **Cards de pasta:** bordas não se sobrepõem mais ao mudar o tamanho dos ícones.
+- 🔍 **Auditoria:** compila limpo, contrato front↔back 100%, i18n 681 chaves completas (PT/EN/ES).
+
 **0.9.23** — Estabilizar (sem giroscópio)
 - 🎥 Nova **estabilização óptica** na Oficina de qualquer vídeo (ffmpeg `vidstab`, 2 passadas) — funciona sem giroscópio, em qualquer material. Saída em `ESTABILIZADO/`, original intacto. O MotionSilk (Gyroflow) segue para clipes com gyro.
 

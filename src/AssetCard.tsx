@@ -11,6 +11,20 @@ import { t } from "./i18n";
 let FALLBACK_ICON = "";
 dragIcon().then((p) => (FALLBACK_ICON = p)).catch(() => {});
 
+// Badges de saúde por flag → cor + chave i18n do rótulo (tooltip). Cada condição tem sua cor.
+const HFLAG: Record<string, { c: string; k: string }> = {
+  noaudio: { c: "#ff9f0a", k: "health.noaudio.label" },
+  vfr: { c: "#ff453a", k: "health.vfr.label" },
+  cfr: { c: "#ff453a", k: "health.vfr.label" },
+  mono: { c: "#0a84ff", k: "health.mono.label" },
+  "8bitlog": { c: "#bf5af2", k: "health.8bitlog.label" },
+  banding: { c: "#ffd60a", k: "health.banding.label" },
+  bt2020notrc: { c: "#ff453a", k: "health.bt2020notrc.label" },
+  rotated: { c: "#64d2ff", k: "health.rotated.label" },
+  samplerate: { c: "#5e5ce6", k: "health.samplerate.label" },
+  proxy: { c: "#30d158", k: "health.proxy.label" },
+};
+
 function fmtDuration(d: number | null): string | null {
   if (!d || d <= 0) return null;
   const m = Math.floor(d / 60);
@@ -174,11 +188,22 @@ function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, reorder
         )}
         {isAudio && playHover && <span className="audio-hover-ind"><Icon name="audio" size={20} /></span>}
 
-        {(asset.health_level === "red" || asset.health_level === "yellow") && (
-          <span
-            className={`health-mark hm-${asset.health_level}`}
-            title={asset.health_flags ? t("card.health").replace("{flags}", asset.health_flags) : t("card.needsAttention")}
-          />
+        {/* Badges de canto (superior-esquerdo): um dot por condição (sem áudio, VFR, mono, 8-bit…).
+            Cada cor identifica o caso; tooltip explica. Computado no import, então vale pra pasta. */}
+        {asset.health_flags ? (
+          <span className="hflags">
+            {asset.health_flags
+              .split(",")
+              .filter((f) => HFLAG[f])
+              .slice(0, 4)
+              .map((f) => (
+                <span key={f} className="hflag-dot" style={{ background: HFLAG[f].c }} title={t(HFLAG[f].k)} />
+              ))}
+          </span>
+        ) : (
+          (asset.health_level === "red" || asset.health_level === "yellow") && (
+            <span className={`health-mark hm-${asset.health_level}`} title={t("card.needsAttention")} />
+          )
         )}
         {asset.seq_frames ? (
           <span className="badge badge-seq" title={`${asset.seq_frames} frames`}>

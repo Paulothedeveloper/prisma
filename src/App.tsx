@@ -304,6 +304,10 @@ export default function App() {
   const [boardMode, setBoardMode] = useState(false); // moodboard (só em coleção)
   const [simThreshold, setSimThreshold] = useState(22); // tolerância da busca por similaridade
   const [selected, setSelected] = useState<Asset | null>(null);
+  // Inspetor agora é um PAINEL com toggle: clicar um card NÃO o abre (pra poder arrastar pra
+  // timeline sem ele pular). Abre pelo botão da barra ou pelo menu de contexto "Detalhes".
+  // Enquanto aberto, clicar nos cards só TROCA o conteúdo. Fechou (X) → cliques não reabrem.
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const anchorRef = useRef<number | null>(null);
   const [previewAsset, setPreviewAsset] = useState<Asset | null>(null);
@@ -1034,7 +1038,7 @@ export default function App() {
     return [
       { label: `${t("insp.view")}${n}`, icon: "play", onClick: () => setPreviewAsset(a) },
       { label: t("ctx.newWindow"), icon: "fullscreen", onClick: () => openInWindow(a) },
-      { label: t("ctx.details"), icon: "pencil", onClick: () => setSelected(a) },
+      { label: t("ctx.details"), icon: "pencil", onClick: () => { setSelected(a); setInspectorOpen(true); } },
       { label: t("insp.explorer"), icon: "reveal", onClick: () => revealInExplorer(a.path) },
       { sep: true, label: "" },
       { label: t("insp.copyPath"), icon: "copy", onClick: () => navigator.clipboard.writeText(a.path) },
@@ -1448,6 +1452,14 @@ export default function App() {
               <Icon name="grip" size={15} />
             </button>
           )}
+          {/* Toggle do painel de detalhes (inspetor). Clicar card não abre mais sozinho. */}
+          <button
+            className={`layout-btn ${inspectorOpen ? "on" : ""}`}
+            title={t("app.toggleInspector")}
+            onClick={() => setInspectorOpen((o) => !o)}
+          >
+            <Icon name="sliders" size={15} />
+          </button>
         </div>
         <div className="size-control" title={t("app.thumbSize")}>
           <button className="size-ico" onClick={() => setThumbSize(130)}>
@@ -2057,7 +2069,7 @@ export default function App() {
           )}
         </main>
 
-        {selected && selectedIds.size <= 1 && (
+        {inspectorOpen && selected && selectedIds.size <= 1 && (
           <Inspector
             key={selected.id}
             asset={selected}
@@ -2071,7 +2083,7 @@ export default function App() {
               setView({ t: "similar", v: a.id, label: a.name || a.filename })
             }
             onOpenSettings={() => setShowSettings(true)}
-            onClose={() => setSelected(null)}
+            onClose={() => setInspectorOpen(false)}
             onPreview={setPreviewAsset}
             onMutate={onMutate}
           />
