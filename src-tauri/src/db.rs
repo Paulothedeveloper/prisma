@@ -713,6 +713,31 @@ pub fn set_favorite(conn: &Connection, id: i64, fav: bool) -> rusqlite::Result<(
     Ok(())
 }
 
+/// Favorita/desfavorita VÁRIOS de uma vez (ação em massa) — numa transação só (rápido).
+pub fn set_favorite_many(conn: &Connection, ids: &[i64], fav: bool) -> rusqlite::Result<()> {
+    let tx = conn.unchecked_transaction()?;
+    for id in ids {
+        set_favorite(&tx, *id, fav)?;
+    }
+    tx.commit()
+}
+
+/// Aplica uma tag (cria se não existir) a VÁRIOS assets de uma vez. Retorna o id da tag.
+pub fn tag_many(
+    conn: &Connection,
+    ids: &[i64],
+    name: &str,
+    color: Option<&str>,
+) -> rusqlite::Result<i64> {
+    let tag_id = create_tag(conn, name, color)?;
+    let tx = conn.unchecked_transaction()?;
+    for id in ids {
+        assign_tag(&tx, *id, tag_id)?;
+    }
+    tx.commit()?;
+    Ok(tag_id)
+}
+
 /// Quantos favoritos (não-lixeira) — pro contador da aba.
 pub fn favorites_count(conn: &Connection) -> rusqlite::Result<i64> {
     conn.query_row(

@@ -46,6 +46,8 @@ import {
   healthCounts,
   favoritesCount,
   setFavorite,
+  setFavoriteMany,
+  tagMany,
   smartSearch,
   deleteSmart,
   aiAnalyzeMany,
@@ -68,6 +70,7 @@ import {
   type Filter,
 } from "./api";
 import { AssetCard } from "./AssetCard";
+import { CommandPalette, type Command } from "./CommandPalette";
 import { Moodboard } from "./Moodboard";
 import { AssetRow } from "./AssetRow";
 import { Inspector } from "./Inspector";
@@ -279,6 +282,7 @@ export default function App() {
     setImportPaused(!!dupPairs).catch(() => {});
   }, [dupPairs]);
   const [showSettings, setShowSettings] = useState(false);
+  const [cmdkOpen, setCmdkOpen] = useState(false);
   const [aiProgress, setAiProgress] = useState<{ done: number; total: number } | null>(null);
   const [proxyProgress, setProxyProgress] = useState<{ done: number; total: number; made: number } | null>(null);
   const [hCounts, setHCounts] = useState<Record<string, number>>({});
@@ -462,6 +466,35 @@ export default function App() {
   useEffect(() => {
     if (clipMode) clipStatus().then(setClipStat).catch(() => {});
   }, [clipMode]);
+
+  // SSD/HD externo conectando ou desconectando: re-checa as raízes offline ao FOCAR a janela
+  // (você volta pro app depois de plugar o drive) e a cada 12s. Se o conjunto mudou, atualiza os
+  // selos OFFLINE e recarrega a grade — sem precisar reiniciar nem clicar em nada.
+  const offlineRef = useRef<string>("");
+  useEffect(() => {
+    let alive = true;
+    const check = async () => {
+      try {
+        const next = await offlineDirs();
+        const key = next.slice().sort().join("|");
+        if (!alive || key === offlineRef.current) return;
+        offlineRef.current = key;
+        setOfflineRoots(next); // módulo (lido por isOffline nos cards/mídias)
+        runSearch(true); // re-renderiza a grade → selos somem/aparecem na hora
+        refreshMeta();
+      } catch {
+        /* ignora */
+      }
+    };
+    const onFocus = () => void check();
+    window.addEventListener("focus", onFocus);
+    const id = window.setInterval(check, 12000);
+    return () => {
+      alive = false;
+      window.removeEventListener("focus", onFocus);
+      window.clearInterval(id);
+    };
+  }, [runSearch, refreshMeta]);
 
   const doClipIndex = async () => {
     setClipBusy(true);
@@ -926,10 +959,27 @@ export default function App() {
       await run();
     }
   };
+  // "C:\" / "F:" / "F:\" → é a RAIZ de um drive inteiro? Adicionar o drive todo é quase sempre
+  // sem querer (foi o que embaralhou o catálogo antes) — então avisamos antes.
+  const isDriveRoot = (p: string) => /^[A-Za-z]:[\\/]?$/.test(p.trim());
   const addFolders = async () => {
     setAddMenu(false);
     const sel = await open({ directory: true, multiple: true });
     const dirs = Array.isArray(sel) ? sel : sel ? [sel] : [];
+    if (!dirs.length) return;
+    const drives = dirs.filter(isDriveRoot);
+    if (drives.length > 0) {
+      setConfirmDlg({
+        title: t("imp.driveTitle"),
+        message: t("imp.driveMsg").replace("{d}", drives.join(", ")),
+        confirmLabel: t("imp.driveConfirm"),
+        onConfirm: () => {
+          void importPaths(dirs);
+        },
+      });
+      sfx.error?.();
+      return;
+    }
     await importPaths(dirs);
   };
   const addFiles = async () => {
@@ -1154,6 +1204,36 @@ export default function App() {
     [selectedIds, clearSelection, onMutate]
   );
 
+  // Favoritar TODOS os selecionados de uma vez (estrela em massa).
+  const batchFavorite = useCallback(async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    try {
+      await setFavoriteMany(ids, true);
+      sfx.pop();
+    } catch {
+      /* ignora */
+    }
+    clearSelection();
+    onMutate();
+  }, [selectedIds, clearSelection, onMutate]);
+
+  // Aplicar uma tag a TODOS os selecionados de uma vez.
+  const batchTag = useCallback(async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const name = window.prompt(t("batch.tagPrompt"));
+    if (!name || !name.trim()) return;
+    try {
+      await tagMany(ids, name.trim(), null);
+      sfx.pop();
+    } catch {
+      /* ignora */
+    }
+    clearSelection();
+    onMutate();
+  }, [selectedIds, clearSelection, onMutate]);
+
   const batchExport = useCallback(
     async (fmt: string) => {
       const sel = assets.filter((a) => selectedIds.has(a.id) && (a.type === "image" || a.type === "gif"));
@@ -1161,6 +1241,102 @@ export default function App() {
     },
     [assets, selectedIds]
   );
+
+  // Exporta a seleção pro NLE (DaVinci/Premiere) em FCPXML — pede onde salvar.
+  const batchNle = useCallback(async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const p = await saveDialog({
+      defaultPath: "prisma.fcpxml",
+      filters: [{ name: "FCPXML", extensions: ["fcpxml"] }],
+    });
+    if (typeof p === "string") {
+      try {
+        await exportNle(ids, p);
+      } catch (e) {
+        window.alert(`${t("common.error")}: ${String(e)}`);
+      }
+    }
+  }, [selectedIds]);
+
+  // Comandos da paleta (Ctrl+K): navegação + ações + destinos (tags/coleções). Recalcula quando
+  // a seleção/tags/coleções mudam (ações de seleção entram no topo).
+  const cmdkCommands = useMemo<Command[]>(() => {
+    const cmds: Command[] = [];
+    if (selectedIds.size > 1) {
+      cmds.push(
+        { id: "sel-fav", label: `${t("batch.favorite")} (${selectedIds.size})`, hint: t("cmdk.selection"), icon: "starFill", run: () => void batchFavorite() },
+        { id: "sel-tag", label: `${t("batch.tag")} (${selectedIds.size})`, hint: t("cmdk.selection"), icon: "tag", run: () => void batchTag() },
+        { id: "sel-nle", label: `${t("batch.nle")} (${selectedIds.size})`, hint: t("cmdk.selection"), icon: "reveal", run: () => void batchNle() },
+        { id: "sel-trash", label: `${t("batch.trash")} (${selectedIds.size})`, hint: t("cmdk.selection"), icon: "trash", run: () => batchTrash() },
+      );
+    }
+    cmds.push(
+      { id: "go-all", label: t("app.all"), hint: t("cmdk.go"), icon: "all", keywords: "tudo all", run: () => setView({ t: "all" }) },
+      { id: "go-fav", label: t("app.favorites"), hint: t("cmdk.go"), icon: "starFill", keywords: "favoritos favorites estrela", run: () => setView({ t: "favorites" }) },
+      { id: "go-untag", label: t("app.untagged"), hint: t("cmdk.go"), icon: "tagSlash", run: () => setView({ t: "untagged" }) },
+      { id: "go-uncoll", label: t("app.uncollected"), hint: t("cmdk.go"), icon: "inbox", run: () => setView({ t: "uncollected" }) },
+      { id: "go-random", label: t("app.random"), hint: t("cmdk.go"), icon: "shuffle", run: () => setView({ t: "random" }) },
+      { id: "go-trash", label: t("app.trash"), hint: t("cmdk.go"), icon: "trash", run: () => setView({ t: "trash" }) },
+      { id: "add-folders", label: t("app.addFolders"), hint: t("cmdk.action"), icon: "folder", run: () => void addFolders() },
+      { id: "add-files", label: t("app.addFiles"), hint: t("cmdk.action"), icon: "image", run: () => void addFiles() },
+      { id: "cmd-settings", label: t("app.settings"), hint: t("cmdk.action"), icon: "sliders", run: () => setShowSettings(true) },
+      { id: "cmd-search", label: t("cmdk.search"), hint: t("cmdk.action"), icon: "search", run: () => searchRef.current?.focus() },
+      { id: "lay-grid", label: t("app.layoutGrid"), hint: t("cmdk.layout"), icon: "layoutGrid", run: () => setLayout("grid") },
+      { id: "lay-list", label: t("app.layoutList"), hint: t("cmdk.layout"), icon: "layoutList", run: () => setLayout("list") },
+      { id: "lay-wf", label: t("app.layoutWaterfall"), hint: t("cmdk.layout"), icon: "layoutWaterfall", run: () => setLayout("waterfall") },
+    );
+    for (const tg of tags) {
+      cmds.push({ id: `tag-${tg.id}`, label: tg.name, hint: t("cmdk.tag"), icon: "tag", run: () => setView({ t: "tag", v: tg.id, label: tg.name }) });
+    }
+    for (const c of collections) {
+      cmds.push({ id: `coll-${c.id}`, label: c.name, hint: t("cmdk.collection"), icon: "stack", run: () => setView({ t: "collection", v: c.id, label: c.name }) });
+    }
+    return cmds;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds, tags, collections, batchFavorite, batchTag, batchTrash, batchNle]);
+
+  // Atalhos de produtividade (sem tirar a mão do teclado):
+  //  Ctrl/Cmd+K = paleta de comandos · "/" = focar busca · Ctrl/Cmd+A = selecionar tudo
+  //  F = favoritar seleção · Esc = limpar seleção
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      const inField = tag === "INPUT" || tag === "TEXTAREA";
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdkOpen((o) => !o);
+        return;
+      }
+      if (inField) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+        if (assets.length) {
+          e.preventDefault();
+          setSelectedIds(new Set(assets.map((a) => a.id)));
+        }
+        return;
+      }
+      if (e.key.toLowerCase() === "f" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const ids = selectedIds.size ? [...selectedIds] : selected ? [selected.id] : [];
+        if (ids.length) {
+          e.preventDefault();
+          void setFavoriteMany(ids, true).then(() => onMutate());
+        }
+        return;
+      }
+      if (e.key === "Escape" && !previewAsset && !cmdkOpen && selectedIds.size) {
+        e.preventDefault();
+        clearSelection();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [assets, selectedIds, selected, previewAsset, cmdkOpen, onMutate, clearSelection]);
 
   const onReorder = useCallback(
     (from: number, to: number) => {
@@ -2177,6 +2353,7 @@ export default function App() {
       )}
 
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+      {cmdkOpen && <CommandPalette commands={cmdkCommands} onClose={() => setCmdkOpen(false)} />}
       {showDownload && (
         <DownloadModal onClose={() => setShowDownload(false)} onDone={onMutate} />
       )}
@@ -2297,6 +2474,12 @@ export default function App() {
         <div className="batch-bar">
           <span className="batch-count">{selectedIds.size} {t("batch.selected")}</span>
           <div className="batch-sep" />
+          <button className="batch-item" onClick={batchFavorite} title={t("batch.favorite")}>
+            <Icon name="starFill" size={13} /> {t("batch.favorite")}
+          </button>
+          <button className="batch-item" onClick={batchTag} title={t("batch.tag")}>
+            <Icon name="tag" size={13} /> {t("batch.tag")}
+          </button>
           {collections.length > 0 && (
             <PopupButton
               value=""
@@ -2314,23 +2497,7 @@ export default function App() {
           <button className="batch-clear" onClick={() => setBatchRename(true)}>
             <Icon name="pencil" size={13} /> {t("batch.rename")}
           </button>
-          <button
-            className="batch-clear"
-            title={t("batch.nleHint")}
-            onClick={async () => {
-              const p = await saveDialog({
-                defaultPath: "prisma.fcpxml",
-                filters: [{ name: "FCPXML", extensions: ["fcpxml"] }],
-              });
-              if (typeof p === "string") {
-                try {
-                  await exportNle([...selectedIds], p);
-                } catch (e) {
-                  window.alert(`${t("common.error")}: ${String(e)}`);
-                }
-              }
-            }}
-          >
+          <button className="batch-clear" title={t("batch.nleHint")} onClick={batchNle}>
             <Icon name="reveal" size={13} /> {t("batch.nle")}
           </button>
           <button

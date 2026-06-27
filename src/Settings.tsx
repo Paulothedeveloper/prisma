@@ -42,12 +42,15 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.30";
+const APP_VERSION = "0.9.31";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Menus mais caprichados: os menus de clique-direito agora se ajustam ao texto (nada de fonte cortada nem aquela barrinha de rolagem horizontal feia embaixo). Largura inteligente, com reticências elegantes se algo for longo demais.",
-  "Item \"Atualizar pasta\" com nome curto e limpo no menu da pasta.",
+  "Paleta de comandos (Ctrl+K / Cmd+K): abra de qualquer lugar pra ir a uma view, tag ou coleção, trocar layout, abrir configurações ou agir na seleção — tudo digitando, sem mouse.",
+  "Atalhos: \"/\" foca a busca · Ctrl+A seleciona tudo · F favorita a seleção · Esc limpa a seleção.",
+  "Ações em massa: na barra de seleção agora dá pra FAVORITAR e TAGGEAR vários de uma vez (além de coleção, exportar, renomear, NLE, lixeira que já tinha).",
+  "Blindagem de drive: ao tentar adicionar um DRIVE inteiro (ex.: \"F:\\\"), o app avisa antes — era o que embaralhava o catálogo.",
+  "Drive externo: ao reconectar o SSD/HD, os selos OFFLINE somem sozinhos (atualiza ao focar a janela), sem reiniciar.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

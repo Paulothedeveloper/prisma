@@ -4419,6 +4419,123 @@ body {
   transform: scale(1.08);
 }
 
+/* ---------- Paleta de comandos (Ctrl/Cmd+K) ---------- */
+.cmdk-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: cmdkFade 0.12s ease;
+}
+@keyframes cmdkFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.cmdk {
+  width: min(560px, 92vw);
+  max-height: 64vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur-strong);
+  -webkit-backdrop-filter: var(--blur-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), var(--glass-hi);
+  animation: cmdkPop 0.16s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes cmdkPop {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.cmdk-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--text-2);
+}
+.cmdk-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 15px;
+}
+.cmdk-input::placeholder {
+  color: var(--text-3);
+}
+.cmdk-esc {
+  font-size: 10px;
+  color: var(--text-3);
+  border: 1px solid var(--glass-border);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+.cmdk-list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px;
+  scrollbar-width: thin;
+}
+.cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 11px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.cmdk-item.active {
+  background: var(--accent);
+  color: #fff;
+}
+.cmdk-item svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.cmdk-item.active svg {
+  color: #fff;
+  opacity: 1;
+}
+.cmdk-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmdk-hint {
+  font-size: 11px;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.cmdk-item.active .cmdk-hint {
+  color: rgba(255, 255, 255, 0.75);
+}
+.cmdk-empty {
+  padding: 22px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
 /* ---------- Inspetor: chips de coleção ---------- */
 .coll-chip {
   display: inline-flex;

@@ -131,6 +131,12 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.31** — Paleta Ctrl+K + atalhos + ações em massa + blindagem de drive
+- ⌨️ **Paleta de comandos (Ctrl/Cmd+K)**: vá a qualquer view/tag/coleção, troque layout, abra config ou aja na seleção — só digitando. Atalhos: `/` busca · Ctrl+A tudo · F favorita · Esc limpa.
+- ✅ **Ações em massa**: favoritar e taggear vários de uma vez (somado a coleção/exportar/renomear/NLE/lixeira). Export FCPXML também na paleta.
+- 🛡️ **Blindagem de drive**: aviso ao adicionar um drive inteiro (causa do embaralhamento).
+- 🔌 **Offline auto-refresh**: ao reconectar o SSD/HD externo, os selos OFFLINE somem sozinhos.
+
 **0.9.30** — Menus de contexto polidos
 - ✨ Menus de clique-direito com **largura adaptativa**: acabou a **fonte cortada** e a **barra de rolagem horizontal** (efeito colateral do `overflow-y:auto`). Reticências elegantes para rótulos longos. Item renomeado para **"Atualizar pasta"**.
 

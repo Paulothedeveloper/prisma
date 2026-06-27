@@ -348,6 +348,10 @@ export const setNotes = (id: number, notes: string) =>
   invoke<void>("set_notes", { id, notes });
 export const setFavorite = (id: number, fav: boolean) =>
   invoke<void>("set_favorite", { id, fav });
+export const setFavoriteMany = (ids: number[], fav: boolean) =>
+  invoke<void>("set_favorite_many", { ids, fav });
+export const tagMany = (ids: number[], name: string, color: string | null) =>
+  invoke<number>("tag_many", { ids, name, color });
 export const favoritesCount = () => invoke<number>("favorites_count");
 export const listTags = () => invoke<Tag[]>("list_tags");
 export const tagsForAsset = (id: number) =>
