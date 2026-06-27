@@ -131,6 +131,12 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.28** — Favoritos + volume global + sem bagunça de som
+- ⭐ **Favoritos com estrela rápida**: clique na estrela no canto da mídia (card, lista e preview) pra favoritar **sem abrir nada**. Já favoritado fica dourado fixo.
+- ⭐ Nova **aba "Favoritos"** na barra lateral (com contador) reunindo tudo num lugar só.
+- 🔊 **Volume global**: o slider do player de rodapé controla **também** o som do preview ao passar o mouse — um nível só pra tudo.
+- 🤫 **Fim da bagunça de som**: com o player tocando, o preview do hover fica **mudo** — não mistura mais a música com a faixa sob o mouse.
+
 **0.9.27** — Cards de pasta refeitos (sem esmagar)
 - 🟦 Cards de pasta agora são **quadrados** (igual à mídia) com **aba no topo** + tom azul. Removido o padding/moldura interna que faziam o card crescer além do quadrado e **se sobrepor/esmagar** ao mudar o tamanho da janela ou dos ícones.
 

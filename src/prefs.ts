@@ -9,6 +9,7 @@ export interface Prefs {
   hoverAutoplay: boolean; // vídeo/áudio tocam ao passar o mouse no card
   sfx: boolean; // efeitos sonoros discretos da interface (estilo Apple)
   quartzo: boolean; // mostra a seção "Quartzo (notas)" no inspetor (integração com o app de notas)
+  previewVolume: number; // volume GLOBAL (0..1) — player de rodapé E preview no hover compartilham
 }
 
 export const ACCENTS = ["#0a84ff", "#30d158", "#ff375f", "#ff9f0a", "#bf5af2", "#64d2ff", "#ffd60a"];
@@ -19,6 +20,7 @@ const DEFAULTS: Prefs = {
   hoverAutoplay: true,
   sfx: true,
   quartzo: false, // desligado por padrão — só quem usa o app de notas Quartzo liga
+  previewVolume: 1, // volume cheio por padrão
 };
 
 const KEY = "prisma.prefs";
@@ -61,6 +63,7 @@ export function applyPrefs(p: Prefs) {
   root.classList.toggle("reduce-glass", p.reduceGlass);
   root.dataset.hoverAutoplay = p.hoverAutoplay ? "1" : "0";
   root.dataset.quartzo = p.quartzo ? "1" : "0";
+  root.dataset.previewVolume = String(p.previewVolume);
   setSfxEnabled(p.sfx);
 }
 
@@ -71,4 +74,29 @@ export function hoverAutoplayOn(): boolean {
 // Integração Quartzo ligada? (desligada por padrão)
 export function quartzoOn(): boolean {
   return document.documentElement.dataset.quartzo === "1";
+}
+
+// Volume global (0..1) — lido pelo preview no hover e pelo player de rodapé.
+export function previewVolume(): number {
+  const v = parseFloat(document.documentElement.dataset.previewVolume ?? "1");
+  return isNaN(v) ? 1 : Math.min(1, Math.max(0, v));
+}
+// Grava o volume global (persiste + dispara 'prefs-changed' pra todos sincronizarem na hora).
+export function setPreviewVolume(v: number) {
+  const clamped = Math.min(1, Math.max(0, v));
+  document.documentElement.dataset.previewVolume = String(clamped);
+  const p = loadPrefs();
+  p.previewVolume = clamped;
+  savePrefs(p);
+}
+
+// "Player de rodapé tocando agora?" — flag transitória (não persiste). Enquanto ligada, o
+// preview do hover NÃO toca som, pra não virar bagunça de áudio (player + faixa do mouse juntos).
+let PLAYER_ACTIVE = false;
+export function setPlayerActive(on: boolean) {
+  PLAYER_ACTIVE = on;
+  document.documentElement.dataset.playerActive = on ? "1" : "0";
+}
+export function playerActive(): boolean {
+  return PLAYER_ACTIVE;
 }

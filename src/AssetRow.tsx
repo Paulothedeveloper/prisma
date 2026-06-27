@@ -3,7 +3,8 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import { Icon, type IconName } from "./Icons";
 import type { Asset } from "./api";
-import { hoverAutoplayOn } from "./prefs";
+import { hoverAutoplayOn, previewVolume, playerActive } from "./prefs";
+import { t } from "./i18n";
 
 let FALLBACK = "";
 import { dragIcon } from "./api";
@@ -28,6 +29,7 @@ function AssetRowImpl({
   onClick,
   onPreview,
   onContext,
+  onToggleFav,
   animDelayMs,
 }: {
   asset: Asset;
@@ -35,6 +37,7 @@ function AssetRowImpl({
   onClick: (a: Asset, e: React.MouseEvent) => void;
   onPreview: (a: Asset) => void;
   onContext?: (a: Asset, e: React.MouseEvent) => void;
+  onToggleFav?: (a: Asset) => void;
   animDelayMs?: number;
 }) {
   const thumb = asset.thumbnail_path ? convertFileSrc(asset.thumbnail_path) : null;
@@ -50,6 +53,8 @@ function AssetRowImpl({
   const hoverSrc = asset.proxy_path ? convertFileSrc(asset.proxy_path) : origUrl;
   const liveSrc = asset.live_motion ? convertFileSrc(asset.live_motion) : null;
   const playHover = hover && hoverAutoplayOn();
+  // Áudio do hover só toca se o player de rodapé NÃO estiver tocando (evita bagunça de som).
+  const playHoverAudio = playHover && !playerActive();
   const isVideo = asset.type === "video";
   const isGif = asset.type === "gif";
   const isAudio = asset.type === "audio";
@@ -86,11 +91,34 @@ function AssetRowImpl({
           />
         )}
         {isGif && hover && <img src={origUrl} className="lrow-hovervid" alt="" />}
-        {isAudio && playHover && (
-          <audio ref={audioRef} src={origUrl} autoPlay onLoadedData={() => audioRef.current?.play().catch(() => {})} />
+        {isAudio && playHoverAudio && (
+          <audio
+            ref={audioRef}
+            src={origUrl}
+            autoPlay
+            onLoadedData={() => {
+              if (audioRef.current) {
+                audioRef.current.volume = previewVolume();
+                audioRef.current.play().catch(() => {});
+              }
+            }}
+          />
         )}
         {isAudio && playHover && <span className="lrow-audioind"><Icon name="audio" size={14} /></span>}
       </div>
+      {onToggleFav && (
+        <button
+          className={`lrow-fav ${asset.favorite ? "on" : ""}`}
+          title={asset.favorite ? t("card.unfavorite") : t("card.favorite")}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFav(asset);
+          }}
+          onDoubleClick={(e) => e.stopPropagation()}
+        >
+          <Icon name={asset.favorite ? "starFill" : "star"} size={14} />
+        </button>
+      )}
       <div className="lrow-name">{name}</div>
       <div className="lrow-col lrow-type">{asset.type}</div>
       <div className="lrow-col lrow-res">{asset.width && asset.height ? `${asset.width}×${asset.height}` : "—"}</div>

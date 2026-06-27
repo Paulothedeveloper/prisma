@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { Icon } from "./Icons";
 import type { Asset } from "./api";
 import { t } from "./i18n";
+import { previewVolume, setPreviewVolume, setPlayerActive } from "./prefs";
 
 // Player de rodapé estilo playlist: toca o áudio/vídeo atual e permite avançar/voltar pela
 // lista (ótimo pra bibliotecas grandes de música/SFX — ouvir um atrás do outro sem abrir cada um).
@@ -34,7 +35,8 @@ export function MiniPlayer({
   const [playing, setPlaying] = useState(true);
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(0);
-  const [vol, setVol] = useState(1);
+  // Volume inicial = volume GLOBAL (compartilhado com o preview no hover).
+  const [vol, setVol] = useState(() => previewVolume());
   const [muted, setMuted] = useState(false);
   // toca o proxy se houver (vídeo de codec pro); senão o original.
   const src = asset.proxy_path ? convertFileSrc(asset.proxy_path) : convertFileSrc(asset.path);
@@ -80,7 +82,16 @@ export function MiniPlayer({
       el.volume = v;
       el.muted = v === 0;
     }
+    // sincroniza o volume GLOBAL → o preview no hover passa a usar o mesmo nível.
+    setPreviewVolume(v);
   };
+
+  // Enquanto o player está tocando, marca a flag global → o áudio do hover fica em silêncio
+  // (sem isso, tocar o player E passar o mouse numa faixa misturava os dois sons).
+  useEffect(() => {
+    setPlayerActive(playing);
+    return () => setPlayerActive(false);
+  }, [playing]);
 
   return (
     <div className="miniplayer">

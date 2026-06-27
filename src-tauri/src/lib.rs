@@ -875,6 +875,20 @@ fn set_rating(app: tauri::AppHandle, id: i64, rating: i64) -> Result<(), String>
 }
 
 #[tauri::command]
+fn set_favorite(app: tauri::AppHandle, id: i64, fav: bool) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    db::set_favorite(&conn, id, fav).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn favorites_count(app: tauri::AppHandle) -> Result<i64, String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    db::favorites_count(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn set_notes(app: tauri::AppHandle, id: i64, notes: String) -> Result<(), String> {
     let state = app.state::<AppState>();
     let conn = state.db.lock().map_err(|e| e.to_string())?;
@@ -2385,6 +2399,8 @@ pub fn run() {
             scan_health,
             health_counts,
             set_rating,
+            set_favorite,
+            favorites_count,
             set_notes,
             list_tags,
             tags_for_asset,

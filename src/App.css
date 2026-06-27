@@ -4240,6 +4240,103 @@ body {
   cursor: grabbing;
 }
 
+/* ---------- Estrela de favorito rápido (card / lista / preview) ---------- */
+.card-fav {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  transform: scale(0.85);
+  cursor: pointer;
+  transition: opacity 0.14s ease, transform 0.14s ease, color 0.14s ease;
+}
+.card:hover .card-fav {
+  opacity: 0.92;
+  transform: scale(1);
+}
+/* Já favoritado: estrela dourada SEMPRE visível (mesmo sem hover). */
+.card-fav.on {
+  opacity: 1;
+  transform: scale(1);
+  color: #ffd60a;
+}
+.card-fav:hover {
+  background: rgba(0, 0, 0, 0.6);
+  transform: scale(1.12);
+}
+.card-fav.on:active {
+  transform: scale(0.9);
+}
+
+/* Estrela na linha (visão lista) — coluna fixa à direita */
+.lrow-fav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  flex: 0 0 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim, #8a8a90);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.14s ease, color 0.14s ease, transform 0.12s ease;
+}
+.lrow:hover .lrow-fav {
+  opacity: 0.85;
+}
+.lrow-fav.on {
+  opacity: 1;
+  color: #ffd60a;
+}
+.lrow-fav:hover {
+  transform: scale(1.15);
+  color: #ffd60a;
+}
+
+/* Estrela no preview (tela cheia) — ao lado do botão fechar */
+.preview-fav {
+  position: absolute;
+  top: 18px;
+  right: 64px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: background 0.14s ease, transform 0.12s ease, color 0.14s ease;
+}
+.preview-fav.on {
+  color: #ffd60a;
+}
+.preview-fav:hover {
+  background: rgba(0, 0, 0, 0.6);
+  transform: scale(1.08);
+}
+
 /* ---------- Inspetor: chips de coleção ---------- */
 .coll-chip {
   display: inline-flex;

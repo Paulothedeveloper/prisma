@@ -18,9 +18,10 @@ interface Props {
   asset: Asset;
   onClose: () => void;
   onNav: (dir: -1 | 1) => void;
+  onToggleFav?: (a: Asset) => void;
 }
 
-export function Preview({ asset, onClose, onNav }: Props) {
+export function Preview({ asset, onClose, onNav, onToggleFav }: Props) {
   const url = convertFileSrc(asset.path);
   const thumbUrl = asset.thumbnail_path ? convertFileSrc(asset.thumbnail_path) : null;
   // null = ainda checando; evita tela cinza antes de saber o codec
@@ -179,6 +180,15 @@ export function Preview({ asset, onClose, onNav }: Props) {
       <button className="prev-nav prev-right" onClick={(e) => { e.stopPropagation(); onNav(1); }}>
         <Icon name="chevronRight" size={26} />
       </button>
+      {onToggleFav && (
+        <button
+          className={`preview-fav ${asset.favorite ? "on" : ""}`}
+          title={asset.favorite ? t("card.unfavorite") : t("card.favorite")}
+          onClick={(e) => { e.stopPropagation(); onToggleFav(asset); }}
+        >
+          <Icon name={asset.favorite ? "starFill" : "star"} size={18} />
+        </button>
+      )}
       <button className="preview-close" onClick={close}>
         <Icon name="close" size={16} />
       </button>

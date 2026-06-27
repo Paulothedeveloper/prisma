@@ -42,12 +42,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.27";
+const APP_VERSION = "0.9.28";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Cards de pasta REFEITOS: agora são quadrados (igual à mídia) com uma aba no topo + tom azul. Não esmagam nem se sobrepõem ao mudar o tamanho da janela/ícones.",
-  "Player: volume funciona + não troca de faixa sozinho (da 0.9.26).",
+  "Favoritos: clique na estrela ⭐ no canto da mídia pra favoritar na hora — sem abrir nada. Tem uma aba \"Favoritos\" nova na barra lateral pra acessar tudo num lugar só. A estrela também aparece no preview em tela cheia.",
+  "Volume global: o volume da barra do player embaixo agora controla TAMBÉM o som do preview ao passar o mouse — um nível só pra tudo.",
+  "Sem bagunça de som: com o player tocando, o preview do hover fica em silêncio — não mistura mais a música com a faixa sob o mouse.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

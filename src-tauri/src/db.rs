@@ -29,6 +29,7 @@ pub struct Asset {
     pub health_flags: Option<String>,
     pub seq_frames: Option<i64>,
     pub live_motion: Option<String>,
+    pub favorite: bool,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -76,6 +77,8 @@ pub struct Filter {
     pub untagged: bool, // sem tags
     #[serde(default)]
     pub uncollected: bool, // fora de qualquer coleção
+    #[serde(default)]
+    pub favorites: bool, // só os marcados como favorito
     #[serde(default)]
     pub random: bool, // ordem aleatória (descoberta)
     pub collection: Option<i64>,
@@ -213,6 +216,7 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "live_motion TEXT", // caminho do .mov irmão (Live Photo) — a imagem "vive" ao passar o mouse
         "live_member INTEGER NOT NULL DEFAULT 0", // 1 = o vídeo do par Live Photo (escondido na grade)
         "clip_embed BLOB", // embedding CLIP (512 f32) pra busca semântica local
+        "favorite INTEGER NOT NULL DEFAULT 0", // favorito (estrela rápida) — aba "Favoritos"
     ] {
         let name = col.split_whitespace().next().unwrap_or("");
         if existing.contains(name) {
@@ -591,6 +595,24 @@ pub fn set_rating(conn: &Connection, id: i64, rating: i64) -> rusqlite::Result<(
     Ok(())
 }
 
+/// Marca/desmarca um asset como favorito (estrela rápida → aba "Favoritos").
+pub fn set_favorite(conn: &Connection, id: i64, fav: bool) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE assets SET favorite=?2 WHERE id=?1",
+        params![id, if fav { 1 } else { 0 }],
+    )?;
+    Ok(())
+}
+
+/// Quantos favoritos (não-lixeira) — pro contador da aba.
+pub fn favorites_count(conn: &Connection) -> rusqlite::Result<i64> {
+    conn.query_row(
+        "SELECT COUNT(*) FROM assets WHERE favorite=1 AND trashed=0",
+        [],
+        |r| r.get(0),
+    )
+}
+
 pub fn set_notes(conn: &Connection, id: i64, notes: &str) -> rusqlite::Result<()> {
     conn.execute("UPDATE assets SET notes=?2 WHERE id=?1", params![id, notes])?;
     Ok(())
@@ -918,12 +940,13 @@ fn row_to_asset(r: &rusqlite::Row) -> rusqlite::Result<Asset> {
         health_flags: r.get("health_flags")?,
         seq_frames: r.get("seq_frames")?,
         live_motion: r.get("live_motion")?,
+        favorite: r.get("favorite")?,
     })
 }
 
 const SELECT_COLS: &str = "id, path, dir, filename, name, ext, type, size, modified_at, width, height,
     duration, rating, notes, dominant_color, color_bucket, thumbnail_path, proxy_path,
-    health_level, health_flags, seq_frames, live_motion";
+    health_level, health_flags, seq_frames, live_motion, favorite";
 
 /// Semente pseudo-aleatória estável por execução do app (pra ordem "aleatória" paginável).
 fn random_seed() -> i64 {
@@ -957,6 +980,9 @@ pub fn search(conn: &Connection, f: &Filter) -> rusqlite::Result<Vec<Asset>> {
     }
     if f.uncollected {
         sql.push_str(" AND NOT EXISTS (SELECT 1 FROM collection_items ci WHERE ci.asset_id=a.id)");
+    }
+    if f.favorites {
+        sql.push_str(" AND favorite = 1");
     }
 
     if !f.query.trim().is_empty() {

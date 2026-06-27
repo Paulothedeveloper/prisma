@@ -23,6 +23,7 @@ export interface Asset {
   health_flags: string | null; // CSV: vfr,banding,proxy...
   seq_frames: number | null; // nº de frames se for uma image sequence
   live_motion: string | null; // caminho do .mov do par Live Photo (toca no hover)
+  favorite: boolean; // marcado como favorito (estrela rápida → aba "Favoritos")
 }
 
 export interface Tag {
@@ -76,6 +77,7 @@ export interface Filter {
   trashed: boolean;
   untagged: boolean;
   uncollected: boolean;
+  favorites: boolean;
   random: boolean;
   collection: number | null;
   bright: string | null;
@@ -344,6 +346,9 @@ export const setRating = (id: number, rating: number) =>
   invoke<void>("set_rating", { id, rating });
 export const setNotes = (id: number, notes: string) =>
   invoke<void>("set_notes", { id, notes });
+export const setFavorite = (id: number, fav: boolean) =>
+  invoke<void>("set_favorite", { id, fav });
+export const favoritesCount = () => invoke<number>("favorites_count");
 export const listTags = () => invoke<Tag[]>("list_tags");
 export const tagsForAsset = (id: number) =>
   invoke<Tag[]>("tags_for_asset", { id });

@@ -3,7 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import { Icon, type IconName } from "./Icons";
 import { dragIcon, type Asset } from "./api";
-import { hoverAutoplayOn } from "./prefs";
+import { hoverAutoplayOn, previewVolume, playerActive } from "./prefs";
 import { isOffline } from "./offline";
 import { t } from "./i18n";
 
@@ -38,6 +38,8 @@ interface Props {
   onClick: (a: Asset, e: React.MouseEvent) => void;
   onPreview: (a: Asset) => void;
   onContext?: (a: Asset, e: React.MouseEvent) => void;
+  // Favorito rápido (estrela no canto) — sem abrir o inspetor.
+  onToggleFav?: (a: Asset) => void;
   // Reordenação manual dentro de uma coleção ("organização livre").
   reorder?: { index: number; onReorder: (from: number, to: number) => void };
   // Proporção real (waterfall/masonry) — sobrescreve o quadrado padrão.
@@ -52,7 +54,7 @@ let dragFrom: number | null = null;
 // memo: numa biblioteca de 27k, sem isto QUALQUER re-render do App (seleção, progresso de
 // indexação, etc.) re-renderizava TODOS os cards visíveis. Com props estáveis (callbacks via
 // useCallback no App), só o card que mudou re-renderiza. Grande ganho de fluidez.
-function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, reorder, aspect, animDelayMs }: Props) {
+function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, onToggleFav, reorder, aspect, animDelayMs }: Props) {
   const [hover, setHover] = useState(false);
   const [vidReady, setVidReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -97,6 +99,9 @@ function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, reorder
   const liveSrc = asset.live_motion ? convertFileSrc(asset.live_motion) : null;
   // Respeita a preferência "Tocar ao passar o mouse" (Configurações › Reprodução).
   const playHover = hover && hoverAutoplayOn();
+  // Áudio do hover NÃO toca enquanto o player de rodapé está tocando — senão vira bagunça de som
+  // (a música do player e a faixa sob o mouse saindo juntas). Vídeo/GIF/Live seguem (são mudos).
+  const playHoverAudio = playHover && !playerActive();
 
   return (
     <div
@@ -130,6 +135,22 @@ function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, reorder
             <Icon name="grip" size={14} />
           </span>
         )}
+        {/* Estrela de favorito rápido (canto superior-direito): aparece no hover, ou fica fixa
+            se já é favorito. Clique NÃO seleciona nem abre — só alterna o favorito. */}
+        {onToggleFav && (
+          <button
+            className={`card-fav ${asset.favorite ? "on" : ""}`}
+            title={asset.favorite ? t("card.unfavorite") : t("card.favorite")}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFav(asset);
+            }}
+            onDoubleClick={(e) => e.stopPropagation()}
+          >
+            <Icon name={asset.favorite ? "starFill" : "star"} size={15} />
+          </button>
+        )}
+
         {/* base: miniatura ou ícone (sempre presente — sem flash cinza) */}
         {thumbUrl ? (
           <img src={thumbUrl} className="media" alt="" loading="lazy" />
@@ -176,13 +197,16 @@ function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, reorder
           />
         )}
         {isGif && hover && <img src={origUrl} className="media media-over show" alt="" />}
-        {isAudio && playHover && (
+        {isAudio && playHoverAudio && (
           <audio
             src={origUrl}
             autoPlay
             className="hidden-audio"
             ref={(el) => {
-              if (el) el.play().catch(() => {});
+              if (el) {
+                el.volume = previewVolume();
+                el.play().catch(() => {});
+              }
             }}
           />
         )}

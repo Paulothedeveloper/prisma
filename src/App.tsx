@@ -44,6 +44,8 @@ import {
   revealInExplorer,
   listSmart,
   healthCounts,
+  favoritesCount,
+  setFavorite,
   smartSearch,
   deleteSmart,
   aiAnalyzeMany,
@@ -196,6 +198,7 @@ type View =
   | { t: "dups" }
   | { t: "untagged" }
   | { t: "uncollected" }
+  | { t: "favorites" }
   | { t: "random" }
   | { t: "trash" }
   | { t: "color"; v: string }
@@ -275,6 +278,7 @@ export default function App() {
   const [aiProgress, setAiProgress] = useState<{ done: number; total: number } | null>(null);
   const [proxyProgress, setProxyProgress] = useState<{ done: number; total: number; made: number } | null>(null);
   const [hCounts, setHCounts] = useState<Record<string, number>>({});
+  const [favCount, setFavCount] = useState(0);
   const [healthProgress, setHealthProgress] = useState<{ done: number; total: number } | null>(null);
   const [tip, setTip] = useState<{ id: string; rect: DOMRect } | null>(null);
   const [welcome, setWelcome] = useState(false);
@@ -347,6 +351,7 @@ export default function App() {
         trashed: view.t === "trash",
         untagged: view.t === "untagged",
         uncollected: view.t === "uncollected",
+        favorites: view.t === "favorites",
         random: view.t === "random",
         min_rating: minRating || null,
         ext: view.t === "ext" ? view.v : fExt || null,
@@ -437,6 +442,7 @@ export default function App() {
     setCollections(await listCollections());
     setSmartFolders(await listSmart());
     healthCounts().then(setHCounts).catch(() => {});
+    favoritesCount().then(setFavCount).catch(() => {});
     offlineDirs().then(setOfflineRoots).catch(() => {});
   }, []);
 
@@ -949,6 +955,26 @@ export default function App() {
     runSearch(true);
     refreshMeta();
   }, [runSearch, refreshMeta]);
+
+  // Favorito rápido (estrela no card/preview, sem abrir o inspetor). Atualiza otimista o
+  // estado local e o contador; se estiver NA aba "Favoritos" e desfavoritar, some o card.
+  const toggleFav = useCallback(
+    (asset: Asset) => {
+      const next = !asset.favorite;
+      setFavorite(asset.id, next).catch(() => {});
+      if (next) sfx.pop();
+      else sfx.toggle();
+      setFavCount((c) => Math.max(0, c + (next ? 1 : -1)));
+      setAssets((prev) =>
+        view.t === "favorites" && !next
+          ? prev.filter((x) => x.id !== asset.id)
+          : prev.map((x) => (x.id === asset.id ? { ...x, favorite: next } : x))
+      );
+      setSelected((s) => (s && s.id === asset.id ? { ...s, favorite: next } : s));
+      setPreviewAsset((p) => (p && p.id === asset.id ? { ...p, favorite: next } : p));
+    },
+    [view]
+  );
 
   // Remoção em massa COM animação (regra do app: tudo anima). A grade faz uma animação
   // de SAÍDA (some), aí a remoção é aplicada, recarrega e os itens restantes entram em cascata.
@@ -1516,6 +1542,13 @@ export default function App() {
               onClick={() => setView({ t: "all" })}
             />
             <SideItem
+              icon="starFill"
+              label={t("app.favorites")}
+              count={favCount}
+              active={isView({ t: "favorites" })}
+              onClick={() => setView({ t: "favorites" })}
+            />
+            <SideItem
               icon="tagSlash"
               label={t("app.untagged")}
               count={counts.untagged}
@@ -2003,6 +2036,7 @@ export default function App() {
                       onClick={(x, e) => handleCardClick(x, e, i)}
                       onPreview={setPreviewAsset}
                       onContext={openCtx}
+                      onToggleFav={toggleFav}
                       animDelayMs={Math.min(i, 18) * 18}
                     />
                   );
@@ -2029,6 +2063,7 @@ export default function App() {
                       onClick={(x, e) => handleCardClick(x, e, i)}
                       onPreview={setPreviewAsset}
                       onContext={openCtx}
+                      onToggleFav={toggleFav}
                       aspect={a.width && a.height ? `${a.width} / ${a.height}` : "1 / 1"}
                       animDelayMs={Math.min(i, 14) * 25}
                     />
@@ -2055,6 +2090,7 @@ export default function App() {
                       onClick={(x, e) => handleCardClick(x, e, i)}
                       onPreview={setPreviewAsset}
                       onContext={openCtx}
+                      onToggleFav={toggleFav}
                       reorder={inCollection !== null ? { index: i, onReorder } : undefined}
                       animDelayMs={Math.min(i, 14) * 25}
                     />
@@ -2065,7 +2101,7 @@ export default function App() {
           </div>
 
           {previewAsset && (
-            <Preview asset={previewAsset} onClose={() => setPreviewAsset(null)} onNav={navPreview} />
+            <Preview asset={previewAsset} onClose={() => setPreviewAsset(null)} onNav={navPreview} onToggleFav={toggleFav} />
           )}
         </main>
 
