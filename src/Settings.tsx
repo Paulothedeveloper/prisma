@@ -42,12 +42,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.25";
+const APP_VERSION = "0.9.26";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "CORRIGIDO de vez: cards de pasta não se sobrepõem mais ao aumentar o tamanho dos ícones (a capa virou absoluta, o card fica sempre quadrado).",
-  "Badges de condição (sem áudio/VFR/mono/8-bit) + inspetor com toggle (das versões recentes).",
+  "Player: controle de VOLUME agora funciona (aplicado direto no áudio).",
+  "Player: NÃO troca mais de faixa sozinho quando a música acaba — agora só para. Avançar/voltar continua manual (botões).",
+  "Cards de pasta sem sobreposição (da 0.9.25).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

@@ -131,6 +131,10 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.26** — Player: volume + fim de faixa
+- 🔊 **Volume do player agora funciona** (aplicado direto no áudio, mantido ao trocar de faixa).
+- ⏹️ **Não troca mais de faixa sozinho** quando a música acaba — só para. Avançar/voltar continua manual pelos botões.
+
 **0.9.25** — Cards de pasta sem sobreposição
 - 🟦 Corrigido de vez: os cards de pasta **não se sobrepõem mais** ao mudar o tamanho dos ícones. A capa virou absoluta (preenche a moldura sem empurrar a altura), então o card fica sempre quadrado.
 

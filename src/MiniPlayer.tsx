@@ -73,7 +73,13 @@ export function MiniPlayer({
   const onVol = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = Number(e.target.value) / 100;
     setVol(v);
-    if (v > 0 && muted) setMuted(false);
+    setMuted(v === 0);
+    // aplica NA HORA no elemento (não só via effect) — mais confiável.
+    const el = ref.current;
+    if (el) {
+      el.volume = v;
+      el.muted = v === 0;
+    }
   };
 
   return (
@@ -83,10 +89,15 @@ export function MiniPlayer({
         src={src}
         autoPlay
         onTimeUpdate={(e) => setCur(e.currentTarget.currentTime)}
-        onLoadedMetadata={(e) => setDur(e.currentTarget.duration || 0)}
+        onLoadedMetadata={(e) => {
+          setDur(e.currentTarget.duration || 0);
+          // reaplica o volume/mute na faixa nova (o elemento reseta pra 1 ao trocar de src).
+          e.currentTarget.volume = vol;
+          e.currentTarget.muted = muted;
+        }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onEnded={() => (hasNext ? onNext() : setPlaying(false))}
+        onEnded={() => setPlaying(false)}
       />
       {thumb ? (
         <img className="mp-thumb" src={thumb} alt="" />
