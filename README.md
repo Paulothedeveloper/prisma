@@ -131,6 +131,10 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.32** — Religar mídias offline + Backup na nuvem
+- 🔗 **Relink (estilo DaVinci)**: botão "N offline" perto da busca → por pasta offline, **Localizar** pra onde ela foi (remapeia a raiz) ou **Buscar automaticamente** (casa por nome + tamanho). Preserva todos os metadados.
+- ☁️ **Backup do catálogo na nuvem**: detecta OneDrive/Google Drive/Dropbox e salva na pasta sincronizada (sem login, sem app extra), ou escolha qualquer pasta. Salva o catálogo, não os arquivos de mídia.
+
 **0.9.31** — Paleta Ctrl+K + atalhos + ações em massa + blindagem de drive
 - ⌨️ **Paleta de comandos (Ctrl/Cmd+K)**: vá a qualquer view/tag/coleção, troque layout, abra config ou aja na seleção — só digitando. Atalhos: `/` busca · Ctrl+A tudo · F favorita · Esc limpa.
 - ✅ **Ações em massa**: favoritar e taggear vários de uma vez (somado a coleção/exportar/renomear/NLE/lixeira). Export FCPXML também na paleta.

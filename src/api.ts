@@ -299,6 +299,24 @@ export const saveAnnotated = (nearPath: string, data: number[]) =>
 // ----- Sync notebook↔desktop (metadados por hash) -----
 export const exportCatalog = (path: string) => invoke<number>("export_catalog", { path });
 export const importCatalog = (path: string) => invoke<number>("import_catalog", { path });
+export interface OfflineRoot {
+  root: string;
+  count: number;
+}
+export interface RelinkResult {
+  relinked: number;
+  missing: number;
+}
+export const offlineRootsDetail = () => invoke<OfflineRoot[]>("offline_roots_detail");
+export const relinkRoot = (oldRoot: string, newRoot: string) =>
+  invoke<RelinkResult>("relink_root", { oldRoot, newRoot });
+export const relinkSearch = (oldRoot: string, searchDir: string) =>
+  invoke<RelinkResult>("relink_search", { oldRoot, searchDir });
+export interface CloudFolder {
+  name: string;
+  path: string;
+}
+export const cloudFolders = () => invoke<CloudFolder[]>("cloud_folders");
 export const backupCatalog = (dest: string) => invoke<void>("backup_catalog", { dest });
 export const restoreCatalog = (src: string) => invoke<void>("restore_catalog", { src });
 export const trashAsset = (id: number, trashed: boolean) =>

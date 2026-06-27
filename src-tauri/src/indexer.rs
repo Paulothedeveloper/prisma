@@ -525,6 +525,99 @@ pub fn rescan_folder(
     let _ = app.emit("index:done", DonePayload { folder, total });
 }
 
+/// Relink "busca automática" (estilo DaVinci "relink by filename"): varre `search_dir` e
+/// re-aponta os assets offline sob `old_root` que tiverem um arquivo de MESMO NOME — preferindo
+/// o de MESMO TAMANHO; se não houver match por tamanho, só aceita quando o nome é único na busca
+/// (evita re-apontar pro arquivo errado). Retorna (religados, ainda_faltando).
+pub fn relink_search(db: &Arc<Mutex<Connection>>, old_root: &str, search_dir: &str) -> (usize, usize) {
+    use std::collections::HashMap;
+    // 1) varre o disco SEM lock: nome (minúsculo) -> [(caminho, tamanho)]
+    let mut by_name: HashMap<String, Vec<(String, i64)>> = HashMap::new();
+    for entry in WalkDir::new(search_dir).into_iter().filter_map(|e| e.ok()) {
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let p = entry.path();
+        let name = p.file_name().map(|s| s.to_string_lossy().to_lowercase()).unwrap_or_default();
+        if name.is_empty() {
+            continue;
+        }
+        let size = entry.metadata().ok().map(|m| m.len() as i64).unwrap_or(-1);
+        by_name.entry(name).or_default().push((p.to_string_lossy().to_string(), size));
+    }
+    // 2) assets sob old_root (filtra offline + prefixo no Rust)
+    let old = old_root.trim_end_matches(|c| c == '\\' || c == '/').to_string();
+    let mut candidates: Vec<(i64, String, String, i64, i64)> = Vec::new();
+    {
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+        let like = format!("{old}%");
+        let mut stmt = match conn.prepare(
+            "SELECT id, path, filename, size, folder_id FROM assets WHERE path LIKE ?1",
+        ) {
+            Ok(s) => s,
+            Err(_) => return (0, 0),
+        };
+        let mut q = match stmt.query(rusqlite::params![like]) {
+            Ok(q) => q,
+            Err(_) => return (0, 0),
+        };
+        while let Ok(Some(r)) = q.next() {
+            if let (Ok(id), Ok(p), Ok(f), Ok(s), Ok(fid)) = (
+                r.get::<_, i64>(0),
+                r.get::<_, String>(1),
+                r.get::<_, String>(2),
+                r.get::<_, i64>(3),
+                r.get::<_, i64>(4),
+            ) {
+                candidates.push((id, p, f, s, fid));
+            }
+        }
+    }
+    // 3) casa por nome (+tamanho) e re-aponta numa transação
+    let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+    let tx = match conn.unchecked_transaction() {
+        Ok(t) => t,
+        Err(_) => return (0, 0),
+    };
+    let mut relinked = 0usize;
+    let mut missing = 0usize;
+    for (id, path, filename, size, fid) in candidates {
+        let under = path == old
+            || path.starts_with(&format!("{old}\\"))
+            || path.starts_with(&format!("{old}/"));
+        if !under {
+            continue;
+        }
+        if Path::new(&path).exists() {
+            continue; // não está offline
+        }
+        let hits = match by_name.get(&filename.to_lowercase()) {
+            Some(h) => h,
+            None => {
+                missing += 1;
+                continue;
+            }
+        };
+        let chosen = hits
+            .iter()
+            .find(|(_, s)| *s == size)
+            .map(|(p, _)| p.clone())
+            .or_else(|| if hits.len() == 1 { Some(hits[0].0.clone()) } else { None });
+        match chosen {
+            Some(np) => {
+                let cp = Path::new(&np);
+                let dir = cp.parent().map(|d| d.to_string_lossy().to_string()).unwrap_or_default();
+                let fname = cp.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+                let _ = db::relink_asset(&tx, id, &np, &dir, &fname, fid);
+                relinked += 1;
+            }
+            None => missing += 1,
+        }
+    }
+    let _ = tx.commit();
+    (relinked, missing)
+}
+
 /// Retomada: gera thumbs para assets ja catalogados que ficaram sem (ex.: app fechado
 /// no meio da indexacao). Roda no boot, sem barra de progresso intrusiva.
 pub fn resume_missing(

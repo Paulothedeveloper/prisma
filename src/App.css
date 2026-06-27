@@ -4536,6 +4536,118 @@ body {
   font-size: 13px;
 }
 
+/* ---------- Botão "N offline" (toolbar) + painel de relink ---------- */
+.offline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 69, 58, 0.5);
+  background: rgba(255, 69, 58, 0.16);
+  color: #ff6961;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.14s ease, transform 0.12s ease;
+}
+.offline-btn:hover {
+  background: rgba(255, 69, 58, 0.26);
+  transform: translateY(-1px);
+}
+.relink-modal {
+  width: min(680px, 94vw);
+}
+.relink-help {
+  margin: 0 0 14px;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.relink-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 56vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+.relink-empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--text-3);
+}
+.relink-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+}
+.relink-item.done {
+  border-color: rgba(74, 222, 128, 0.5);
+  background: rgba(74, 222, 128, 0.08);
+}
+.relink-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.relink-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: rgba(255, 69, 58, 0.85);
+  border-radius: 5px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+.relink-name {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text-1);
+}
+.relink-path {
+  font-size: 11px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+.relink-count {
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.relink-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.relink-result {
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+.relink-result.ok {
+  color: #4ade80;
+}
+.set-bulk-btn.cloud {
+  border-color: rgba(10, 132, 255, 0.45);
+  color: var(--accent);
+}
+
 /* ---------- Inspetor: chips de coleção ---------- */
 .coll-chip {
   display: inline-flex;

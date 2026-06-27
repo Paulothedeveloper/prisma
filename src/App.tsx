@@ -31,6 +31,8 @@ import {
   addFromUrl,
   exportNle,
   offlineDirs,
+  offlineRootsDetail,
+  type OfflineRoot,
   duplicateAsset,
   emptyTrash,
   dedupeKeepOne,
@@ -71,6 +73,7 @@ import {
 } from "./api";
 import { AssetCard } from "./AssetCard";
 import { CommandPalette, type Command } from "./CommandPalette";
+import { Relink } from "./Relink";
 import { Moodboard } from "./Moodboard";
 import { AssetRow } from "./AssetRow";
 import { Inspector } from "./Inspector";
@@ -283,6 +286,8 @@ export default function App() {
   }, [dupPairs]);
   const [showSettings, setShowSettings] = useState(false);
   const [cmdkOpen, setCmdkOpen] = useState(false);
+  const [offlineDetail, setOfflineDetail] = useState<OfflineRoot[]>([]);
+  const [relinkOpen, setRelinkOpen] = useState(false);
   const [aiProgress, setAiProgress] = useState<{ done: number; total: number } | null>(null);
   const [proxyProgress, setProxyProgress] = useState<{ done: number; total: number; made: number } | null>(null);
   const [hCounts, setHCounts] = useState<Record<string, number>>({});
@@ -452,6 +457,7 @@ export default function App() {
     healthCounts().then(setHCounts).catch(() => {});
     favoritesCount().then(setFavCount).catch(() => {});
     offlineDirs().then(setOfflineRoots).catch(() => {});
+    offlineRootsDetail().then(setOfflineDetail).catch(() => {});
   }, []);
 
   // Filtro/busca/ordenação: recarrega EM LUGAR (sem cascata — pra não reanimar enquanto digita).
@@ -480,6 +486,7 @@ export default function App() {
         if (!alive || key === offlineRef.current) return;
         offlineRef.current = key;
         setOfflineRoots(next); // módulo (lido por isOffline nos cards/mídias)
+        offlineRootsDetail().then(setOfflineDetail).catch(() => {});
         runSearch(true); // re-renderiza a grade → selos somem/aparecem na hora
         refreshMeta();
       } catch {
@@ -1564,6 +1571,16 @@ export default function App() {
           </button>
         </div>
         <div className="tb-right" data-tauri-drag-region>
+          {offlineDetail.length > 0 && (
+            <button
+              className="offline-btn"
+              onClick={() => setRelinkOpen(true)}
+              title={t("relink.title")}
+            >
+              <Icon name="eyeOff" size={14} />
+              {offlineDetail.reduce((n, r) => n + r.count, 0)} {t("relink.offlineShort")}
+            </button>
+          )}
           <button className="icon-btn tb-gear" onClick={() => setShowSettings(true)} title={t("app.settings")}>
             <Icon name="sliders" size={16} />
           </button>
@@ -2354,6 +2371,18 @@ export default function App() {
 
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
       {cmdkOpen && <CommandPalette commands={cmdkCommands} onClose={() => setCmdkOpen(false)} />}
+      {relinkOpen && (
+        <Relink
+          roots={offlineDetail}
+          onClose={() => setRelinkOpen(false)}
+          onDone={() => {
+            offlineDirs().then(setOfflineRoots).catch(() => {});
+            offlineRootsDetail().then(setOfflineDetail).catch(() => {});
+            runSearch(true);
+            refreshMeta();
+          }}
+        />
+      )}
       {showDownload && (
         <DownloadModal onClose={() => setShowDownload(false)} onDone={onMutate} />
       )}

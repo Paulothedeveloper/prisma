@@ -1256,6 +1256,66 @@ fn offline_dirs(app: tauri::AppHandle) -> Result<Vec<String>, String> {
         .collect())
 }
 
+/// Raízes offline COM a contagem de itens — pro botão "N offline" e o painel de relink.
+#[derive(serde::Serialize)]
+struct OfflineRoot {
+    root: String,
+    count: i64,
+}
+
+#[tauri::command]
+fn offline_roots_detail(app: tauri::AppHandle) -> Result<Vec<OfflineRoot>, String> {
+    let state = app.state::<AppState>();
+    state
+        .reads
+        .with(|c| {
+            let roots = db::folder_roots(c)?;
+            let mut out = Vec::new();
+            for r in roots {
+                if !std::path::Path::new(&r).exists() {
+                    let base = r.trim_end_matches(|ch| ch == '\\' || ch == '/');
+                    let like = format!("{base}%");
+                    let count: i64 = c
+                        .query_row(
+                            "SELECT COUNT(*) FROM assets WHERE path LIKE ?1 AND trashed=0",
+                            rusqlite::params![like],
+                            |row| row.get(0),
+                        )
+                        .unwrap_or(0);
+                    out.push(OfflineRoot { root: r, count });
+                }
+            }
+            Ok(out)
+        })
+        .map_err(|e: rusqlite::Error| e.to_string())
+}
+
+/// Resultado de um relink: quantos re-apontados e quantos ainda faltando.
+#[derive(serde::Serialize)]
+struct RelinkResult {
+    relinked: usize,
+    missing: usize,
+}
+
+/// Relink manual: o usuário apontou pra ONDE a pasta offline foi parar (remapeia a raiz).
+#[tauri::command]
+fn relink_root(app: tauri::AppHandle, old_root: String, new_root: String) -> Result<RelinkResult, String> {
+    let state = app.state::<AppState>();
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let (relinked, missing) =
+        db::relink_root(&conn, &old_root, &new_root).map_err(|e| e.to_string())?;
+    Ok(RelinkResult { relinked, missing })
+}
+
+/// Relink automático: varre uma pasta e re-aponta por NOME (preferindo mesmo tamanho).
+#[tauri::command]
+fn relink_search(app: tauri::AppHandle, old_root: String, search_dir: String) -> Result<RelinkResult, String> {
+    let state = app.state::<AppState>();
+    let db = state.db.clone();
+    let (relinked, missing) = indexer::relink_search(&db, &old_root, &search_dir);
+    Ok(RelinkResult { relinked, missing })
+}
+
 // ---------- Moodboard (quadro livre de uma coleção) ----------
 
 #[tauri::command]
@@ -2160,6 +2220,56 @@ fn reset_app(app: tauri::AppHandle) -> Result<(), String> {
     app.restart()
 }
 
+/// Pasta de nuvem SINCRONIZADA detectada no PC (OneDrive/Google Drive/Dropbox/iCloud). Salvar o
+/// backup numa dessas faz a própria nuvem subir sozinha — sem login, sem API, sem software extra.
+#[derive(serde::Serialize)]
+struct CloudFolder {
+    name: String,
+    path: String,
+}
+
+#[tauri::command]
+fn cloud_folders() -> Vec<CloudFolder> {
+    let mut out: Vec<CloudFolder> = Vec::new();
+    let mut push = |name: &str, path: String| {
+        if std::path::Path::new(&path).is_dir() && !out.iter().any(|c| c.path.eq_ignore_ascii_case(&path)) {
+            out.push(CloudFolder { name: name.to_string(), path });
+        }
+    };
+    // OneDrive: via variável de ambiente (pessoal e comercial)
+    for var in ["OneDrive", "OneDriveConsumer", "OneDriveCommercial"] {
+        if let Ok(v) = std::env::var(var) {
+            push("OneDrive", v);
+        }
+    }
+    // Pastas comuns sob o perfil do usuário
+    if let Ok(up) = std::env::var("USERPROFILE") {
+        let base = std::path::PathBuf::from(up);
+        for (name, sub) in [
+            ("Google Drive", "Google Drive"),
+            ("Google Drive", "My Drive"),
+            ("Dropbox", "Dropbox"),
+            ("iCloud Drive", "iCloudDrive"),
+        ] {
+            push(name, base.join(sub).to_string_lossy().to_string());
+        }
+    }
+    // Dropbox com pasta em local custom: lê o caminho do info.json
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        let info = std::path::PathBuf::from(appdata).join("Dropbox").join("info.json");
+        if let Ok(txt) = std::fs::read_to_string(&info) {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&txt) {
+                for k in ["personal", "business"] {
+                    if let Some(p) = v.get(k).and_then(|o| o.get("path")).and_then(|s| s.as_str()) {
+                        push("Dropbox", p.to_string());
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
 /// Backup do catálogo num arquivo .db único e consistente (VACUUM INTO inclui o WAL).
 /// Não toca em nenhum arquivo de mídia — só copia o banco (tags/estrelas/notas/coleções).
 #[tauri::command]
@@ -2448,6 +2558,9 @@ pub fn run() {
             set_board_item,
             export_nle,
             offline_dirs,
+            offline_roots_detail,
+            relink_root,
+            relink_search,
             resolve_dup,
             drag_icon,
             remove_asset,
@@ -2513,6 +2626,7 @@ pub fn run() {
             concat_run,
             export_catalog,
             import_catalog,
+            cloud_folders,
             backup_catalog,
             restore_catalog
         ])

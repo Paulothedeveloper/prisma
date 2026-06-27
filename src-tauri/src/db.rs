@@ -526,6 +526,55 @@ pub fn relink_asset(
     Ok(())
 }
 
+/// Relink "remapeando a raiz" (estilo DaVinci): o usuário aponta pra ONDE a pasta/drive offline
+/// foi parar. Pra cada asset sob `old_root` que não existe mais, tenta o caminho equivalente sob
+/// `new_root` mantendo a subestrutura; se o arquivo existir lá, re-aponta (preserva metadados).
+/// Retorna (religados, ainda_faltando).
+pub fn relink_root(
+    conn: &Connection,
+    old_root: &str,
+    new_root: &str,
+) -> rusqlite::Result<(usize, usize)> {
+    let old = old_root.trim_end_matches(|c| c == '\\' || c == '/').to_string();
+    let new = new_root.trim_end_matches(|c| c == '\\' || c == '/').to_string();
+    let like = format!("{old}%"); // filtro grosso; o prefixo real é conferido no Rust
+    let mut rows: Vec<(i64, String, i64)> = Vec::new();
+    {
+        let mut stmt = conn.prepare("SELECT id, path, folder_id FROM assets WHERE path LIKE ?1")?;
+        let mut q = stmt.query(params![like])?;
+        while let Some(r) = q.next()? {
+            rows.push((r.get(0)?, r.get(1)?, r.get(2)?));
+        }
+    }
+    let tx = conn.unchecked_transaction()?;
+    let mut relinked = 0usize;
+    let mut missing = 0usize;
+    for (id, path, fid) in rows {
+        let under = path == old
+            || path.starts_with(&format!("{old}\\"))
+            || path.starts_with(&format!("{old}/"));
+        if !under {
+            continue;
+        }
+        if Path::new(&path).exists() {
+            continue; // não está offline
+        }
+        let suffix = &path[old.len()..]; // inclui o separador inicial
+        let candidate = format!("{new}{suffix}");
+        if Path::new(&candidate).exists() {
+            let cp = Path::new(&candidate);
+            let dir = cp.parent().map(|d| d.to_string_lossy().to_string()).unwrap_or_default();
+            let fname = cp.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+            relink_asset(&tx, id, &candidate, &dir, &fname, fid)?;
+            relinked += 1;
+        } else {
+            missing += 1;
+        }
+    }
+    tx.commit()?;
+    Ok((relinked, missing))
+}
+
 /// Conserta caminhos "drive-relativos" gravados por um bug antigo: quando uma RAIZ era um drive
 /// cru ("F:" sem barra), o WalkDir gerava `F:AFFINITY\...` em vez de `F:\AFFINITY\...`, faltando a
 /// barra logo após o `X:`. Isso embaralhava as pastas (apareciam com o nome colado no drive) e

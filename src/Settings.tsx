@@ -11,6 +11,8 @@ import {
   importCatalog,
   backupCatalog,
   restoreCatalog,
+  cloudFolders,
+  type CloudFolder,
   setAutotagImport,
   setAutoProxyImport,
   resetApp,
@@ -42,15 +44,12 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.31";
+const APP_VERSION = "0.9.32";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Paleta de comandos (Ctrl+K / Cmd+K): abra de qualquer lugar pra ir a uma view, tag ou coleção, trocar layout, abrir configurações ou agir na seleção — tudo digitando, sem mouse.",
-  "Atalhos: \"/\" foca a busca · Ctrl+A seleciona tudo · F favorita a seleção · Esc limpa a seleção.",
-  "Ações em massa: na barra de seleção agora dá pra FAVORITAR e TAGGEAR vários de uma vez (além de coleção, exportar, renomear, NLE, lixeira que já tinha).",
-  "Blindagem de drive: ao tentar adicionar um DRIVE inteiro (ex.: \"F:\\\"), o app avisa antes — era o que embaralhava o catálogo.",
-  "Drive externo: ao reconectar o SSD/HD, os selos OFFLINE somem sozinhos (atualiza ao focar a janela), sem reiniciar.",
+  "Religar mídias offline (estilo DaVinci): apareceu um botão \"N offline\" perto da busca. Clicando, você vê as pastas offline e pode (1) LOCALIZAR pra onde a pasta foi (religa mantendo a subestrutura) ou (2) pedir uma BUSCA AUTOMÁTICA numa pasta (casa por nome + tamanho). Os dois são opcionais, por pasta — e mantêm todos os metadados.",
+  "Backup na nuvem (sem software externo): em Configurações › Backup, botões que detectam OneDrive/Google Drive/Dropbox no seu PC e salvam o catálogo na pasta sincronizada — a nuvem sobe sozinha. Também dá pra escolher qualquer pasta. (Salva o catálogo: tags/estrelas/favoritos/coleções/notas — não os arquivos de mídia.)",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
@@ -101,6 +100,10 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [autoProxy, setAutoProxy] = useState(true);
   const [syncMsg, setSyncMsg] = useState("");
   const [backupMsg, setBackupMsg] = useState("");
+  const [clouds, setClouds] = useState<CloudFolder[]>([]);
+  useEffect(() => {
+    cloudFolders().then(setClouds).catch(() => {});
+  }, []);
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [proxyMsg, setProxyMsg] = useState("");
@@ -260,6 +263,24 @@ export function Settings({ onClose }: { onClose: () => void }) {
     } catch (e) {
       setBackupMsg(`${t("common.error")}: ${String(e)}`);
     }
+  };
+  // Backup do catálogo numa pasta de NUVEM (sincronizada). É só uma cópia local de arquivo — a
+  // nuvem sobe sozinha. 100% confiável, sem login/API. Nome com data pra não sobrescrever.
+  const backupToFolder = async (folder: string) => {
+    try {
+      const d = new Date();
+      const p2 = (n: number) => String(n).padStart(2, "0");
+      const stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}`;
+      const dest = `${folder.replace(/[\\/]+$/, "")}\\PRISMA-catalogo-${stamp}.db`;
+      await backupCatalog(dest);
+      setBackupMsg(t("set.cloudOk").replace("{p}", dest));
+    } catch (e) {
+      setBackupMsg(`${t("common.error")}: ${String(e)}`);
+    }
+  };
+  const doCloudPick = async () => {
+    const p = await openDialog({ directory: true, multiple: false, title: t("set.cloudPick") });
+    if (typeof p === "string") await backupToFolder(p);
   };
 
   return (
@@ -645,6 +666,19 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   <div className="set-bulk-row">
                     <button className="set-bulk-btn" onClick={doBackup}>{t("set.backupBtn")}</button>
                     <button className="set-bulk-btn" onClick={doRestore}>{t("set.restoreBtn")}</button>
+                  </div>
+                  {/* Backup na NUVEM: salva o catálogo na pasta sincronizada do OneDrive/Drive/
+                      Dropbox que você já tem no PC — a nuvem sobe sozinha. Sem login, sem API. */}
+                  <div className="pref-help" style={{ marginTop: 12 }}>{t("set.cloudHelp")}</div>
+                  <div className="set-bulk-row">
+                    {clouds.map((c) => (
+                      <button key={c.path} className="set-bulk-btn cloud" onClick={() => backupToFolder(c.path)} title={c.path}>
+                        <Icon name="check" size={13} /> {c.name}
+                      </button>
+                    ))}
+                    <button className="set-bulk-btn" onClick={doCloudPick}>
+                      <Icon name="folder" size={13} /> {t("set.cloudPickBtn")}
+                    </button>
                   </div>
                   {backupMsg && (
                     <div className="set-status">
