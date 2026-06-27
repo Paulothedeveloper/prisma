@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { Icon } from "./Icons";
+import { quartzoOn } from "./prefs";
 import { Oficina } from "./Oficina";
 import { AudioPlayer } from "./AudioPlayer";
 import { CstCard } from "./CstCard";
@@ -163,6 +164,13 @@ function InspectorImpl({
   const [velvetMsg, setVelvetMsg] = useState<string | null>(null);
   const [velvetBusy, setVelvetBusy] = useState(false);
   // Quartzo (PKM nosso): notas ligadas ao asset + anexar a uma nota.
+  // A seção só aparece se a integração estiver LIGADA em Configurações (opcional).
+  const [showQz, setShowQz] = useState(quartzoOn());
+  useEffect(() => {
+    const sync = () => setShowQz(quartzoOn());
+    window.addEventListener("prefs-changed", sync);
+    return () => window.removeEventListener("prefs-changed", sync);
+  }, []);
   const [qzOpen, setQzOpen] = useState(false);
   const [qzNotes, setQzNotes] = useState<QuartzoNote[]>([]);
   const [qzLinked, setQzLinked] = useState<QuartzoNote[]>([]);
@@ -748,7 +756,8 @@ function InspectorImpl({
         )}
       </div>
 
-      {/* Quartzo (PKM nosso): ligar este asset às suas notas */}
+      {/* Quartzo (PKM nosso): ligar este asset às suas notas. Opcional — ligado em Configurações. */}
+      {showQz && (
       <div className="insp-block">
         <button className="insp-section-title qz-head" onClick={openQuartzo}>
           <Icon name="stack" size={13} /> {t("insp.quartzo")}
@@ -789,6 +798,7 @@ function InspectorImpl({
           </div>
         )}
       </div>
+      )}
 
       {/* Coleções */}
       <div className="insp-block">

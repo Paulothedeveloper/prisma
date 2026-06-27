@@ -42,13 +42,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.20";
+const APP_VERSION = "0.9.21";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Vídeo toca DENTRO do app: ProRes/.mov (codec pro) agora reproduz inline pelo proxy — o player externo virou OPCIONAL.",
-  "Botão 'Tocar aqui' no visualizador: gera o proxy na hora se ainda não existir, e toca sem sair do PRISMA.",
-  "Deep-link prisma:// e CLIP++ (das versões recentes).",
+  "Visualizador se ADAPTA ao tamanho da janela (antes o vídeo não encolhia ao diminuir a janela).",
+  "Contorno de seleção não é mais cortado na fileira de cima dos cards.",
+  "Integração Quartzo (notas) virou OPCIONAL — ligue/desligue em Configurações › Aparência (desligada por padrão).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
@@ -377,6 +377,12 @@ export function Settings({ onClose }: { onClose: () => void }) {
                   onClick={() => setPref("sfx", !prefs.sfx)}
                   title={t("set.sfx")}
                   help={t("set.sfxHelp")}
+                />
+                <Toggle
+                  on={prefs.quartzo}
+                  onClick={() => setPref("quartzo", !prefs.quartzo)}
+                  title={t("set.quartzo")}
+                  help={t("set.quartzoHelp")}
                 />
                 <Toggle
                   on={autoProxy}

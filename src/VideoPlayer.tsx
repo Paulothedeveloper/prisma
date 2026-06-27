@@ -14,7 +14,7 @@ function fmt(t: number): string {
 
 const SPEEDS = [0.25, 0.5, 1, 1.5, 2];
 
-export function VideoPlayer({ src, fps = 30, aspect }: { src: string; fps?: number; aspect?: string }) {
+export function VideoPlayer({ src, fps = 30 }: { src: string; fps?: number }) {
   const vidRef = useRef<HTMLVideoElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -195,7 +195,6 @@ export function VideoPlayer({ src, fps = 30, aspect }: { src: string; fps?: numb
       ref={wrapRef}
       data-sfx-skip
       className={`vp ${uiVisible || !playing ? "vp-ui" : ""}`}
-      style={aspect ? { aspectRatio: aspect } : undefined}
       onMouseMove={wakeUi}
       onMouseLeave={() => playing && setUiVisible(false)}
     >

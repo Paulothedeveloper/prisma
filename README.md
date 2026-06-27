@@ -131,6 +131,11 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.21** — Visualizador responsivo + seleção + Quartzo opcional
+- 🪟 Visualizador (preview) **se adapta ao tamanho da janela** (o vídeo encolhe junto).
+- 🔲 Contorno de seleção **não corta** mais na fileira de cima dos cards.
+- 📝 **Integração Quartzo (notas) opcional** — liga/desliga em Configurações › Aparência (desligada por padrão).
+
 **0.9.20** — Vídeo toca dentro do app (player externo opcional)
 - ▶️ **ProRes/.mov tocam inline** pelo proxy H.264 (o WebView não decodifica codec pro). Se o vídeo ainda não tem proxy, o botão **"Tocar aqui"** gera na hora e toca. O "Abrir no player externo" virou opcional.
 

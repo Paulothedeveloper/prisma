@@ -868,6 +868,9 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--thumb), 1fr));
   gap: 14px;
+  /* respiro no topo/laterais pra o ANEL de seleção (box-shadow de 2px) da 1ª fileira/coluna não
+     ser cortado pela borda do scroller. */
+  padding: 5px 4px 0;
 }
 .card {
   cursor: pointer;
@@ -3839,21 +3842,23 @@ body {
 /* ---------- Player de vídeo customizado (PRISMA) ---------- */
 .vp {
   position: relative;
-  /* assume a proporção real do vídeo (aspect-ratio vem inline) e cresce até os limites */
-  max-width: 90vw;
-  max-height: 78vh;
-  width: auto;
-  height: 78vh;
+  /* o PRÓPRIO vídeo se limita à viewport (abaixo) e o .vp encolhe junto — assim o preview SEMPRE
+     se adapta quando a janela diminui (antes height:78vh fixo não encolhia na largura). */
+  display: inline-flex;
+  max-width: 92vw;
+  max-height: 80vh;
   background: #000;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
 }
 .vp-video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
   display: block;
+  max-width: 92vw;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   cursor: pointer;
 }
 .vp-bigplay {

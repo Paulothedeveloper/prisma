@@ -8,6 +8,7 @@ export interface Prefs {
   reduceGlass: boolean; // menos desfoque/transparência (melhor desempenho)
   hoverAutoplay: boolean; // vídeo/áudio tocam ao passar o mouse no card
   sfx: boolean; // efeitos sonoros discretos da interface (estilo Apple)
+  quartzo: boolean; // mostra a seção "Quartzo (notas)" no inspetor (integração com o app de notas)
 }
 
 export const ACCENTS = ["#0a84ff", "#30d158", "#ff375f", "#ff9f0a", "#bf5af2", "#64d2ff", "#ffd60a"];
@@ -17,6 +18,7 @@ const DEFAULTS: Prefs = {
   reduceGlass: false,
   hoverAutoplay: true,
   sfx: true,
+  quartzo: false, // desligado por padrão — só quem usa o app de notas Quartzo liga
 };
 
 const KEY = "prisma.prefs";
@@ -38,6 +40,8 @@ export function savePrefs(p: Prefs) {
     /* ignora */
   }
   applyPrefs(p);
+  // avisa quem lê preferência fora do React (ex.: o inspetor) pra atualizar na hora.
+  window.dispatchEvent(new Event("prefs-changed"));
 }
 
 // hex (#rrggbb) → rgba(r,g,b,alpha) — pra derivar o --accent-soft a partir da cor escolhida.
@@ -56,10 +60,15 @@ export function applyPrefs(p: Prefs) {
   root.style.setProperty("--accent-soft", hexToRgba(p.accent, 0.18));
   root.classList.toggle("reduce-glass", p.reduceGlass);
   root.dataset.hoverAutoplay = p.hoverAutoplay ? "1" : "0";
+  root.dataset.quartzo = p.quartzo ? "1" : "0";
   setSfxEnabled(p.sfx);
 }
 
 // Leitura rápida usada por componentes fora do React state (ex.: AssetCard no hover).
 export function hoverAutoplayOn(): boolean {
   return document.documentElement.dataset.hoverAutoplay !== "0";
+}
+// Integração Quartzo ligada? (desligada por padrão)
+export function quartzoOn(): boolean {
+  return document.documentElement.dataset.quartzo === "1";
 }

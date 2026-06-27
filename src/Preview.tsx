@@ -26,7 +26,6 @@ export function Preview({ asset, onClose, onNav }: Props) {
   // null = ainda checando; evita tela cinza antes de saber o codec
   const [playable, setPlayable] = useState<boolean | null>(null);
   const [fps, setFps] = useState(30);
-  const [rot, setRot] = useState(0);
   // proxy gerado SOB DEMANDA (botão "Tocar aqui") quando o original não é web e não tem proxy.
   const [madeProxy, setMadeProxy] = useState<string | null>(null);
   const [genning, setGenning] = useState(false);
@@ -56,25 +55,14 @@ export function Preview({ asset, onClose, onNav }: Props) {
   useEffect(() => {
     if (asset.type !== "video") return;
     setPlayable(null);
-    setRot(0);
     probeMedia(asset.path)
       .then((info) => {
         const c = info.video?.codec?.toLowerCase();
         setPlayable(!!c && WEB_VIDEO_CODECS.has(c));
         if (info.video?.fps) setFps(info.video.fps);
-        setRot(info.video?.rotation ?? 0);
       })
       .catch(() => setPlayable(false));
   }, [asset.path, asset.type]);
-
-  // proporção real (considera rotação) → o box do preview assume o formato do vídeo
-  const rotated = rot === 90 || rot === 270;
-  const ew = asset.width ?? 16;
-  const eh = asset.height ?? 9;
-  const aspect =
-    asset.width && asset.height
-      ? `${rotated ? eh : ew} / ${rotated ? ew : eh}`
-      : undefined;
 
   // som de abertura do preview (entra em tela cheia) — montagem
   useEffect(() => {
@@ -113,10 +101,10 @@ export function Preview({ asset, onClose, onNav }: Props) {
       <div className="preview-stage" onClick={(e) => e.stopPropagation()}>
         {isVideo ? (
           playable === true ? (
-            <VideoPlayer src={url} fps={fps} aspect={aspect} />
+            <VideoPlayer src={url} fps={fps} />
           ) : playable === false && proxyUrl ? (
             // Original não-web (ex.: ProRes) MAS tem proxy → toca o proxy aqui dentro.
-            <VideoPlayer src={proxyUrl} fps={fps} aspect={aspect} />
+            <VideoPlayer src={proxyUrl} fps={fps} />
           ) : (
             <div className="preview-unsupported">
               {thumbUrl && <img src={thumbUrl} className="preview-media" alt="" />}

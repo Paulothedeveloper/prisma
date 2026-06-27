@@ -15,7 +15,6 @@ export function PreviewWindow() {
   const name = params.get("name") || "";
   const url = convertFileSrc(path);
   const [fps, setFps] = useState(30);
-  const [aspect, setAspect] = useState<string | undefined>(undefined);
   const [playable, setPlayable] = useState<boolean | null>(type === "video" ? null : true);
 
   useEffect(() => {
@@ -26,13 +25,6 @@ export function PreviewWindow() {
         const c = info.video?.codec?.toLowerCase();
         setPlayable(!!c && WEB_VIDEO.has(c));
         if (info.video?.fps) setFps(info.video.fps);
-        const rot = info.video?.rotation ?? 0;
-        const w = info.video?.width;
-        const h = info.video?.height;
-        if (w && h) {
-          const r = rot === 90 || rot === 270;
-          setAspect(`${r ? h : w} / ${r ? w : h}`);
-        }
       })
       .catch(() => setPlayable(false));
   }, [path, type, name]);
@@ -43,7 +35,7 @@ export function PreviewWindow() {
         playable === false ? (
           <div className="pwin-msg">{t("prev.codecUnsupported")}</div>
         ) : playable ? (
-          <VideoPlayer src={url} fps={fps} aspect={aspect} />
+          <VideoPlayer src={url} fps={fps} />
         ) : (
           <div className="pwin-msg">{t("prev.loading")}</div>
         )
