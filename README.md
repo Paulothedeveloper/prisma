@@ -131,6 +131,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.33** — Tipografia embutida (Inter)
+- 🔤 A fonte agora vem **embutida no app** (Inter variável, `.woff2` local, offline). A stack antiga pedia SF Pro/`-apple-system`, **ausentes no Windows** → o WebView caía num genérico (Arial) com métricas erradas, e o texto **vazava/cortava/encostava na borda**. Com a fonte real carregada, renderiza igual em qualquer PC e **encaixa**. (SF Pro real não é embutível — licença Apple; Inter é a equivalente aberta.)
+
 **0.9.32** — Religar mídias offline + Backup na nuvem
 - 🔗 **Relink (estilo DaVinci)**: botão "N offline" perto da busca → por pasta offline, **Localizar** pra onde ela foi (remapeia a raiz) ou **Buscar automaticamente** (casa por nome + tamanho). Preserva todos os metadados.
 - ☁️ **Backup do catálogo na nuvem**: detecta OneDrive/Google Drive/Dropbox e salva na pasta sincronizada (sem login, sem app extra), ou escolha qualquer pasta. Salva o catálogo, não os arquivos de mídia.

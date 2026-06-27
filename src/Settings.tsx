@@ -44,12 +44,11 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.32";
+const APP_VERSION = "0.9.33";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Religar mídias offline (estilo DaVinci): apareceu um botão \"N offline\" perto da busca. Clicando, você vê as pastas offline e pode (1) LOCALIZAR pra onde a pasta foi (religa mantendo a subestrutura) ou (2) pedir uma BUSCA AUTOMÁTICA numa pasta (casa por nome + tamanho). Os dois são opcionais, por pasta — e mantêm todos os metadados.",
-  "Backup na nuvem (sem software externo): em Configurações › Backup, botões que detectam OneDrive/Google Drive/Dropbox no seu PC e salvam o catálogo na pasta sincronizada — a nuvem sobe sozinha. Também dá pra escolher qualquer pasta. (Salva o catálogo: tags/estrelas/favoritos/coleções/notas — não os arquivos de mídia.)",
+  "Tipografia refeita: a fonte agora vem EMBUTIDA no app (Inter) e renderiza igual em qualquer PC. Antes o app pedia fontes da Apple (SF Pro) que não existem no Windows, e caía num genérico (Arial) com métricas erradas — por isso o texto vazava, cortava com \"…\" e encostava na borda. Agora encaixa direitinho, com cara de Apple.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
