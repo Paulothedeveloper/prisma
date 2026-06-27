@@ -42,14 +42,12 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.24";
+const APP_VERSION = "0.9.25";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Badges de condição no canto do card: vídeo sem áudio (laranja), VFR, mono, 8-bit… cada caso com sua cor + tooltip.",
-  "Saúde calculada já na importação — agora a mídia dentro de pastas também vem marcada (antes só o scan manual marcava).",
-  "Inspetor não abre mais sozinho no clique simples: clique só seleciona (dá pra arrastar pra timeline). Abre pelo botão de detalhes na barra ou pelo menu 'Detalhes'.",
-  "Auditoria completa: compila limpo, contrato front↔back 100%, i18n 681 chaves nas 3 línguas (achei e corrigi 1 faltando).",
+  "CORRIGIDO de vez: cards de pasta não se sobrepõem mais ao aumentar o tamanho dos ícones (a capa virou absoluta, o card fica sempre quadrado).",
+  "Badges de condição (sem áudio/VFR/mono/8-bit) + inspetor com toggle (das versões recentes).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
