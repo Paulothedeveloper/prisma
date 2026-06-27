@@ -42,13 +42,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.21";
+const APP_VERSION = "0.9.22";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Visualizador se ADAPTA ao tamanho da janela (antes o vídeo não encolhia ao diminuir a janela).",
-  "Contorno de seleção não é mais cortado na fileira de cima dos cards.",
-  "Integração Quartzo (notas) virou OPCIONAL — ligue/desligue em Configurações › Aparência (desligada por padrão).",
+  "CORRIGIDO: acentos quebrados na interface (Resolução, Duração, Aleatório…) — era um erro de codificação dos textos.",
+  "Visualizador se adapta ao tamanho da janela; contorno de seleção não corta na fileira de cima.",
+  "Integração Quartzo (notas) opcional em Configurações › Aparência (desligada por padrão).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

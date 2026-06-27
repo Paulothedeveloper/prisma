@@ -131,6 +131,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.22** — Correção dos acentos na interface
+- 🔤 Acentos quebrados (Resolução, Duração, Aleatório…) **corrigidos** — era um erro de codificação UTF-8 no arquivo de textos (PT/EN/ES).
+
 **0.9.21** — Visualizador responsivo + seleção + Quartzo opcional
 - 🪟 Visualizador (preview) **se adapta ao tamanho da janela** (o vídeo encolhe junto).
 - 🔲 Contorno de seleção **não corta** mais na fileira de cima dos cards.
