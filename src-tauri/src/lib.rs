@@ -776,6 +776,9 @@ fn oficina_run(
     std::thread::spawn(move || {
         if op == "stabilize" {
             oficina::run_gyroflow(app2, db, thumbs_dir, job, cancel, input, opts);
+        } else if op == "stabilize_optical" {
+            let ffmpeg = thumbs::bin_path("ffmpeg");
+            oficina::run_stabilize_optical(app2, db, thumbs_dir, ffmpeg, job, cancel, input, opts);
         } else if let Some(fmt) = op.strip_prefix("convert:") {
             oficina::run_convert(app2, db, thumbs_dir, job, input, fmt.to_string());
         } else {

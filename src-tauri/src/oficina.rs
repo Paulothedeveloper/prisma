@@ -783,6 +783,109 @@ pub fn run_with_opts(
 
 /// Estabilização via Gyroflow EMBUTIDO (sidecar). Render real com gyro, progresso
 /// parseado de --stdout-progress, saída em ESTABILIZADO/, reindexa.
+/// Estabilização ÓPTICA (SEM giroscópio) via ffmpeg `vidstab` — 2 passadas. Funciona em QUALQUER
+/// vídeo (não precisa de gyro nem perfil de lente). Passo 1 detecta o movimento (.trf); passo 2
+/// aplica + leve `unsharp`. Saída em ESTABILIZADO/. Não toca no original.
+pub fn run_stabilize_optical(
+    app: AppHandle,
+    db: Arc<Mutex<Connection>>,
+    thumbs_dir: PathBuf,
+    ffmpeg: PathBuf,
+    job: u64,
+    cancel: Arc<AtomicBool>,
+    input: String,
+    opts: JobOpts,
+) {
+    let label = "Estabilizar (óptica)".to_string();
+    let in_path = Path::new(&input);
+    let stem = in_path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    let parent = in_path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| PathBuf::from("."));
+    let out_dir = parent.join("ESTABILIZADO");
+    std::fs::create_dir_all(&out_dir).ok();
+    let output = out_dir.join(format!("{stem}.mp4"));
+    if output.exists() {
+        let _ = app.emit("oficina:done", DonePayload { job, output: output.to_string_lossy().to_string(), label });
+        return;
+    }
+    let trf = out_dir.join(format!("{stem}.trf"));
+    // Path do .trf DENTRO de um filtro: escapa o `:` do drive (D:) e usa `/` — senão o `:` é lido
+    // como separador de opção do filtro e quebra tudo.
+    let trf_f = trf.to_string_lossy().replace('\\', "/").replace(':', "\\:");
+    let duration = mediainfo::probe(in_path).duration.unwrap_or(0.0);
+    // suavidade: deriva de opts.smoothness (0..1) se vier; senão 30 (bom padrão).
+    let smoothing = opts
+        .smoothness
+        .map(|s| (s.clamp(0.0, 1.0) * 60.0).round() as i64)
+        .filter(|v| *v > 0)
+        .unwrap_or(30);
+
+    // helper de uma passada do vidstab com progresso/cancel
+    let run_pass = |vf: String, extra: &[&str], base_pct: f64, span: f64| -> bool {
+        let mut cmd = Command::new(&ffmpeg);
+        cmd.args(["-hide_banner", "-y", "-nostats", "-progress", "pipe:1", "-i"]).arg(&input);
+        cmd.args(["-vf", &vf]);
+        for a in extra {
+            cmd.arg(a);
+        }
+        cmd.stdout(Stdio::piped()).stderr(Stdio::null()).stdin(Stdio::null());
+        #[cfg(windows)]
+        cmd.creation_flags(BG_HEAVY);
+        let mut child = match cmd.spawn() {
+            Ok(c) => c,
+            Err(_) => return false,
+        };
+        if let Some(out) = child.stdout.take() {
+            for line in BufReader::new(out).lines().map_while(Result::ok) {
+                if cancel.load(Ordering::SeqCst) {
+                    let _ = child.kill();
+                    return false;
+                }
+                if let Some(v) = line.strip_prefix("out_time_us=") {
+                    if let Ok(us) = v.trim().parse::<f64>() {
+                        let pct = if duration > 0.0 {
+                            (base_pct + us / 1_000_000.0 / duration * span).clamp(base_pct, base_pct + span - 1.0)
+                        } else {
+                            base_pct
+                        };
+                        let _ = app.emit("oficina:progress", ProgressPayload { job, pct, label: label.clone() });
+                    }
+                }
+            }
+        }
+        child.wait().map(|s| s.success()).unwrap_or(false)
+    };
+
+    // PASSO 1: detectar movimento → .trf
+    let det = format!("vidstabdetect=shakiness=8:accuracy=15:result={trf_f}");
+    if !run_pass(det, &["-f", "null", "-"], 0.0, 50.0) || !trf.exists() {
+        let _ = std::fs::remove_file(&trf);
+        let msg = if cancel.load(Ordering::SeqCst) { "cancelado" } else { "falha ao analisar o movimento" };
+        let _ = app.emit("oficina:error", ErrPayload { job, message: msg.into(), label });
+        return;
+    }
+    // PASSO 2: aplicar estabilização (+ leve nitidez) → output
+    let outs = output.to_string_lossy().to_string();
+    let tf = format!(
+        "vidstabtransform=input={trf_f}:smoothing={smoothing}:optzoom=1:zoom=0,unsharp=5:5:0.8:3:3:0.4"
+    );
+    let ok = run_pass(
+        tf,
+        &["-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p", "-c:a", "copy", &outs],
+        50.0,
+        50.0,
+    ) && output.exists();
+    let _ = std::fs::remove_file(&trf); // limpa o temporário
+    if !ok {
+        let _ = std::fs::remove_file(&output);
+        let msg = if cancel.load(Ordering::SeqCst) { "cancelado" } else { "falha ao estabilizar" };
+        let _ = app.emit("oficina:error", ErrPayload { job, message: msg.into(), label });
+        return;
+    }
+    reindex_output(&app, &db, &thumbs_dir, &output, "stabilize", &input);
+    let _ = app.emit("oficina:progress", ProgressPayload { job, pct: 100.0, label: label.clone() });
+    let _ = app.emit("oficina:done", DonePayload { job, output: outs, label });
+}
+
 pub fn run_gyroflow(
     app: AppHandle,
     db: Arc<Mutex<Connection>>,

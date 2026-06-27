@@ -131,6 +131,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.23** — Estabilizar (sem giroscópio)
+- 🎥 Nova **estabilização óptica** na Oficina de qualquer vídeo (ffmpeg `vidstab`, 2 passadas) — funciona sem giroscópio, em qualquer material. Saída em `ESTABILIZADO/`, original intacto. O MotionSilk (Gyroflow) segue para clipes com gyro.
+
 **0.9.22** — Correção dos acentos na interface
 - 🔤 Acentos quebrados (Resolução, Duração, Aleatório…) **corrigidos** — era um erro de codificação UTF-8 no arquivo de textos (PT/EN/ES).
 

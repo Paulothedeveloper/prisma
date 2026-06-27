@@ -17,6 +17,7 @@ const IMG_FORMATS: [string, string][] = [
 export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [smooth, setSmooth] = useState(80);
+  const [osmooth, setOsmooth] = useState(50); // suavidade da estabilização óptica (sem gyro)
   const [fov, setFov] = useState(100); // 100 = 1.0
   const [horizon, setHorizon] = useState(0);
   const [lens, setLens] = useState(0);
@@ -103,6 +104,25 @@ export function Oficina({ asset, info }: { asset: Asset; info: MediaInfo }) {
         <button className="of-btn of-wide" disabled={!!busy} onClick={() => run("proxy")}>
           <Icon name="play" size={13} /> {t("ofi.genProxy")}
         </button>
+      )}
+
+      {/* Estabilização ÓPTICA (sem giroscópio) — funciona em qualquer vídeo. */}
+      {isVideo && (
+        <div className="oficina-group">
+          <div className="oficina-label">{t("ofi.stabOptical")}</div>
+          <label className="of-slider">
+            <span>{t("ofi.smoothness")}</span>
+            <input type="range" min={0} max={100} value={osmooth} onChange={(e) => setOsmooth(Number(e.target.value))} />
+            <span className="of-slider-val">{osmooth}%</span>
+          </label>
+          <button
+            className="of-btn of-wide of-fix"
+            disabled={!!busy}
+            onClick={() => run("stabilize_optical", { smoothness: osmooth / 100 })}
+          >
+            <Icon name="motionsilk" size={14} /> {busy === "stabilize_optical" ? t("ofi.stabilizing") : t("ofi.stabOpticalBtn")}
+          </button>
+        </div>
       )}
 
       {isImage && (

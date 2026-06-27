@@ -42,13 +42,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.22";
+const APP_VERSION = "0.9.23";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "CORRIGIDO: acentos quebrados na interface (Resolução, Duração, Aleatório…) — era um erro de codificação dos textos.",
-  "Visualizador se adapta ao tamanho da janela; contorno de seleção não corta na fileira de cima.",
-  "Integração Quartzo (notas) opcional em Configurações › Aparência (desligada por padrão).",
+  "NOVO — Estabilizar (sem giroscópio): na Oficina de qualquer vídeo, estabiliza a imagem por análise de movimento (ffmpeg vidstab, 2 passadas). Funciona em tudo, não só câmera de ação.",
+  "O Gyroflow (MotionSilk) continua para clipes COM giroscópio; este novo é pra todo o resto.",
+  "Acentos da interface corrigidos (da 0.9.22).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
