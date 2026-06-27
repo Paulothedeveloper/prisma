@@ -131,6 +131,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.30** — Menus de contexto polidos
+- ✨ Menus de clique-direito com **largura adaptativa**: acabou a **fonte cortada** e a **barra de rolagem horizontal** (efeito colateral do `overflow-y:auto`). Reticências elegantes para rótulos longos. Item renomeado para **"Atualizar pasta"**.
+
 **0.9.29** — Conserto do embaralhamento de pastas + Atualizar pasta + Offline
 - 🛠️ **Correção importante:** pastas **embaralhadas** (nomes colados no drive, ex. `F:MUSICAS`) e **duplicação** do catálogo, causadas por um drive adicionado "cru" (`F:` sem a barra) que gerava caminhos drive-relativos na varredura. **Causa raiz eliminada** (toda raiz vira `F:\` antes de varrer, em todos os pontos) e **reparo automático no boot** (apaga duplicatas, corrige os caminhos sem perder metadados, desembaralha as pastas — idempotente).
 - 🧹 **Lixeira do Windows / System Volume Information** nunca mais entram na biblioteca (e as que entraram foram removidas).

@@ -42,15 +42,12 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.29";
+const APP_VERSION = "0.9.30";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "CORREÇÃO IMPORTANTE: pastas embaralhadas (nomes colados no drive, tipo \"F:MUSICAS\", e lixo da Lixeira do Windows) foram CONSERTADAS automaticamente. A causa era um drive adicionado \"cru\" (\"F:\" sem a barra) que fazia a varredura gerar caminhos errados. Agora isso não acontece mais (qualquer drive vira \"F:\\\" antes de varrer) e o app conserta sozinho o que já estava torto, ao abrir.",
-  "Lixeira do Windows e \"System Volume Information\" nunca mais entram na biblioteca.",
-  "Atualizar pasta: botão \"Atualizar\" na barra de filtros quando você está numa pasta. Em vez de reimportar tudo, ele sincroniza só o que mudou — arquivos novos entram, apagados saem, e renomeados/movidos são reconhecidos MANTENDO nota, tag, favorito, coleção e miniatura. Um toast mostra o resumo (novos / renomeados / removidos).",
-  "Proteção: se o HD/pasta estiver desconectado, o Atualizar não apaga nada — só avisa.",
-  "Pastas em drive externo desconectado agora mostram um selo OFFLINE no card (capa esmaecida) — você vê na hora que aquele conteúdo está num SSD/HD que não está plugado.",
+  "Menus mais caprichados: os menus de clique-direito agora se ajustam ao texto (nada de fonte cortada nem aquela barrinha de rolagem horizontal feia embaixo). Largura inteligente, com reticências elegantes se algo for longo demais.",
+  "Item \"Atualizar pasta\" com nome curto e limpo no menu da pasta.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
