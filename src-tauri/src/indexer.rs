@@ -37,6 +37,15 @@ fn is_junk(name: &str) -> bool {
         || lower == "icon\r" // ícone custom do macOS
 }
 
+/// Pastas de SISTEMA que nunca entram na biblioteca (lixeira do Windows, índice de volume).
+/// Aparecem quando um drive inteiro é varrido por engano — entram como "S-1-5-21-…" (SID).
+/// Recebe o caminho já em minúsculas.
+fn is_system_path(path_lower: &str) -> bool {
+    path_lower.contains("\\$recycle.bin")
+        || path_lower.contains("\\system volume information")
+        || path_lower.contains("\\found.000")
+}
+
 /// Varre rápido (sem tocar no banco) os caminhos escolhidos e devolve
 /// `(compatíveis, incompatíveis)`: quantos são mídia que entra na biblioteca e quantos arquivos
 /// "de verdade" (não-lixo de SO) seriam recusados por não serem mídia. A UI usa pra avisar antes.
@@ -58,13 +67,20 @@ pub fn scan_importable(paths: &[String]) -> (usize, usize) {
         }
     };
     for p in paths {
-        let path = Path::new(p);
+        // Mesma blindagem do índice: drive cru "F:" → "F:\" (senão a contagem prévia anda
+        // num caminho drive-relativo e diverge do que será catalogado).
+        let p = normalize_root(p);
+        let path = Path::new(&p);
         if path.is_file() {
             let name = path.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
             tally(path, &name);
         } else if path.is_dir() {
             for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
                 if entry.file_type().is_file() {
+                    let pl = entry.path().to_string_lossy().to_lowercase();
+                    if is_system_path(&pl) {
+                        continue; // não conta lixeira/índice de volume
+                    }
                     tally(entry.path(), &entry.file_name().to_string_lossy());
                 }
             }
@@ -103,11 +119,40 @@ struct DonePayload {
     total: usize,
 }
 
+/// Resumo do "Atualizar pasta" (re-scan inteligente) — vira um toast na UI:
+/// quantos arquivos novos, renomeados/movidos (metadados preservados) e removidos.
+/// `offline` = a pasta/HD sumiu por inteiro → NÃO mexemos no catálogo (proteção).
+#[derive(Serialize, Clone)]
+struct RescanSummary {
+    folder: String,
+    added: usize,
+    renamed: usize,
+    removed: usize,
+    offline: bool,
+}
+
 fn now() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
+}
+
+/// Normaliza a RAIZ da varredura. Um drive "cru" como `F:` (sem a barra) faz o WalkDir gerar
+/// caminhos RELATIVOS ao drive — `F:AFFINITY\...` em vez de `F:\AFFINITY\...` — embaralhando as
+/// pastas no catálogo (cada subpasta aparecia com o nome colado no drive). Garante a barra logo
+/// após o `X:`. Idempotente: caminhos já corretos passam intactos.
+pub fn normalize_root(p: &str) -> String {
+    let b = p.as_bytes();
+    if b.len() >= 2 && b[0].is_ascii_alphabetic() && b[1] == b':' {
+        if b.len() == 2 {
+            return format!("{p}\\"); // "F:" -> "F:\"
+        }
+        if b[2] != b'\\' && b[2] != b'/' {
+            return format!("{}:\\{}", &p[..1], &p[2..]); // "F:AFFINITY" -> "F:\AFFINITY"
+        }
+    }
+    p.to_string()
 }
 
 /// Roda numa thread propria. Emite: index:start, index:thumb (por arquivo), index:done.
@@ -118,6 +163,9 @@ pub fn index_folder(
     folder: String,
     autotag: bool,
 ) {
+    // Blinda contra o drive cru ("F:" → "F:\"): senão o WalkDir gera caminhos drive-relativos
+    // ("F:AFFINITY") e embaralha as pastas.
+    let folder = normalize_root(&folder);
     let root = Path::new(&folder);
     if !root.exists() {
         let _ = app.emit("index:error", format!("Pasta nao encontrada: {folder}"));
@@ -154,8 +202,10 @@ pub fn index_folder(
             continue;
         }
         let p = entry.path();
-        // Pula arquivos sob qualquer pasta EXCLUÍDA (removida de propósito) — não re-indexa.
-        if under_excluded(&p.to_string_lossy().to_lowercase(), &excluded) {
+        // Pula arquivos sob qualquer pasta EXCLUÍDA (removida de propósito) ou de SISTEMA
+        // (lixeira/índice de volume) — não re-indexa.
+        let p_low = p.to_string_lossy().to_lowercase();
+        if under_excluded(&p_low, &excluded) || is_system_path(&p_low) {
             continue;
         }
         let filename = p
@@ -274,15 +324,36 @@ pub fn index_folder(
     let _ = app.emit("index:done", DonePayload { folder, total });
 }
 
-/// Re-scan de uma pasta já indexada: cataloga arquivos NOVOS, remove do catálogo os
-/// que sumiram do disco, e gera thumb só pros novos. (Briefing 1 §5 — must-have.)
+/// "Atualizar pasta" — re-scan INTELIGENTE de uma pasta já indexada. Em vez de reimportar tudo,
+/// aplica só o DIFF do disco, preservando metadados:
+///   • arquivos NOVOS  → catalogados (geram thumb).
+///   • RENOMEADOS/MOVIDOS (mesmo tamanho+mtime+extensão) → re-apontados pelo `id`, mantendo
+///     rating/tags/favorito/notas/coleções/hash/miniatura (NÃO regera thumb).
+///   • REMOVIDOS de verdade → tirados do catálogo.
+/// Proteção: se a pasta/HD sumiu por inteiro (offline), NÃO mexe em nada (não apaga o catálogo).
 pub fn rescan_folder(
     app: AppHandle,
     db: Arc<Mutex<Connection>>,
     thumbs_dir: std::path::PathBuf,
     folder: String,
 ) {
+    use std::collections::HashMap;
+
+    // Blinda contra o drive cru ("F:" → "F:\") — mesma proteção do index_folder.
+    let folder = normalize_root(&folder);
     let root = Path::new(&folder);
+
+    // Proteção contra HD desconectado: a raiz não existe → não dá pra saber o que "sumiu".
+    // Reimportar/prune aqui apagaria o catálogo inteiro. Aborta e avisa a UI.
+    if !root.exists() {
+        let _ = app.emit(
+            "index:rescan-summary",
+            RescanSummary { folder: folder.clone(), added: 0, renamed: 0, removed: 0, offline: true },
+        );
+        let _ = app.emit("index:done", DonePayload { folder, total: 0 });
+        return;
+    }
+
     let excluded: Vec<String> = {
         let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::remove_excluded(&conn, &folder);
@@ -293,78 +364,142 @@ pub fn rescan_folder(
         db::upsert_folder(&conn, &folder, now()).unwrap_or(0)
     };
 
-    // 1) cataloga (upsert) tudo que existe agora no disco. Varre SEM o lock (parte lenta) e
-    // grava em lotes, soltando o lock entre eles — não congela a UI/watcher.
-    if root.exists() {
-        let mut scanned: Vec<db::NewAsset> = Vec::new();
-        for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
-            if !entry.file_type().is_file() {
-                continue;
-            }
-            let p = entry.path();
-            if under_excluded(&p.to_string_lossy().to_lowercase(), &excluded) {
-                continue;
-            }
-            let filename = p.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
-            if is_junk(&filename) {
-                continue;
-            }
-            let ext = p.extension().map(|s| s.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
-            // Só mídia entra (mesma regra do import).
-            if !classify::is_media(&ext) {
-                continue;
-            }
-            let kind = classify::categorize(&ext).to_string();
-            let dir = p.parent().map(|d| d.to_string_lossy().to_string()).unwrap_or_default();
-            let md = entry.metadata().ok();
-            let size = md.as_ref().map(|m| m.len() as i64).unwrap_or(0);
-            let modified = md
-                .as_ref()
-                .and_then(|m| m.modified().ok())
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_secs() as i64)
-                .unwrap_or(0);
-            scanned.push(db::NewAsset {
-                path: p.to_string_lossy().to_string(),
-                dir,
-                filename,
-                ext,
-                kind,
-                size,
-                modified_at: modified,
-                folder_id,
-            });
+    let _ = app.emit("index:start", StartPayload { folder: format!("Atualizando: {folder}"), total: 0 });
+
+    // --- 1) varre o disco AGORA (parte lenta, sem segurar o lock) ---
+    let mut scanned: Vec<db::NewAsset> = Vec::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        if !entry.file_type().is_file() {
+            continue;
         }
-        for chunk in scanned.chunks(2000) {
-            let mut conn = db.lock().unwrap_or_else(|p| p.into_inner());
-            let tx = match conn.transaction() {
-                Ok(t) => t,
-                Err(_) => continue,
-            };
-            for na in chunk {
-                let _ = db::upsert_asset(&tx, na);
-            }
-            let _ = tx.commit();
+        let p = entry.path();
+        let p_low = p.to_string_lossy().to_lowercase();
+        if under_excluded(&p_low, &excluded) || is_system_path(&p_low) {
+            continue;
         }
+        let filename = p.file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+        if is_junk(&filename) {
+            continue;
+        }
+        let ext = p.extension().map(|s| s.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
+        if !classify::is_media(&ext) {
+            continue;
+        }
+        let kind = classify::categorize(&ext).to_string();
+        let dir = p.parent().map(|d| d.to_string_lossy().to_string()).unwrap_or_default();
+        let md = entry.metadata().ok();
+        let size = md.as_ref().map(|m| m.len() as i64).unwrap_or(0);
+        let modified = md
+            .as_ref()
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+        scanned.push(db::NewAsset {
+            path: p.to_string_lossy().to_string(),
+            dir,
+            filename,
+            ext,
+            kind,
+            size,
+            modified_at: modified,
+            folder_id,
+        });
     }
 
-    // 2) prune: remove do catálogo o que não existe mais no disco
-    let mut removed = 0;
-    {
-        let under = {
-            let conn = db.lock().unwrap_or_else(|p| p.into_inner());
-            db::assets_under(&conn, &folder).unwrap_or_default()
-        };
+    // --- 2) carrega o estado ATUAL do catálogo sob a pasta (id, path, size, mtime, ext) ---
+    let existing = {
         let conn = db.lock().unwrap_or_else(|p| p.into_inner());
-        for (id, path) in under {
-            if !Path::new(&path).exists() {
-                let _ = db::delete_asset(&conn, id);
-                removed += 1;
-            }
+        db::assets_under_meta(&conn, &folder).unwrap_or_default()
+    };
+    // Comparação de caminhos case-insensitive (Windows não diferencia maiúsc./minúsc.).
+    let db_paths: std::collections::HashSet<String> =
+        existing.iter().map(|(_, p, ..)| p.to_lowercase()).collect();
+    let disk_paths: std::collections::HashSet<String> =
+        scanned.iter().map(|na| na.path.to_lowercase()).collect();
+
+    // "sumiu do disco" = está no catálogo mas não na varredura E o arquivo realmente não existe.
+    // Indexa por (tamanho, mtime, ext) pra casar com um arquivo novo de mesmo conteúdo (rename/move).
+    let mut gone_by_sig: HashMap<(i64, i64, String), Vec<(i64, String)>> = HashMap::new();
+    let mut gone_ids: Vec<i64> = Vec::new();
+    for (id, path, size, mtime, ext) in &existing {
+        if !disk_paths.contains(&path.to_lowercase()) && !Path::new(path).exists() {
+            gone_by_sig
+                .entry((*size, *mtime, ext.to_lowercase()))
+                .or_default()
+                .push((*id, path.clone()));
+            gone_ids.push(*id);
         }
     }
 
-    // 3) gera thumb só pros novos (sem miniatura)
+    // --- 3) decide, pra cada arquivo do disco que é NOVO no catálogo: é rename ou genuinamente novo? ---
+    let mut to_insert: Vec<db::NewAsset> = Vec::new();
+    let mut relinks: Vec<(i64, db::NewAsset)> = Vec::new(); // (id antigo, novo caminho)
+    let mut consumed_gone: std::collections::HashSet<i64> = std::collections::HashSet::new();
+    for na in scanned.into_iter() {
+        if db_paths.contains(&na.path.to_lowercase()) {
+            // já existe com esse caminho exato → o upsert normal cuida (size/mtime/folder_id).
+            to_insert.push(na);
+            continue;
+        }
+        // caminho novo: tenta casar com um arquivo que sumiu (mesmo conteúdo) → é rename/move.
+        // Só casa quando é INEQUÍVOCO: a assinatura (tamanho+mtime+ext) aponta pra EXATAMENTE um
+        // arquivo sumido. Se houver ambiguidade (vários iguais), NÃO arrisca trocar metadados —
+        // trata como novo e deixa o prune cuidar dos sumidos. ("não quebre nada".)
+        let sig = (na.size, na.modified_at, na.ext.to_lowercase());
+        let matched = match gone_by_sig.get_mut(&sig) {
+            Some(v) if v.len() == 1 && !consumed_gone.contains(&v[0].0) => Some(v[0].0),
+            _ => None,
+        };
+        match matched {
+            Some(id) => {
+                consumed_gone.insert(id);
+                relinks.push((id, na));
+            }
+            None => to_insert.push(na),
+        }
+    }
+
+    // --- 4) aplica os RENAMES (re-aponta id antigo → novo caminho; metadados intactos) ---
+    let renamed = relinks.len();
+    {
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+        for (id, na) in &relinks {
+            let _ = db::relink_asset(&conn, *id, &na.path, &na.dir, &na.filename, na.folder_id);
+        }
+    }
+
+    // --- 5) UPSERT do que existe agora (novos + os de caminho igual). Conta quantos são NOVOS. ---
+    let mut added = 0usize;
+    for chunk in to_insert.chunks(2000) {
+        let mut conn = db.lock().unwrap_or_else(|p| p.into_inner());
+        let tx = match conn.transaction() {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+        for na in chunk {
+            if !db_paths.contains(&na.path.to_lowercase()) {
+                added += 1;
+            }
+            let _ = db::upsert_asset(&tx, na);
+        }
+        let _ = tx.commit();
+    }
+
+    // --- 6) PRUNE: só os que sumiram de verdade E não viraram rename ---
+    let mut removed = 0usize;
+    {
+        let conn = db.lock().unwrap_or_else(|p| p.into_inner());
+        for id in &gone_ids {
+            if consumed_gone.contains(id) {
+                continue; // foi renomeado/movido, não apaga
+            }
+            let _ = db::delete_asset(&conn, *id);
+            removed += 1;
+        }
+    }
+
+    // --- 7) thumbs só pros NOVOS (os renomeados mantêm a miniatura, então não entram aqui) ---
     let pending = {
         let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         db::pending_thumbs_under(&conn, &folder).unwrap_or_default()
@@ -372,18 +507,21 @@ pub fn rescan_folder(
     let total = pending.len();
     let _ = app.emit(
         "index:start",
-        StartPayload { folder: format!("Re-scan: {folder}"), total },
+        StartPayload { folder: format!("Atualizando: {folder}"), total },
     );
     if total > 0 {
         run_thumb_queue(&app, &db, &thumbs_dir, pending);
     }
-    // Re-detecta sequences e Live Photos (pares novos depois do re-scan).
+    // Re-detecta sequences e Live Photos (pares novos depois da atualização).
     {
         let conn = db.lock().unwrap_or_else(|p| p.into_inner());
         let _ = db::detect_sequences(&conn, &folder);
         let _ = db::detect_live_photos(&conn, &folder);
     }
-    let _ = app.emit("index:rescan", removed);
+    let _ = app.emit(
+        "index:rescan-summary",
+        RescanSummary { folder: folder.clone(), added, renamed, removed, offline: false },
+    );
     let _ = app.emit("index:done", DonePayload { folder, total });
 }
 

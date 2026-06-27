@@ -151,6 +151,8 @@ fn index_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
     let state = app.state::<AppState>();
     let db = state.db.clone();
     let thumbs_dir = state.thumbs_dir.clone();
+    // Drive cru ("F:") → "F:\": evita caminhos drive-relativos que embaralham as pastas.
+    let path = indexer::normalize_root(&path);
     // passa a monitorar essa pasta (Watch Folder) se for um diretório
     if std::path::Path::new(&path).is_dir() {
         if let Ok(mut w) = state.watcher.lock() {
@@ -2267,12 +2269,19 @@ pub fn run() {
                 let _ = std::fs::remove_file(&pending);
             }
 
-            let conn = db::open(&db_path).expect("falha ao abrir o banco");
+            let mut conn = db::open(&db_path).expect("falha ao abrir o banco");
             // Limpeza única: tira da biblioteca o clipe de teste do Gyroflow (pasta temp).
             let _ = conn.execute(
                 "DELETE FROM assets WHERE dir LIKE '%prisma-gyro-test%' OR path LIKE '%prisma-gyro-test%'",
                 [],
             );
+            // Reparo de caminhos "drive-relativos" (bug do drive cru "F:" → "F:AFFINITY"): apaga as
+            // duplicatas e conserta o resto, desembaralhando as pastas. Idempotente (no-op se já ok).
+            if let Ok((d, f)) = db::repair_drive_relative(&mut conn) {
+                if d + f > 0 {
+                    eprintln!("[prisma] reparo de caminhos: {d} duplicatas apagadas, {f} corrigidas");
+                }
+            }
 
             let db_arc = Arc::new(Mutex::new(conn));
             // Pool de leitura (WAL): a UI lê sem disputar o lock do writer. 4 conexões

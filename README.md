@@ -131,6 +131,12 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.29** — Conserto do embaralhamento de pastas + Atualizar pasta + Offline
+- 🛠️ **Correção importante:** pastas **embaralhadas** (nomes colados no drive, ex. `F:MUSICAS`) e **duplicação** do catálogo, causadas por um drive adicionado "cru" (`F:` sem a barra) que gerava caminhos drive-relativos na varredura. **Causa raiz eliminada** (toda raiz vira `F:\` antes de varrer, em todos os pontos) e **reparo automático no boot** (apaga duplicatas, corrige os caminhos sem perder metadados, desembaralha as pastas — idempotente).
+- 🧹 **Lixeira do Windows / System Volume Information** nunca mais entram na biblioteca (e as que entraram foram removidas).
+- 🔄 **Atualizar pasta:** botão na barra de filtros que sincroniza **só o diff** — novos entram, apagados saem, **renomeados/movidos** mantêm nota/tag/favorito/coleção/miniatura. Não apaga nada se o HD estiver desconectado.
+- 🔌 **Selo OFFLINE em pasta:** pastas num SSD/HD externo desconectado aparecem com selo OFFLINE no card (capa esmaecida).
+
 **0.9.28** — Favoritos + volume global + sem bagunça de som
 - ⭐ **Favoritos com estrela rápida**: clique na estrela no canto da mídia (card, lista e preview) pra favoritar **sem abrir nada**. Já favoritado fica dourado fixo.
 - ⭐ Nova **aba "Favoritos"** na barra lateral (com contador) reunindo tudo num lugar só.

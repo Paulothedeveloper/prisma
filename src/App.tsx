@@ -91,7 +91,7 @@ import { UpdateBanner } from "./UpdateBanner";
 import { onTip, fireTip, isFirstLaunch, markWelcomed } from "./tips";
 import { t } from "./i18n";
 import { sfx } from "./sfx";
-import { setOfflineRoots } from "./offline";
+import { setOfflineRoots, isOffline } from "./offline";
 import { PopupButton } from "./Menu";
 import { TrafficLights } from "./TrafficLights";
 import "./App.css";
@@ -245,6 +245,10 @@ export default function App() {
   const [removingDirs, setRemovingDirs] = useState<Set<string>>(new Set());
   const [removeToast, setRemoveToast] = useState<{ name: string; done: boolean } | null>(null);
   const removeToastTimer = useRef<number | null>(null);
+  // Toast do "Atualizar pasta": resumo do diff (novos / renomeados / removidos) ou aviso de offline.
+  const [syncToast, setSyncToast] = useState<{ added: number; renamed: number; removed: number; offline: boolean } | null>(null);
+  const syncToastTimer = useRef<number | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const removingDirsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     removingDirsRef.current = removingDirs;
@@ -680,6 +684,18 @@ export default function App() {
       runSearch(true);
       refreshMeta();
     }).then((u) => unl.push(u));
+    // "Atualizar pasta" terminou → mostra um toast com o resumo do diff e some sozinho.
+    listen<{ added: number; renamed: number; removed: number; offline: boolean }>(
+      "index:rescan-summary",
+      (e) => {
+        setSyncing(false);
+        setSyncToast(e.payload);
+        if (e.payload.offline) sfx.error();
+        else sfx.success();
+        if (syncToastTimer.current) clearTimeout(syncToastTimer.current);
+        syncToastTimer.current = window.setTimeout(() => setSyncToast(null), 3600);
+      },
+    ).then((u) => unl.push(u));
     // Deep-link prisma://asset/<id> (clicado numa nota do Quartzo/VELVET) → abre o asset.
     listen<number>("deeplink:asset", async (e) => {
       try {
@@ -1223,10 +1239,13 @@ export default function App() {
     removingDirs.size === 0 ? folders : folders.filter((f) => !isRemoving(f.dir));
   const subCardEl = (s: SubCard) => {
     const cover = s.cover ? convertFileSrc(s.cover) : null;
+    // Pasta num drive desconectado (SSD/HD externo fora): marca como OFFLINE no card. As
+    // miniaturas em cache continuam visíveis, mas o conteúdo não está acessível agora.
+    const offline = isOffline(s.dir);
     return (
       <button
         key={`sub:${s.dir}`}
-        className="card folder-card"
+        className={`card folder-card${offline ? " is-offline" : ""}`}
         style={s.color ? { borderColor: s.color } : undefined}
         onClick={() => {
           sfx.tap();
@@ -1234,13 +1253,18 @@ export default function App() {
           setView({ t: "folder", v: s.dir, label: s.name });
         }}
         onContextMenu={(e) => e.preventDefault()}
-        title={s.name}
+        title={offline ? `${s.name} — ${t("card.offline")}` : s.name}
       >
         <div className="thumb folder-thumb">
           {cover ? (
             <img className="thumb-image" src={cover} alt="" loading="lazy" />
           ) : (
             <Icon name="folder" size={42} />
+          )}
+          {offline && (
+            <span className="badge badge-offline folder-offline" title={t("card.offline")}>
+              <Icon name="eyeOff" size={10} /> OFFLINE
+            </span>
           )}
           <span className="folder-badge">
             <Icon name="folder" size={11} /> {s.count}
@@ -1424,6 +1448,22 @@ export default function App() {
               <Icon name="search" size={12} /> {t("filter.scopeAll")}
             </button>
           </div>
+        )}
+        {view.t === "folder" && (
+          <button
+            className={`sync-btn ${syncing ? "busy" : ""}`}
+            onClick={() => {
+              if (view.t !== "folder" || syncing) return;
+              setSyncing(true);
+              setSyncToast(null);
+              rescanFolder(view.v);
+            }}
+            disabled={syncing}
+            title={t("folder.syncHint")}
+          >
+            {syncing ? <span className="sync-spin" /> : <Icon name="refresh" size={13} />}
+            {syncing ? t("folder.syncing") : t("folder.sync")}
+          </button>
         )}
         <PopupButton value={sort} options={SORT_OPTS} onChange={setSort} />
         <PopupButton value={fRes} options={RES_OPTS} onChange={setFRes} placeholder={t("filter.res")} />
@@ -2168,6 +2208,23 @@ export default function App() {
             {removeToast.done
               ? t("fld.removed").replace("{x}", removeToast.name)
               : t("fld.removing").replace("{x}", removeToast.name)}
+          </span>
+        </div>
+      )}
+
+      {/* Toast do "Atualizar pasta": resumo do diff, ou aviso se o HD estiver offline. */}
+      {syncToast && (
+        <div className={`remove-toast done${syncToast.offline ? " sync-offline" : ""}`}>
+          <Icon name={syncToast.offline ? "eyeOff" : "check"} size={15} />
+          <span>
+            {syncToast.offline
+              ? t("folder.syncOffline")
+              : syncToast.added + syncToast.renamed + syncToast.removed === 0
+                ? t("folder.syncNoChanges")
+                : t("folder.syncDone")
+                    .replace("{a}", String(syncToast.added))
+                    .replace("{r}", String(syncToast.renamed))
+                    .replace("{d}", String(syncToast.removed))}
           </span>
         </div>
       )}

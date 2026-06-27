@@ -492,6 +492,115 @@ pub fn assets_under(conn: &Connection, dir: &str) -> rusqlite::Result<Vec<(i64, 
     rows.collect()
 }
 
+/// (id, path, size, modified_at, ext) dos assets sob um diretório — pro re-scan inteligente
+/// detectar RENOMEAÇÕES/MOVIMENTAÇÕES (mesmo tamanho+mtime+ext = é o mesmo arquivo só que
+/// com outro nome/local) e preservar TODOS os metadados (nota/tag/favorito/coleção/hash).
+pub fn assets_under_meta(
+    conn: &Connection,
+    dir: &str,
+) -> rusqlite::Result<Vec<(i64, String, i64, i64, String)>> {
+    let mut stmt = conn
+        .prepare("SELECT id, path, size, modified_at, ext FROM assets WHERE dir = ?1 OR dir LIKE ?2")?;
+    let like = format!("{dir}\\%");
+    let rows = stmt.query_map(params![dir, like], |r| {
+        Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
+    })?;
+    rows.collect()
+}
+
+/// Re-aponta um asset EXISTENTE pra um novo caminho (arquivo renomeado/movido), preservando o
+/// `id` — e com ele TODOS os metadados ligados por id (rating, notas, favorito, hash, miniatura,
+/// tags em `asset_tags`, coleções em `collection_items`). Não toca no conteúdo nem regera thumb.
+pub fn relink_asset(
+    conn: &Connection,
+    id: i64,
+    new_path: &str,
+    new_dir: &str,
+    new_filename: &str,
+    folder_id: i64,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        "UPDATE assets SET path=?2, dir=?3, filename=?4, folder_id=?5 WHERE id=?1",
+        params![id, new_path, new_dir, new_filename, folder_id],
+    )?;
+    Ok(())
+}
+
+/// Conserta caminhos "drive-relativos" gravados por um bug antigo: quando uma RAIZ era um drive
+/// cru ("F:" sem barra), o WalkDir gerava `F:AFFINITY\...` em vez de `F:\AFFINITY\...`, faltando a
+/// barra logo após o `X:`. Isso embaralhava as pastas (apareciam com o nome colado no drive) e
+/// duplicava o catálogo. Este reparo (idempotente, roda no boot):
+///   1) APAGA os malformados que já têm um caminho CORRETO equivalente (duplicatas exatas);
+///   2) CORRIGE no lugar os restantes (insere a barra em `path` e `dir`);
+///   3) corrige também `folders`, `folder_meta` e `excluded_dirs`.
+/// `char(92)` = a barra invertida (evita confusão de escape no SQL). Retorna (apagados, corrigidos).
+pub fn repair_drive_relative(conn: &mut Connection) -> rusqlite::Result<(usize, usize)> {
+    // malformado = 2º char é ':' e o 3º NÃO é barra (cobre também o drive cru "F:", cujo 3º é vazio)
+    let bad = "substr(path,2,1)=':' AND substr(path,3,1) NOT IN (char(92), '/')";
+    // junk de sistema que entrou ao varrer um drive inteiro (lixeira/índice de volume).
+    let sysjunk = "(path LIKE '%'||char(92)||'$RECYCLE.BIN'||char(92)||'%'
+                    OR path LIKE '%'||char(92)||'System Volume Information'||char(92)||'%')";
+    let count: i64 = conn.query_row(
+        &format!("SELECT COUNT(*) FROM assets WHERE {bad} OR {sysjunk}"),
+        [],
+        |r| r.get(0),
+    )?;
+    if count == 0 {
+        return Ok((0, 0));
+    }
+    let tx = conn.transaction()?;
+    // 1) duplicatas: malformado cujo caminho corrigido JÁ existe correto → apaga o malformado.
+    let deleted = tx.execute(
+        &format!(
+            "DELETE FROM assets WHERE {bad} AND EXISTS (
+                 SELECT 1 FROM assets b
+                 WHERE b.path = substr(assets.path,1,2) || char(92) || substr(assets.path,3))"
+        ),
+        [],
+    )?;
+    // 2) corrige no lugar os que sobraram (path + dir).
+    let fixed = tx.execute(
+        &format!(
+            "UPDATE assets SET
+                 path = substr(path,1,2) || char(92) || substr(path,3),
+                 dir = CASE
+                     WHEN dir IS NOT NULL AND substr(dir,2,1)=':' AND substr(dir,3,1) NOT IN (char(92), '/')
+                     THEN substr(dir,1,2) || char(92) || substr(dir,3)
+                     ELSE dir END
+             WHERE {bad}"
+        ),
+        [],
+    )?;
+    // 2b) AGORA que os caminhos estão normalizados, varre o lixo de sistema pra fora da
+    // biblioteca (lixeira do Windows / índice de volume) — entrou ao varrer o drive inteiro.
+    let _ = tx.execute(&format!("DELETE FROM assets WHERE {sysjunk}"), []);
+    // 3) tabelas auxiliares (a raiz "F:" do bug vira "F:\").
+    let aux = "substr(##,2,1)=':' AND substr(##,3,1) NOT IN (char(92), '/')";
+    let _ = tx.execute(
+        &format!(
+            "UPDATE OR IGNORE folders SET path = substr(path,1,2) || char(92) || substr(path,3) WHERE {}",
+            aux.replace("##", "path")
+        ),
+        [],
+    );
+    let _ = tx.execute(
+        &format!(
+            "UPDATE OR IGNORE folder_meta SET dir = substr(dir,1,2) || char(92) || substr(dir,3) WHERE {}",
+            aux.replace("##", "dir")
+        ),
+        [],
+    );
+    let _ = tx.execute(
+        &format!(
+            "UPDATE OR IGNORE excluded_dirs SET dir = substr(dir,1,2) || char(92) || substr(dir,3) WHERE {}",
+            aux.replace("##", "dir")
+        ),
+        [],
+    );
+    tx.commit()?;
+    Ok((deleted, fixed))
+}
+
 /// Assets thumbnailaveis sob um diretório ainda sem miniatura (re-scan só processa os novos).
 pub fn pending_thumbs_under(
     conn: &Connection,

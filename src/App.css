@@ -507,6 +507,48 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Botão "Atualizar" da pasta (filterbar) — sincroniza só o diff sem reimportar tudo. */
+.sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+.sync-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.sync-btn:disabled,
+.sync-btn.busy {
+  cursor: default;
+  opacity: 0.85;
+}
+.sync-spin {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+  animation: removeSpin 0.7s linear infinite;
+}
+/* Toast de atualização quando o HD está offline → tom de alerta (âmbar). */
+.remove-toast.sync-offline {
+  color: #ffb84d;
+}
+.remove-toast.sync-offline :last-child {
+  color: var(--text-1);
+}
+
 /* ---------- Progress ---------- */
 .progress {
   position: relative;
@@ -1013,6 +1055,23 @@ body {
   align-items: center;
   gap: 1px;
   padding: 3px 5px;
+}
+/* Pasta num drive desconectado: selo OFFLINE no topo + capa esmaecida (cache visível, mas o
+   conteúdo não está acessível agora). */
+.badge-offline.folder-offline {
+  top: 8px;
+  left: 8px;
+  bottom: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 4;
+}
+.folder-card.is-offline .thumb-image {
+  filter: grayscale(0.55) brightness(0.7);
+}
+.folder-card.is-offline {
+  opacity: 0.92;
 }
 .hidden-audio {
   display: none;
@@ -3389,7 +3448,7 @@ body {
 .health-mark {
   position: absolute;
   top: 8px;
-  left: 8px;
+  right: 8px;
   z-index: 3;
   width: 11px;
   height: 11px;
@@ -3397,13 +3456,15 @@ body {
   border: 1.5px solid rgba(0, 0, 0, 0.45);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
-/* fileira de badges de condição no canto superior-esquerdo (sem áudio, VFR, mono…) */
+/* fileira de badges de condição no canto superior-DIREITO (sem áudio, VFR, mono…). Ficavam à
+   esquerda, mas a estrela de favorito passou pra lá — então os badges vieram pra direita. */
 .hflags {
   position: absolute;
   top: 8px;
-  left: 8px;
+  right: 8px;
   z-index: 3;
   display: flex;
+  flex-direction: row-reverse;
   gap: 4px;
 }
 .hflag-dot {
@@ -3701,8 +3762,8 @@ body {
 /* indicador de áudio tocando no hover */
 .audio-hover-ind {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  bottom: 8px;
+  left: 8px;
   z-index: 3;
   color: var(--accent);
   background: rgba(0, 0, 0, 0.5);
@@ -4241,11 +4302,13 @@ body {
 }
 
 /* ---------- Estrela de favorito rápido (card / lista / preview) ---------- */
+/* Fica no canto superior-ESQUERDO pra não cobrir o indicador de áudio (pulse) nem os badges
+   de condição, que vivem à direita. */
 .card-fav {
   position: absolute;
   top: 5px;
-  right: 5px;
-  z-index: 5;
+  left: 5px;
+  z-index: 6;
   display: flex;
   align-items: center;
   justify-content: center;

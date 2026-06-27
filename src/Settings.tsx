@@ -42,13 +42,15 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.28";
+const APP_VERSION = "0.9.29";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Favoritos: clique na estrela ⭐ no canto da mídia pra favoritar na hora — sem abrir nada. Tem uma aba \"Favoritos\" nova na barra lateral pra acessar tudo num lugar só. A estrela também aparece no preview em tela cheia.",
-  "Volume global: o volume da barra do player embaixo agora controla TAMBÉM o som do preview ao passar o mouse — um nível só pra tudo.",
-  "Sem bagunça de som: com o player tocando, o preview do hover fica em silêncio — não mistura mais a música com a faixa sob o mouse.",
+  "CORREÇÃO IMPORTANTE: pastas embaralhadas (nomes colados no drive, tipo \"F:MUSICAS\", e lixo da Lixeira do Windows) foram CONSERTADAS automaticamente. A causa era um drive adicionado \"cru\" (\"F:\" sem a barra) que fazia a varredura gerar caminhos errados. Agora isso não acontece mais (qualquer drive vira \"F:\\\" antes de varrer) e o app conserta sozinho o que já estava torto, ao abrir.",
+  "Lixeira do Windows e \"System Volume Information\" nunca mais entram na biblioteca.",
+  "Atualizar pasta: botão \"Atualizar\" na barra de filtros quando você está numa pasta. Em vez de reimportar tudo, ele sincroniza só o que mudou — arquivos novos entram, apagados saem, e renomeados/movidos são reconhecidos MANTENDO nota, tag, favorito, coleção e miniatura. Um toast mostra o resumo (novos / renomeados / removidos).",
+  "Proteção: se o HD/pasta estiver desconectado, o Atualizar não apaga nada — só avisa.",
+  "Pastas em drive externo desconectado agora mostram um selo OFFLINE no card (capa esmaecida) — você vê na hora que aquele conteúdo está num SSD/HD que não está plugado.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
