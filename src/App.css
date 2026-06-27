@@ -2357,70 +2357,41 @@ body {
 .folder-card {
   text-align: left;
   background: linear-gradient(180deg, rgba(96, 134, 255, 0.16), rgba(96, 134, 255, 0.05));
-  /* borda externa SUTIL (como a mídia): a identidade de pasta fica na aba + na moldura interna.
-     Antes a borda azul forte + a moldura interna (duas bordas grossas) pareciam se fundir entre
-     cards vizinhos ao mudar o zoom. */
-  border-color: var(--glass-border);
+  border-color: rgba(120, 150, 255, 0.3);
   overflow: hidden;
 }
 .folder-card:hover {
-  border-color: var(--hair-strong);
+  border-color: rgba(150, 178, 255, 0.55);
 }
-/* A miniatura vira o "corpo da pasta": espaço no topo p/ a ABA e moldura azulada em volta da
-   capa. A aba (::before) é um trapézio horizontal saindo do corpo; o corpo (::after) é um painel
-   azul com o canto sup-esquerdo reto, continuando a aba — leitura imediata de PASTA. */
+/* O thumb da pasta é QUADRADO igual ao da mídia (herda aspect-ratio 1/1 do .thumb): SEM padding
+   e SEM moldura interna — eram eles que faziam o card crescer além do quadrado e se sobrepor /
+   esmagar ao mudar o tamanho. A identidade de "pasta" vem da ABA no topo + tom azulado + o badge. */
 .folder-thumb {
   color: #aebfff;
-  padding: 22px 10px 10px;
-  background: transparent;
-  overflow: hidden;
 }
-/* ABA da pasta — trapézio no topo-esquerdo (lado direito desce até o corpo) */
+/* ABA de pasta pendurada no topo-esquerdo (sobreposta — não empurra o layout) */
 .folder-card .thumb::before {
   content: "";
   position: absolute;
-  top: 6px;
-  left: 10px;
-  width: 46%;
-  height: 15px;
+  top: 0;
+  left: 8px;
+  width: 52px;
+  height: 14px;
   background: linear-gradient(180deg, #6f93ff, #4f74e6);
-  border-radius: 6px 7px 0 0;
-  clip-path: polygon(0 0, 80% 0, 100% 100%, 0 100%);
+  border-radius: 0 0 7px 7px;
   z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
-/* CORPO da pasta — painel azul atrás da capa; canto sup-esquerdo reto continua a aba */
-.folder-card .thumb::after {
-  content: "";
-  position: absolute;
-  top: 19px;
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-  background: linear-gradient(180deg, rgba(111, 147, 255, 0.28), rgba(79, 116, 230, 0.16));
-  border: 1px solid rgba(140, 165, 255, 0.45);
-  border-radius: 3px 11px 11px 11px;
-  z-index: 0;
-}
-/* capa embutida na moldura da pasta. ABSOLUTA (preenche o corpo sem empurrar a altura do thumb):
-   antes era position:relative + height:100% e, junto com o padding, fazia o thumb crescer além do
-   quadrado do aspect-ratio → cards mais altos se sobrepunham verticalmente ao mudar o zoom. */
+/* capa preenche o thumb quadrado (exatamente como a mídia) */
 .folder-thumb .thumb-image {
-  position: absolute;
-  top: 19px;
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-  width: auto;
-  height: auto;
-  z-index: 1;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 2px 9px 9px 9px;
   background: none;
 }
 /* ícone de pasta quando não há capa */
 .folder-thumb > svg {
-  position: relative;
-  z-index: 1;
+  opacity: 0.9;
 }
 .folder-badge {
   position: absolute;

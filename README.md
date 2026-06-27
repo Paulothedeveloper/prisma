@@ -131,6 +131,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.27** — Cards de pasta refeitos (sem esmagar)
+- 🟦 Cards de pasta agora são **quadrados** (igual à mídia) com **aba no topo** + tom azul. Removido o padding/moldura interna que faziam o card crescer além do quadrado e **se sobrepor/esmagar** ao mudar o tamanho da janela ou dos ícones.
+
 **0.9.26** — Player: volume + fim de faixa
 - 🔊 **Volume do player agora funciona** (aplicado direto no áudio, mantido ao trocar de faixa).
 - ⏹️ **Não troca mais de faixa sozinho** quando a música acaba — só para. Avançar/voltar continua manual pelos botões.
