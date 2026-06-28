@@ -131,6 +131,11 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.35** — Cards não se esmagam mais no resize + fim do texto cortado "…"
+- 🧱 **Esmagamento dos cards ao redimensionar a janela: CONSERTADO na raiz.** Ao arrastar a borda da janela do Windows (ou mudar o tamanho dos ícones), pastas/itens **não se sobrepõem** nem viram colunas gigantes. Causa: colunas "esticáveis" (`1fr`) + thumb quadrado faziam a **altura da linha do grid ficar defasada** no resize → cards sobrepostos. Agora as colunas têm **largura fixa** (= tamanho do ícone) + `grid-auto-rows: max-content` → ao redimensionar muda só o **número de colunas**, nunca a altura/forma do card. Validado de 600→1320px sem sobreposição.
+- ✂️ **Fim do texto cortado com "…"**: varri **17 pontos** que truncavam e troquei por **quebra de linha** — nome/caminho aparece completo (cards, lista, sidebar, árvore de pastas, menu de contexto, paleta Ctrl+K, inspetor, duplicados, batch rename, player, caminhos do religar offline).
+- ℹ️ Os "…" que restam são **intencionais** (convenção DaVinci/Adobe): "Baixando…" = em andamento; "Localizar pasta…" = abre um seletor.
+
 **0.9.34** — Nomes dos cards em 2 linhas
 - 📝 Os cards da grade mostram o nome em **até 2 linhas** em vez de uma só com "…". A maioria dos nomes longos aparece **inteira**; só os realmente gigantes ainda reticenciam, depois de 2 linhas. Foi o ajuste que faltava pro texto cortado sumir na tela principal.
 - ✅ Confirmado por inspeção do app rodando: a fonte **Inter** já estava embutida e **ativa** (`document.fonts.check = true`). A sensação de "texto vazando/na borda" vinha do corte do nome em 1 linha, não da fonte — inspetor, lista, ajustes e o painel de religar offline já cabiam certo.

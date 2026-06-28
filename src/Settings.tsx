@@ -44,12 +44,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.34";
+const APP_VERSION = "0.9.35";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Nomes dos arquivos não cortam mais cedo: os cards da grade agora mostram o nome em ATÉ 2 LINHAS em vez de uma só com \"…\". A maioria dos nomes longos (background_loop_particulas_douradas_4096x2160.mp4, Logo_Cliente_AcmeCorporation_VetorEditavel.png…) aparece INTEIRA; só os realmente gigantes ainda reticenciam, depois de 2 linhas. Foi o ajuste que faltava pro \"(....)\" sumir de vez na tela principal.",
-  "Confirmado e verificado: a fonte Inter está mesmo embutida e ATIVA (medido no app, não no chute) — o que dava sensação de \"texto vazando/na borda\" era o corte do nome em 1 linha, não a fonte. Inspetor, lista, ajustes e o painel de religar offline já cabiam certo e seguem assim.",
+  "CONSERTADO de vez o esmagamento dos cards ao redimensionar a janela: as pastas/itens não se sobrepõem nem viram colunas gigantes quando você arrasta a borda da janela do Windows ou muda o tamanho dos ícones. Causa-raiz: as colunas eram \"esticáveis\" (1fr) e, junto com o thumb quadrado, a altura da linha do grid ficava defasada no resize → cards sobrepostos. Agora as colunas têm LARGURA FIXA (= tamanho do ícone) e a linha SEMPRE acompanha o conteúdo: ao redimensionar muda só o número de colunas, nunca a altura/forma do card. Validado em vários tamanhos seguidos (600→1320px), sem sobreposição.",
+  "Fim do texto cortado com \"…\" no app inteiro: varri TODO ponto que truncava e troquei por QUEBRA DE LINHA — o nome/caminho aparece completo. 17 lugares: nomes dos cards (em quantas linhas precisar), visão de lista, barra lateral, árvore de pastas, menu de contexto, paleta Ctrl+K, botões do inspetor, duplicados, batch rename, player e os caminhos no religar offline.",
+  "O que continua com \"…\" é de propósito (convenção, igual DaVinci/Adobe): \"Baixando…/Indexando…\" = em andamento; \"Localizar pasta…/Exportar catálogo…\" = abre um seletor. Isso NÃO é texto cortado.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

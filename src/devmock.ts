@@ -85,12 +85,28 @@ if (import.meta.env.DEV && !("__TAURI_INTERNALS__" in window)) {
     { id: 4, name: "som ambiente", color: null, count: 9 },
   ];
 
+  // DEV: ?folders na URL → simula uma pasta que só tem subpastas (view .only-subs),
+  // com nomes de tamanhos variados (inclusive longos) pra testar resize/esmagamento.
+  const mockFoldersOnly = location.search.includes("folders");
+  const subNames = [
+    "CINEMATICO E TRAILER", "CLASSICAS E FAMOSAS", "DIVERSOS", "ESPORTE E TREINO",
+    "FESTAS E DATAS", "FUNK POP E UPBEAT", "HIP HOP E TRAP", "LOFI E CHILL",
+    "SAMBA E BRASIL", "SAMPLES E LOOPS", "SEM COPYRIGHT E INSTRUMENTAL", "ROCK CLASSICO NACIONAL E INTERNACIONAL",
+  ];
+  const subFolders = subNames.map((name, i) => ({
+    dir: "F:\\MUSICAS\\" + name,
+    name,
+    count: [436, 1918, 496, 153, 4, 467, 377, 428, 2, 972, 2384, 88][i],
+    cover: null,
+    color: null,
+  }));
+
   const handlers: Record<string, (a: any) => any> = {
     feature_flags: () => ({ tier: "core", ai_analysis: true, color_plan: true, oficina_encode: true, motionsilk: true, sync_catalog: true }),
     get_folders: () => folders,
     get_counts: () => counts,
-    search_assets: () => assets,
-    subfolders: () => [],
+    search_assets: () => (mockFoldersOnly ? [] : assets),
+    subfolders: () => subFolders,
     search_folders: () => [],
     list_tags: () => tags,
     tags_for_asset: () => tags.slice(0, 2),

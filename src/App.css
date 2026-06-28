@@ -757,9 +757,10 @@ body {
 }
 .side-label {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .side-sub {
   padding-left: 28px;
@@ -772,11 +773,12 @@ body {
 }
 .side-sub-sug {
   flex: 1;
+  min-width: 0;
   font-size: 10.5px;
   color: var(--text-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .side-item .count,
 .tree-row .count {
@@ -839,9 +841,10 @@ body {
 }
 .tree-name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ---------- Palette ---------- */
@@ -925,7 +928,16 @@ body {
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--thumb), 1fr));
+  /* Colunas de LARGURA FIXA (= --thumb), não "1fr" esticável. Com 1fr a largura da coluna
+     mudava ao redimensionar a janela e, junto com o aspect-ratio do thumb, a altura da
+     linha do grid ficava DEFASADA → os cards (sobretudo de PASTA) se sobrepunham/esmagavam.
+     Largura fixa: ao redimensionar muda só o NÚMERO de colunas, nunca a altura do card. */
+  grid-template-columns: repeat(auto-fill, var(--thumb));
+  justify-content: center;
+  /* Linha do grid SEMPRE com a altura do conteúdo. Sem isto, com thumbs aspect-ratio o
+     track de linha ficava menor que o card (≈153px p/ card de 226px) e os cards se
+     sobrepunham depois de redimensionar a janela. */
+  grid-auto-rows: max-content;
   gap: 14px;
   /* respiro no topo/laterais pra o ANEL de seleção (box-shadow de 2px) da 1ª fileira/coluna não
      ser cortado pela borda do scroller. */
@@ -1098,14 +1110,10 @@ body {
   font-size: 11.5px;
   line-height: 1.32;
   color: var(--text);
-  /* 2 linhas em vez de cortar tudo com "…": mostra ~o dobro do nome. Quebra também
-     nomes longos sem espaço (snake_case/CAIXA-ALTA). Altura fixa de 2 linhas mantém
-     a grade alinhada (cards de nome curto e longo ocupam o mesmo espaço). */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  /* Nome COMPLETO, sem "…": quebra em quantas linhas precisar (inclusive nomes
+     sem espaço, snake_case/CAIXA-ALTA). min-height = piso de 2 linhas pra cards de
+     nome curto não ficarem baixos demais; nomes longos esticam o card naturalmente. */
+  white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
   min-height: calc(2 * 1.32em + 16px);
@@ -1375,9 +1383,9 @@ body {
   border-radius: 7px;
   padding: 7px 6px;
   font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   cursor: pointer;
   transition: background 0.12s;
 }
@@ -2314,9 +2322,9 @@ body {
   font-size: 11px;
   cursor: pointer;
   margin-top: 2px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .job-open:hover {
   background: rgba(10, 132, 255, 0.26);
@@ -2418,15 +2426,14 @@ body {
   font-size: 12.5px;
   text-align: left;
   cursor: pointer;
-  white-space: nowrap;
-  min-width: 0; /* permite o texto encolher/elidir dentro do flex em vez de estourar */
+  white-space: normal;
+  min-width: 0; /* permite o texto quebrar dentro do flex em vez de estourar */
 }
-/* Salvaguarda premium: se algum rótulo for longo demais pro teto, elide com "…" — nunca corta
-   no meio nem gera barra de rolagem. */
+/* Rótulo longo demais pro teto do menu QUEBRA em 2+ linhas — sem "…", sem corte no meio,
+   sem barra de rolagem (o menu tem max-width pra não esticar infinito). */
 .ctx-item > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .ctx-item:hover {
   background: var(--accent);
@@ -2543,11 +2550,12 @@ body {
 }
 .folder-row-name {
   flex: 1;
+  min-width: 0;
   font-size: 13px;
   font-weight: 550;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .folder-row-count {
   font-size: 11.5px;
@@ -2674,9 +2682,9 @@ body {
   flex: 1;
   min-width: 0;
   font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .lrow-col {
   font-size: 12px;
@@ -2830,18 +2838,18 @@ body {
   flex: 1;
   min-width: 0;
   color: var(--text-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .br-new {
   flex: 1;
   min-width: 0;
   color: var(--accent);
   font-weight: 550;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ---------- Construtor de pasta inteligente ---------- */
@@ -4541,9 +4549,9 @@ body {
 .cmdk-label {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .cmdk-hint {
   font-size: 11px;
@@ -4644,10 +4652,9 @@ body {
 .relink-path {
   font-size: 11px;
   color: var(--text-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 280px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 .relink-count {
   font-size: 11.5px;
@@ -4846,9 +4853,9 @@ body {
   color: var(--text-2);
   border-bottom: 1px solid var(--glass-border);
   margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .ctx-colors-label {
   padding: 2px 10px;
@@ -5908,11 +5915,9 @@ body {
 .dl-vtitle {
   font-size: 13px;
   font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .dl-vsub {
   font-size: 11.5px;
@@ -6118,16 +6123,16 @@ body {
 .dup-name {
   font-size: 13px;
   font-weight: 550;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .dup-where {
   font-size: 11px;
   color: var(--text-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 .dup-size {
   font-size: 11px;
@@ -6312,9 +6317,9 @@ body {
 .mp-name {
   font-size: 12px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .mp-type {
   font-size: 10px;
