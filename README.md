@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/prisma-logo.png" alt="PRISMA" width="140" />
+
 # PRISMA
 
 ### Biblioteca inteligente de mídia, feita por um editor de vídeo — para editores de vídeo.
@@ -59,6 +61,15 @@ Além de catalogar, o PRISMA entende a parte **técnica** do vídeo: lê os meta
 2. Baixe **`PRISMA_x.y.z_x64-setup.exe`** (instalador em português).
 3. Rode, abra o PRISMA e adicione uma pasta. O instalador é autocontido (ffmpeg embutido).
 
+A partir da próxima versão, o PRISMA **baixa e instala as atualizações sozinho** (auto-update assinado).
+
+### ⚙️ Pré-requisitos
+
+- **Windows 10 (build 1809+)** ou **Windows 11** (x64).
+- **WebView2 Runtime** — já vem no Windows 11; no Windows 10 instale por [aka.ms/webview2](https://developer.microsoft.com/microsoft-edge/webview2/).
+- **Microsoft Visual C++ Redistributable 2015–2022 (x64)** — [aka.ms/vs/17/release/vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe).
+- Opcional: GPU dedicada para acelerar proxies/preview de codecs pesados.
+
 ---
 
 ## 🇺🇸 English
@@ -101,6 +112,15 @@ Beyond cataloging, PRISMA understands the **technical** side of video: it reads 
 1. Go to **[Releases](https://github.com/Paulothedeveloper/prisma/releases/latest)**.
 2. Download **`PRISMA_x.y.z_x64-setup.exe`**.
 3. Run it, open PRISMA and add a folder. The installer is self-contained (ffmpeg bundled).
+
+From the next version on, PRISMA **downloads and installs updates by itself** (signed auto-update).
+
+### ⚙️ Requirements
+
+- **Windows 10 (build 1809+)** or **Windows 11** (x64).
+- **WebView2 Runtime** — built into Windows 11; on Windows 10 install from [aka.ms/webview2](https://developer.microsoft.com/microsoft-edge/webview2/).
+- **Microsoft Visual C++ Redistributable 2015–2022 (x64)** — [aka.ms/vs/17/release/vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe).
+- Optional: a dedicated GPU to speed up proxies/preview of heavy codecs.
 
 ---
 
