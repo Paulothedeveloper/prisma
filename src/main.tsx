@@ -1,3 +1,4 @@
+import "./devmock"; // DEV: mock do Tauri p/ inspecionar layout no navegador (no-op em prod/tauri)
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";

@@ -131,6 +131,10 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.34** — Nomes dos cards em 2 linhas
+- 📝 Os cards da grade mostram o nome em **até 2 linhas** em vez de uma só com "…". A maioria dos nomes longos aparece **inteira**; só os realmente gigantes ainda reticenciam, depois de 2 linhas. Foi o ajuste que faltava pro texto cortado sumir na tela principal.
+- ✅ Confirmado por inspeção do app rodando: a fonte **Inter** já estava embutida e **ativa** (`document.fonts.check = true`). A sensação de "texto vazando/na borda" vinha do corte do nome em 1 linha, não da fonte — inspetor, lista, ajustes e o painel de religar offline já cabiam certo.
+
 **0.9.33** — Tipografia embutida (Inter)
 - 🔤 A fonte agora vem **embutida no app** (Inter variável, `.woff2` local, offline). A stack antiga pedia SF Pro/`-apple-system`, **ausentes no Windows** → o WebView caía num genérico (Arial) com métricas erradas, e o texto **vazava/cortava/encostava na borda**. Com a fonte real carregada, renderiza igual em qualquer PC e **encaixa**. (SF Pro real não é embutível — licença Apple; Inter é a equivalente aberta.)
 

@@ -44,11 +44,12 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.33";
+const APP_VERSION = "0.9.34";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Tipografia refeita: a fonte agora vem EMBUTIDA no app (Inter) e renderiza igual em qualquer PC. Antes o app pedia fontes da Apple (SF Pro) que não existem no Windows, e caía num genérico (Arial) com métricas erradas — por isso o texto vazava, cortava com \"…\" e encostava na borda. Agora encaixa direitinho, com cara de Apple.",
+  "Nomes dos arquivos não cortam mais cedo: os cards da grade agora mostram o nome em ATÉ 2 LINHAS em vez de uma só com \"…\". A maioria dos nomes longos (background_loop_particulas_douradas_4096x2160.mp4, Logo_Cliente_AcmeCorporation_VetorEditavel.png…) aparece INTEIRA; só os realmente gigantes ainda reticenciam, depois de 2 linhas. Foi o ajuste que faltava pro \"(....)\" sumir de vez na tela principal.",
+  "Confirmado e verificado: a fonte Inter está mesmo embutida e ATIVA (medido no app, não no chute) — o que dava sensação de \"texto vazando/na borda\" era o corte do nome em 1 linha, não a fonte. Inspetor, lista, ajustes e o painel de religar offline já cabiam certo e seguem assim.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

@@ -1094,12 +1094,21 @@ body {
   display: none;
 }
 .card-name {
-  padding: 8px 10px;
+  padding: 7px 10px 9px;
   font-size: 11.5px;
+  line-height: 1.32;
   color: var(--text);
-  white-space: nowrap;
+  /* 2 linhas em vez de cortar tudo com "…": mostra ~o dobro do nome. Quebra também
+     nomes longos sem espaço (snake_case/CAIXA-ALTA). Altura fixa de 2 linhas mantém
+     a grade alinhada (cards de nome curto e longo ocupam o mesmo espaço). */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-height: calc(2 * 1.32em + 16px);
 }
 
 /* ---------- Empty ---------- */
