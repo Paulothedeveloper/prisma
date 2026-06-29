@@ -376,6 +376,10 @@ body {
 /* ---------- Filter bar ---------- */
 .filterbar {
   display: flex;
+  /* QUEBRA em vez de VAZAR: com muitos filtros + tela estreita, os controles descem pra
+     outra linha (sem barra de rolagem, sem cortar nada na borda). Antes era flex sem wrap
+     → a barra exigia ~1096px e estourava pra fora abaixo disso (até no mínimo de 900px). */
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;

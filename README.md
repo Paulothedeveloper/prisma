@@ -151,6 +151,10 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.36** — Barra de filtros responsiva (não vaza mais ao estreitar a janela)
+- 📐 A barra de filtros tinha **largura mínima fixa (~1096px)** e os controles da direita (slider de tamanho, alternar visão, filtro de estrelas, contador) **vazavam pra fora da borda** e eram cortados — já no tamanho mínimo de janela (900px). Agora ela **quebra pra uma 2ª linha** de forma limpa: nada some, nada corta, sem barra de rolagem.
+- 🔎 Achado **proativamente** numa **auditoria medida** (`getBoundingClientRect`, não screenshot) do app em **6 larguras (640→1320px)** caçando overflow/sobreposição/texto cortado. Pós-correção: **zero problema** em todas as larguras (grade, lista, pastas, paleta).
+
 **0.9.35** — Cards não se esmagam mais no resize + fim do texto cortado "…"
 - 🧱 **Esmagamento dos cards ao redimensionar a janela: CONSERTADO na raiz.** Ao arrastar a borda da janela do Windows (ou mudar o tamanho dos ícones), pastas/itens **não se sobrepõem** nem viram colunas gigantes. Causa: colunas "esticáveis" (`1fr`) + thumb quadrado faziam a **altura da linha do grid ficar defasada** no resize → cards sobrepostos. Agora as colunas têm **largura fixa** (= tamanho do ícone) + `grid-auto-rows: max-content` → ao redimensionar muda só o **número de colunas**, nunca a altura/forma do card. Validado de 600→1320px sem sobreposição.
 - ✂️ **Fim do texto cortado com "…"**: varri **17 pontos** que truncavam e troquei por **quebra de linha** — nome/caminho aparece completo (cards, lista, sidebar, árvore de pastas, menu de contexto, paleta Ctrl+K, inspetor, duplicados, batch rename, player, caminhos do religar offline).

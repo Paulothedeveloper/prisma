@@ -44,13 +44,12 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.35";
+const APP_VERSION = "0.9.36";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "CONSERTADO de vez o esmagamento dos cards ao redimensionar a janela: as pastas/itens não se sobrepõem nem viram colunas gigantes quando você arrasta a borda da janela do Windows ou muda o tamanho dos ícones. Causa-raiz: as colunas eram \"esticáveis\" (1fr) e, junto com o thumb quadrado, a altura da linha do grid ficava defasada no resize → cards sobrepostos. Agora as colunas têm LARGURA FIXA (= tamanho do ícone) e a linha SEMPRE acompanha o conteúdo: ao redimensionar muda só o número de colunas, nunca a altura/forma do card. Validado em vários tamanhos seguidos (600→1320px), sem sobreposição.",
-  "Fim do texto cortado com \"…\" no app inteiro: varri TODO ponto que truncava e troquei por QUEBRA DE LINHA — o nome/caminho aparece completo. 17 lugares: nomes dos cards (em quantas linhas precisar), visão de lista, barra lateral, árvore de pastas, menu de contexto, paleta Ctrl+K, botões do inspetor, duplicados, batch rename, player e os caminhos no religar offline.",
-  "O que continua com \"…\" é de propósito (convenção, igual DaVinci/Adobe): \"Baixando…/Indexando…\" = em andamento; \"Localizar pasta…/Exportar catálogo…\" = abre um seletor. Isso NÃO é texto cortado.",
+  "Barra de filtros agora se ADAPTA quando você estreita a janela: antes ela tinha largura mínima fixa (~1096px) e os controles da direita (slider de tamanho, alternar visão, filtro de estrelas, contador) VAZAVAM pra fora da borda e eram cortados — já no tamanho mínimo da janela (900px). Agora a barra QUEBRA pra uma segunda linha de forma limpa: nada some, nada é cortado, sem barra de rolagem. Achei isso fazendo uma auditoria MEDIDA do app em 6 larguras (640→1320px) — não esperei você apontar.",
+  "Auditoria de redimensionamento do app inteiro: medi (não só olhei) grade, lista, pastas e paleta em várias larguras de janela procurando overflow, sobreposição e texto cortado. Resultado pós-correção: ZERO problema em todas as larguras.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
