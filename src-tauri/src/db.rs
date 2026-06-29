@@ -218,6 +218,7 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "clip_embed BLOB", // embedding CLIP (512 f32) pra busca semântica local
         "favorite INTEGER NOT NULL DEFAULT 0", // favorito (estrela rápida) — aba "Favoritos"
         "audio_checked INTEGER NOT NULL DEFAULT 0", // 1 = já medimos o volume do áudio (detecção de "áudio mudo"). 0 = ainda não → re-entra na varredura de saúde uma vez.
+        "suggested_name TEXT", // nome padronizado sugerido pela IA (Reorganizar SFX) — pro rename opcional no disco depois. NÃO toca no arquivo.
     ] {
         let name = col.split_whitespace().next().unwrap_or("");
         if existing.contains(name) {
@@ -803,6 +804,50 @@ pub fn favorites_count(conn: &Connection) -> rusqlite::Result<i64> {
 
 pub fn set_notes(conn: &Connection, id: i64, notes: &str) -> rusqlite::Result<()> {
     conn.execute("UPDATE assets SET notes=?2 WHERE id=?1", params![id, notes])?;
+    Ok(())
+}
+
+/// Reorganizar SFX: dentre os ids dados, os que são ÁUDIO e ainda não foram classificados
+/// (suggested_name vazio). Devolve (id, path, filename). `force`=true ignora o cache.
+pub fn audio_assets_to_reorg(
+    conn: &Connection,
+    ids: &[i64],
+    force: bool,
+) -> rusqlite::Result<Vec<(i64, String, String)>> {
+    let mut out = Vec::new();
+    let mut stmt = conn.prepare(
+        "SELECT id, path, filename FROM assets WHERE id=?1 AND type='audio' AND trashed=0",
+    )?;
+    for id in ids {
+        if let Ok((aid, path, filename, sug)) = stmt.query_row(params![id], |r| {
+            Ok((
+                r.get::<_, i64>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+                // suggested_name pode não existir na linha — lemos separado
+                (),
+            ))
+        }) {
+            let _ = sug;
+            // cache: pula os que já têm suggested_name (a menos que force)
+            if !force {
+                let done: Option<String> = conn
+                    .query_row("SELECT suggested_name FROM assets WHERE id=?1", params![aid], |r| r.get(0))
+                    .ok()
+                    .flatten();
+                if done.as_deref().map(|s| !s.is_empty()).unwrap_or(false) {
+                    continue;
+                }
+            }
+            out.push((aid, path, filename));
+        }
+    }
+    Ok(out)
+}
+
+/// Grava o nome sugerido pela IA (não toca no arquivo no disco).
+pub fn set_suggested_name(conn: &Connection, id: i64, name: &str) -> rusqlite::Result<()> {
+    conn.execute("UPDATE assets SET suggested_name=?2 WHERE id=?1", params![id, name])?;
     Ok(())
 }
 

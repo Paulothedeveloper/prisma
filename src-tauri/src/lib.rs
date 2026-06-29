@@ -1490,6 +1490,107 @@ fn ai_analyze_many(app: tauri::AppHandle, ids: Vec<i64>) -> Result<(), String> {
     Ok(())
 }
 
+/// REORGANIZAR SFX (elementos de edição): classifica os ÁUDIOS selecionados pela IA (espectrograma
+/// + features → Claude vision) e organiza NA BIBLIOTECA — tags (categoria/subtipo/tags), descrição
+/// e nome sugerido, e adiciona à coleção "Elementos de Edição organizados". 100% não-destrutivo:
+/// NÃO toca nos arquivos no disco (o rename real é um passo opcional separado, futuro).
+/// Retorna quantos áudios entraram na fila. `force`=true reprocessa os já classificados.
+#[tauri::command]
+fn reorganize_sfx(app: tauri::AppHandle, ids: Vec<i64>, force: bool) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let settings = ai::load_settings(&state.data_dir);
+    let key = settings
+        .anthropic_key
+        .clone()
+        .filter(|k| !k.is_empty())
+        .ok_or("Configure sua chave da API nas configurações.")?;
+    let model = settings.model();
+    let db = state.db.clone();
+    let items = {
+        let conn = db.lock().map_err(|e| e.to_string())?;
+        db::audio_assets_to_reorg(&conn, &ids, force).map_err(|e| e.to_string())?
+    };
+    if items.is_empty() {
+        return Ok(0);
+    }
+    let coll = {
+        let conn = db.lock().map_err(|e| e.to_string())?;
+        db::create_collection(&conn, "Elementos de Edição organizados").map_err(|e| e.to_string())?
+    };
+    let spectro_dir = state.data_dir.join("sfx-spectro");
+    std::fs::create_dir_all(&spectro_dir).ok();
+    let n = items.len();
+    run_sfx_batch(app.clone(), db, key, model, coll, spectro_dir, items);
+    Ok(n)
+}
+
+fn run_sfx_batch(
+    app: tauri::AppHandle,
+    db: Arc<Mutex<Connection>>,
+    key: String,
+    model: String,
+    coll: i64,
+    spectro_dir: PathBuf,
+    items: Vec<(i64, String, String)>,
+) {
+    const WORKERS: usize = 4; // espectrograma (ffmpeg) + chamada à API por item
+    let jobs = app.state::<AppState>().jobs.clone();
+    let _ = jobs.run_batch(app.clone(), "sfx", items, WORKERS, move |item: &(i64, String, String)| {
+        let (id, path, filename) = (item.0, item.1.clone(), item.2.clone());
+        let src = std::path::Path::new(&path);
+        let spectro = spectro_dir.join(format!("{id}.png"));
+        if mediainfo::spectrogram(src, &spectro).is_err() {
+            return;
+        }
+        // features: duração + pico real (dB) — contexto numérico junto do espectrograma
+        let info = mediainfo::probe(src);
+        let dur = info.duration.unwrap_or(0.0);
+        let peak = mediainfo::audio_max_volume_db(src)
+            .map(|v| format!("{v:.1} dB"))
+            .unwrap_or_else(|| "?".into());
+        let features = format!("duracao ~{dur:.1}s; pico {peak}");
+        let res = ai::classify_sfx(&key, &model, &spectro, &filename, &features);
+        let _ = std::fs::remove_file(&spectro);
+        let Ok(c) = res else {
+            return;
+        };
+        if let Ok(conn) = db.lock() {
+            // tags = categoria + subtipo + tags da IA (na biblioteca, pesquisável)
+            let mut all: Vec<String> = Vec::new();
+            if !c.categoria.is_empty() {
+                all.push(c.categoria.to_lowercase());
+            }
+            if !c.subtipo.is_empty() {
+                all.push(c.subtipo.to_lowercase());
+            }
+            all.extend(c.tags.iter().cloned());
+            for t in &all {
+                if let Ok(tid) = db::create_tag(&conn, t, None) {
+                    let _ = db::assign_tag(&conn, id, tid);
+                }
+            }
+            // descrição vai pro campo de IA (NÃO sobrescreve as notas do usuário)
+            if !c.descricao.is_empty() {
+                let _ = db::set_ai_desc(&conn, id, &c.descricao);
+            }
+            // nome sugerido + extensão original (só guarda; não renomeia o arquivo)
+            if !c.nome_sugerido.is_empty() {
+                let ext = std::path::Path::new(&filename)
+                    .extension()
+                    .map(|e| e.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                let name = if ext.is_empty() {
+                    c.nome_sugerido.clone()
+                } else {
+                    format!("{}.{ext}", c.nome_sugerido)
+                };
+                let _ = db::set_suggested_name(&conn, id, &name);
+            }
+            let _ = db::add_to_collection(&conn, coll, id);
+        }
+    });
+}
+
 /// AI Action (plugin do Eagle): pergunta livre sobre UMA imagem (descreva, que texto há,
 /// sugira um nome, etc.). Usa a thumb em cache e a chave/modelo já configurados.
 #[tauri::command]
@@ -2583,6 +2684,7 @@ pub fn run() {
             set_ai_key,
             ai_analyze,
             ai_analyze_many,
+            reorganize_sfx,
             ai_analyze_untagged,
             set_folder_alias,
             set_folder_hidden,

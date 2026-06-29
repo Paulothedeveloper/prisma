@@ -221,6 +221,119 @@ pub fn ask_text(key: &str, model: &str, system: &str, user: &str) -> Result<Stri
         .to_string())
 }
 
+// ---------- Reorganizar SFX (classificação de elemento de edição por espectrograma + features) ----------
+
+#[derive(Default, Clone)]
+pub struct SfxClass {
+    pub categoria: String,
+    pub subtipo: String,
+    pub descricao: String,
+    pub nome_sugerido: String,
+    pub tags: Vec<String>,
+    pub confianca: f64,
+}
+
+const SFX_PROMPT: &str = "Você é especialista em sound design e SFX para edição de vídeo. \
+A imagem é o ESPECTROGRAMA de um arquivo de áudio de elemento de edição (eixo Y = frequência, \
+X = tempo, cor = intensidade). Um whoosh aparece como varredura ascendente/descendente; um riser \
+como rampa subindo; um impact/hit como pico transiente curto; um drone/ambience como faixa contínua. \
+Use TAMBÉM o nome do arquivo e as features de áudio abaixo, e seu conhecimento das convenções de \
+bibliotecas famosas (Artlist, Epidemic Sound, Boom Library, Soundly).\n\
+Responda APENAS um JSON válido (sem texto antes ou depois, sem markdown), exatamente neste formato:\n\
+{\"categoria\":\"SFX|Musica|Voz|Ambiente\",\"subtipo\":\"Whoosh|Riser|Impact|Sweep|Hit|Foley|Ambience|Drone|Glitch|Sub|Transicao|Outro\",\"descricao\":\"frase curta em pt-BR\",\"nome_sugerido\":\"TIPO_Subtipo_Caracteristica_Numero\",\"tags\":[\"5 a 8 tags curtas em pt-BR\"],\"confianca\":0.0}\n\
+No nome_sugerido NÃO inclua a extensão; use só letras/números/underscore.";
+
+/// Classifica um elemento de edição (SFX) a partir do espectrograma + features. Bloqueante.
+pub fn classify_sfx(
+    key: &str,
+    model: &str,
+    spectro_png: &Path,
+    filename: &str,
+    features: &str,
+) -> Result<SfxClass, String> {
+    let bytes = std::fs::read(spectro_png).map_err(|e| format!("espectrograma: {e}"))?;
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    let user_text = format!(
+        "{SFX_PROMPT}\n\nNome do arquivo: {filename}\nFeatures (ffmpeg): {features}"
+    );
+    let body = serde_json::json!({
+        "model": model,
+        "max_tokens": 500,
+        "messages": [{
+            "role": "user",
+            "content": [
+                { "type": "image", "source": { "type": "base64", "media_type": "image/png", "data": b64 } },
+                { "type": "text", "text": user_text }
+            ]
+        }]
+    });
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client
+        .post("https://api.anthropic.com/v1/messages")
+        .header("x-api-key", key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .map_err(|e| format!("rede: {e}"))?;
+    let status = resp.status();
+    let json: serde_json::Value = resp.json().map_err(|e| e.to_string())?;
+    if !status.is_success() {
+        let msg = json
+            .get("error")
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+            .unwrap_or("falha na API");
+        return Err(format!("Claude {status}: {msg}"));
+    }
+    let text = json
+        .get("content")
+        .and_then(|c| c.get(0))
+        .and_then(|b| b.get("text"))
+        .and_then(|t| t.as_str())
+        .unwrap_or("");
+    parse_sfx(text).ok_or_else(|| "resposta da IA não veio em JSON válido".to_string())
+}
+
+/// Extrai o JSON da resposta (tolerante a texto/markdown em volta) e monta o SfxClass.
+fn parse_sfx(text: &str) -> Option<SfxClass> {
+    let start = text.find('{')?;
+    let end = text.rfind('}')?;
+    if end <= start {
+        return None;
+    }
+    let v: serde_json::Value = serde_json::from_str(&text[start..=end]).ok()?;
+    let s = |k: &str| v.get(k).and_then(|x| x.as_str()).unwrap_or("").trim().to_string();
+    let tags = v
+        .get("tags")
+        .and_then(|t| t.as_array())
+        .map(|a| {
+            a.iter()
+                .filter_map(|x| x.as_str())
+                .map(|x| x.trim().to_lowercase())
+                .filter(|x| !x.is_empty() && x.len() <= 30)
+                .take(8)
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    let confianca = v.get("confianca").and_then(|x| x.as_f64()).unwrap_or(0.0);
+    let out = SfxClass {
+        categoria: s("categoria"),
+        subtipo: s("subtipo"),
+        descricao: s("descricao"),
+        nome_sugerido: s("nome_sugerido"),
+        tags,
+        confianca,
+    };
+    if out.categoria.is_empty() && out.subtipo.is_empty() && out.tags.is_empty() {
+        return None;
+    }
+    Some(out)
+}
+
 fn parse_result(text: &str) -> AiResult {
     let mut tags = Vec::new();
     let mut description = String::new();

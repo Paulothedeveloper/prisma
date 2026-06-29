@@ -44,12 +44,13 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.37";
+const APP_VERSION = "0.9.38";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Novo selo \"Áudio mudo\": o app agora identifica objetivamente os vídeos que TÊM trilha de áudio mas ela está SILENCIOSA (mudo). Diferente do selo \"sem áudio\" (que é não ter trilha nenhuma) — aqui medimos o VOLUME REAL da faixa com o ffmpeg e, se o pico ficar ≤ -60 dB, o item ganha um selo rosa no card e aparece nos Detalhes. Útil pra achar na hora os clipes exportados sem som ou de câmera que não captou áudio.",
-  "Como pega os vídeos que já estão na biblioteca: os novos imports já entram marcados; os antigos são re-checados em segundo plano — é só clicar uma vez em Ajustes › IA e busca › \"Escanear saúde agora\" (a medição de volume roda junto, sem reimportar nada).",
+  "Novo: \"Reorganizar (SFX)\" — selecione seus áudios de edição (whoosh, riser, impact, foley…) e a IA CLASSIFICA cada um e organiza na biblioteca: gera tags + categoria + subtipo + um nome padronizado sugerido, e junta tudo numa coleção \"Elementos de Edição organizados\". O botão aparece na barra de seleção (e na paleta Ctrl+K).",
+  "Como a IA \"ouve\" o som: o ffmpeg gera o ESPECTROGRAMA de cada áudio (a imagem das frequências no tempo) + as features (duração, pico), e o Claude classifica VENDO o espectrograma — um whoosh é uma varredura, um impact é um pico, um riser é uma rampa. Usa o conhecimento dele das bibliotecas (Artlist, Epidemic Sound, Boom Library) pra nomear certo.",
+  "100% não-destrutivo: NÃO renomeia nem move seus arquivos no disco — só organiza na biblioteca (reversível). O rename real dos arquivos virá como um botão opcional separado, com preview. É IA opt-in (sua chave), processa em lote (cancelável) e guarda o resultado em cache.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

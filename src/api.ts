@@ -494,6 +494,11 @@ export const setAiKey = (key: string) => invoke<void>("set_ai_key", { key });
 export const aiAnalyze = (id: number) => invoke<string[]>("ai_analyze", { id });
 export const aiAnalyzeMany = (ids: number[]) =>
   invoke<void>("ai_analyze_many", { ids });
+// Reorganizar SFX (elementos de edição): classifica os ÁUDIOS por IA (espectrograma+features) e
+// organiza na biblioteca (tags/categoria/nome sugerido + coleção). Não toca nos arquivos. Devolve
+// quantos áudios entraram na fila. force=true reprocessa os já classificados.
+export const reorganizeSfx = (ids: number[], force = false) =>
+  invoke<number>("reorganize_sfx", { ids, force });
 // AI Action: pergunta livre sobre uma imagem (descreva, que texto há, sugira nome…)
 export const aiAskImage = (id: number, question: string) =>
   invoke<string>("ai_ask_image", { id, question });

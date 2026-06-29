@@ -53,6 +53,7 @@ import {
   smartSearch,
   deleteSmart,
   aiAnalyzeMany,
+  reorganizeSfx,
   subfolders,
   searchFolders,
   clipSearch,
@@ -767,6 +768,13 @@ export default function App() {
       runSearch(true);
       refreshMeta();
     }).then((u) => unl.push(u));
+    // Reorganizar SFX: reaproveita a MESMA barra de progresso da IA (só um lote roda por vez).
+    listen<{ done: number; total: number }>("sfx:progress", (e) => setAiProgress(e.payload)).then((u) => unl.push(u));
+    listen("sfx:done", () => {
+      setAiProgress(null);
+      runSearch(true);
+      refreshMeta();
+    }).then((u) => unl.push(u));
     // Indexação semântica (CLIP): progresso + fim → atualiza o status do banner.
     listen<number>("clip:progress", (e) =>
       setClipStat((s) => (s ? { ...s, done: e.payload } : s)),
@@ -1266,6 +1274,26 @@ export default function App() {
     }
   }, [selectedIds]);
 
+  // Reorganizar SFX (elementos de edição): só ÁUDIOS, classifica por IA e organiza na biblioteca.
+  const batchSfx = useCallback(async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const audioN = assets.filter((a) => selectedIds.has(a.id) && a.type === "audio").length;
+    if (audioN === 0) {
+      window.alert(t("sfx.noAudio"));
+      return;
+    }
+    const usd = audioN * 0.002; // espectrograma (imagem pequena) + Haiku ≈ centavos por arquivo
+    const cost = usd < 0.01 ? "< US$ 0,01" : "~ US$ " + usd.toFixed(2).replace(".", ",");
+    if (!window.confirm(t("sfx.confirm").replace("{n}", String(audioN)).replace("{cost}", cost))) return;
+    try {
+      const n = await reorganizeSfx(ids, false);
+      if (n === 0) window.alert(t("sfx.allDone"));
+    } catch (e) {
+      window.alert(`${t("common.error")}: ${String(e)}`);
+    }
+  }, [selectedIds, assets]);
+
   // Comandos da paleta (Ctrl+K): navegação + ações + destinos (tags/coleções). Recalcula quando
   // a seleção/tags/coleções mudam (ações de seleção entram no topo).
   const cmdkCommands = useMemo<Command[]>(() => {
@@ -1275,6 +1303,7 @@ export default function App() {
         { id: "sel-fav", label: `${t("batch.favorite")} (${selectedIds.size})`, hint: t("cmdk.selection"), icon: "starFill", run: () => void batchFavorite() },
         { id: "sel-tag", label: `${t("batch.tag")} (${selectedIds.size})`, hint: t("cmdk.selection"), icon: "tag", run: () => void batchTag() },
         { id: "sel-nle", label: `${t("batch.nle")} (${selectedIds.size})`, hint: t("cmdk.selection"), icon: "reveal", run: () => void batchNle() },
+        { id: "sel-sfx", label: `${t("batch.sfx")} (${selectedIds.size})`, hint: t("cmdk.selection"), icon: "sliders", run: () => void batchSfx() },
         { id: "sel-trash", label: `${t("batch.trash")} (${selectedIds.size})`, hint: t("cmdk.selection"), icon: "trash", run: () => batchTrash() },
       );
     }
@@ -1301,7 +1330,7 @@ export default function App() {
     }
     return cmds;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIds, tags, collections, batchFavorite, batchTag, batchTrash, batchNle]);
+  }, [selectedIds, tags, collections, batchFavorite, batchTag, batchTrash, batchNle, batchSfx]);
 
   // Atalhos de produtividade (sem tirar a mão do teclado):
   //  Ctrl/Cmd+K = paleta de comandos · "/" = focar busca · Ctrl/Cmd+A = selecionar tudo
@@ -2549,6 +2578,9 @@ export default function App() {
             title={t("app.aiHint")}
           >
             <Icon name="sliders" size={13} /> {t("batch.ai")}
+          </button>
+          <button className="batch-ai" onClick={batchSfx} title={t("sfx.hint")}>
+            <Icon name="sparkles" size={13} /> {t("batch.sfx")}
           </button>
           <button className="batch-item" onClick={batchFixCfr} title={t("app.vfrCfr")}>
             <Icon name="refresh" size={13} /> {t("batch.fixCfr")}

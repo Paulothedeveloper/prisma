@@ -516,6 +516,31 @@ pub fn silent_audio_finding() -> HealthFinding {
     }
 }
 
+/// Gera o ESPECTROGRAMA (PNG) do áudio com ffmpeg (`showspectrumpic`) — eixo Y frequência, X tempo,
+/// cor intensidade. Usado pela Reorganização de SFX pra a IA "ver" o som. Bloqueante.
+pub fn spectrogram(audio: &Path, out: &Path) -> Result<(), String> {
+    let ff = thumbs::bin_path("ffmpeg");
+    let ok = cmd(ff)
+        .args(["-y", "-hide_banner", "-nostats", "-i"])
+        .arg(audio)
+        .args([
+            "-lavfi",
+            "showspectrumpic=s=900x420:legend=1:gain=3:color=intensity",
+            "-frames:v",
+            "1",
+        ])
+        .arg(out)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .map_err(|e| e.to_string())?;
+    if ok.success() && out.exists() {
+        Ok(())
+    } else {
+        Err("falha ao gerar espectrograma".into())
+    }
+}
+
 /// `health_summary` + detecção de "áudio mudo". Decodifica o áudio (ffmpeg), então NÃO fica no
 /// `probe()` puro — só é chamado nos pontos que toleram o custo (import/varredura/abrir arquivo).
 pub fn health_with_audio(info: &MediaInfo, path: &Path) -> (String, String) {

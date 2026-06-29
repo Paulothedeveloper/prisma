@@ -151,6 +151,11 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.38** — Reorganizar SFX por IA (classifica elementos de edição)
+- 🎚️ Novo **"Reorganizar (SFX)"** na barra de seleção (e na paleta Ctrl+K): seleciona os áudios de edição (whoosh, riser, impact, foley…) e a **IA classifica** cada um e organiza **na biblioteca** — tags + **categoria** + **subtipo** + um **nome padronizado sugerido**, e junta tudo na coleção **"Elementos de Edição organizados"**.
+- 🔊 Como a IA "ouve": o **ffmpeg gera o espectrograma** de cada áudio (imagem das frequências no tempo) + features (duração, pico) e o **Claude classifica VENDO o espectrograma** (whoosh = varredura, impact = pico, riser = rampa), usando o conhecimento das bibliotecas (Artlist, Epidemic Sound, Boom Library). *(A API da Claude não aceita áudio cru — espectrograma + visão é o caminho certo e mais confiável.)*
+- 🛡️ **100% não-destrutivo**: não renomeia nem move os arquivos no disco — só organiza na biblioteca (reversível). O rename real fica como botão opcional separado (futuro). IA **opt-in** (sua chave), em **lote cancelável**, com **cache**.
+
 **0.9.37** — Selo "Áudio mudo" (vídeo com trilha de áudio porém SILENCIOSA)
 - 🔇 Novo selo que identifica **objetivamente** os vídeos que **têm** trilha de áudio mas ela está **muda/silenciosa** — diferente do selo "sem áudio" (que é não ter trilha nenhuma). O app **mede o volume de pico real** da faixa com o ffmpeg (`volumedetect`, só o áudio via `-vn` → rápido); se o pico ficar **≤ -60 dB**, o item ganha um **selo rosa** no card e um aviso nos Detalhes. Útil pra achar na hora os clipes exportados sem som ou de câmera que não captou áudio.
 - ♻️ Novos imports já entram marcados; os vídeos **já na biblioteca** são re-checados em segundo plano ao rodar **Ajustes › "Escanear saúde agora"** (sem reimportar nada — uma coluna `audio_checked` garante que cada vídeo é medido só uma vez).
