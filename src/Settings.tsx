@@ -44,12 +44,12 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.36";
+const APP_VERSION = "0.9.37";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Barra de filtros agora se ADAPTA quando você estreita a janela: antes ela tinha largura mínima fixa (~1096px) e os controles da direita (slider de tamanho, alternar visão, filtro de estrelas, contador) VAZAVAM pra fora da borda e eram cortados — já no tamanho mínimo da janela (900px). Agora a barra QUEBRA pra uma segunda linha de forma limpa: nada some, nada é cortado, sem barra de rolagem. Achei isso fazendo uma auditoria MEDIDA do app em 6 larguras (640→1320px) — não esperei você apontar.",
-  "Auditoria de redimensionamento do app inteiro: medi (não só olhei) grade, lista, pastas e paleta em várias larguras de janela procurando overflow, sobreposição e texto cortado. Resultado pós-correção: ZERO problema em todas as larguras.",
+  "Novo selo \"Áudio mudo\": o app agora identifica objetivamente os vídeos que TÊM trilha de áudio mas ela está SILENCIOSA (mudo). Diferente do selo \"sem áudio\" (que é não ter trilha nenhuma) — aqui medimos o VOLUME REAL da faixa com o ffmpeg e, se o pico ficar ≤ -60 dB, o item ganha um selo rosa no card e aparece nos Detalhes. Útil pra achar na hora os clipes exportados sem som ou de câmera que não captou áudio.",
+  "Como pega os vídeos que já estão na biblioteca: os novos imports já entram marcados; os antigos são re-checados em segundo plano — é só clicar uma vez em Ajustes › IA e busca › \"Escanear saúde agora\" (a medição de volume roda junto, sem reimportar nada).",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt

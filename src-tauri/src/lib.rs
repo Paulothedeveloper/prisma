@@ -752,9 +752,23 @@ fn dedupe_keep_one(app: tauri::AppHandle) -> Result<i64, String> {
 #[tauri::command]
 fn probe_media(app: tauri::AppHandle, path: String) -> Result<mediainfo::MediaInfo, String> {
     let state = app.state::<AppState>();
-    let info = mediainfo::probe(std::path::Path::new(&path));
+    let mut info = mediainfo::probe(std::path::Path::new(&path));
     if info.video.is_some() {
-        let (level, flags) = mediainfo::health_summary(&info);
+        let p = std::path::Path::new(&path);
+        let (mut level, mut flags) = mediainfo::health_summary(&info);
+        // Áudio MUDO: tem trilha mas é silenciosa (mede o pico real com ffmpeg). Marca no card e
+        // mostra o achado no inspetor.
+        if mediainfo::audio_is_silent(&info, p) {
+            if flags.is_empty() {
+                flags = "silentaudio".to_string();
+            } else if !flags.split(',').any(|f| f == "silentaudio") {
+                flags.push_str(",silentaudio");
+            }
+            if level == "green" {
+                level = "yellow".to_string();
+            }
+            info.health.push(mediainfo::silent_audio_finding());
+        }
         if let Ok(conn) = state.db.lock() {
             let _ = db::set_health(&conn, &path, &level, &flags);
         }
@@ -2092,7 +2106,8 @@ fn run_health_scan(app: tauri::AppHandle, db: Arc<Mutex<Connection>>, paths: Vec
     let _ = jobs.run_batch(app.clone(), "health", paths, WORKERS, move |path: &String| {
         let info = mediainfo::probe(std::path::Path::new(path));
         if info.video.is_some() {
-            let (level, flags) = mediainfo::health_summary(&info);
+            // health_with_audio = saúde por metadados + detecção de "áudio mudo" (mede o volume).
+            let (level, flags) = mediainfo::health_with_audio(&info, std::path::Path::new(path));
             if let Ok(conn) = db.lock() {
                 let _ = db::set_health(&conn, path, &level, &flags);
             }

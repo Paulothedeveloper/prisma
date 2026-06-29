@@ -838,7 +838,9 @@ fn run_thumb_queue(
             // não vinha marcada). Vídeo sem áudio / VFR / etc. saem marcados no card na hora.
             if kind == "video" {
                 let info = crate::mediainfo::probe(p);
-                let (level, flags) = crate::mediainfo::health_summary(&info);
+                // health_with_audio inclui a detecção de "áudio mudo" (mede o volume real). Vídeo
+                // novo já entra no card marcado se a trilha for silenciosa.
+                let (level, flags) = crate::mediainfo::health_with_audio(&info, p);
                 let conn = db.lock().unwrap_or_else(|p| p.into_inner());
                 let _ = db::set_health(&conn, &path, &level, &flags);
             }

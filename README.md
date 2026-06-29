@@ -151,6 +151,10 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.37** — Selo "Áudio mudo" (vídeo com trilha de áudio porém SILENCIOSA)
+- 🔇 Novo selo que identifica **objetivamente** os vídeos que **têm** trilha de áudio mas ela está **muda/silenciosa** — diferente do selo "sem áudio" (que é não ter trilha nenhuma). O app **mede o volume de pico real** da faixa com o ffmpeg (`volumedetect`, só o áudio via `-vn` → rápido); se o pico ficar **≤ -60 dB**, o item ganha um **selo rosa** no card e um aviso nos Detalhes. Útil pra achar na hora os clipes exportados sem som ou de câmera que não captou áudio.
+- ♻️ Novos imports já entram marcados; os vídeos **já na biblioteca** são re-checados em segundo plano ao rodar **Ajustes › "Escanear saúde agora"** (sem reimportar nada — uma coluna `audio_checked` garante que cada vídeo é medido só uma vez).
+
 **0.9.36** — Barra de filtros responsiva (não vaza mais ao estreitar a janela)
 - 📐 A barra de filtros tinha **largura mínima fixa (~1096px)** e os controles da direita (slider de tamanho, alternar visão, filtro de estrelas, contador) **vazavam pra fora da borda** e eram cortados — já no tamanho mínimo de janela (900px). Agora ela **quebra pra uma 2ª linha** de forma limpa: nada some, nada corta, sem barra de rolagem.
 - 🔎 Achado **proativamente** numa **auditoria medida** (`getBoundingClientRect`, não screenshot) do app em **6 larguras (640→1320px)** caçando overflow/sobreposição/texto cortado. Pós-correção: **zero problema** em todas as larguras (grade, lista, pastas, paleta).

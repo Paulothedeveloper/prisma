@@ -14,6 +14,7 @@ dragIcon().then((p) => (FALLBACK_ICON = p)).catch(() => {});
 // Badges de saúde por flag → cor + chave i18n do rótulo (tooltip). Cada condição tem sua cor.
 const HFLAG: Record<string, { c: string; k: string }> = {
   noaudio: { c: "#ff9f0a", k: "health.noaudio.label" },
+  silentaudio: { c: "#ff375f", k: "health.silentaudio.label" },
   vfr: { c: "#ff453a", k: "health.vfr.label" },
   cfr: { c: "#ff453a", k: "health.vfr.label" },
   mono: { c: "#0a84ff", k: "health.mono.label" },

@@ -217,6 +217,7 @@ fn init(conn: &Connection) -> rusqlite::Result<()> {
         "live_member INTEGER NOT NULL DEFAULT 0", // 1 = o vídeo do par Live Photo (escondido na grade)
         "clip_embed BLOB", // embedding CLIP (512 f32) pra busca semântica local
         "favorite INTEGER NOT NULL DEFAULT 0", // favorito (estrela rápida) — aba "Favoritos"
+        "audio_checked INTEGER NOT NULL DEFAULT 0", // 1 = já medimos o volume do áudio (detecção de "áudio mudo"). 0 = ainda não → re-entra na varredura de saúde uma vez.
     ] {
         let name = col.split_whitespace().next().unwrap_or("");
         if existing.contains(name) {
@@ -369,8 +370,10 @@ pub fn vault_count(conn: &Connection) -> rusqlite::Result<i64> {
 
 /// Grava o diagnóstico em cache de um asset (saúde da biblioteca).
 pub fn set_health(conn: &Connection, path: &str, level: &str, flags: &str) -> rusqlite::Result<()> {
+    // audio_checked=1: todos os pontos que chamam set_health já passaram pela detecção de áudio
+    // mudo (health_with_audio / audio_is_silent) antes de gravar.
     conn.execute(
-        "UPDATE assets SET health_level=?2, health_flags=?3 WHERE path=?1",
+        "UPDATE assets SET health_level=?2, health_flags=?3, audio_checked=1 WHERE path=?1",
         params![path, level, flags],
     )?;
     Ok(())
@@ -378,7 +381,9 @@ pub fn set_health(conn: &Connection, path: &str, level: &str, flags: &str) -> ru
 
 /// Vídeos ainda sem diagnóstico em cache (pro "Escanear saúde" em lote).
 pub fn assets_needing_health(conn: &Connection, limit: i64) -> rusqlite::Result<Vec<String>> {
-    let base = "SELECT path FROM assets WHERE type='video' AND health_level IS NULL AND trashed=0";
+    // health_level IS NULL = nunca diagnosticado · audio_checked=0 = ainda não medimos o volume
+    // (detecção de "áudio mudo") → re-inclui os vídeos antigos UMA vez pra pegar a trilha silenciosa.
+    let base = "SELECT path FROM assets WHERE type='video' AND (health_level IS NULL OR audio_checked=0) AND trashed=0";
     if limit <= 0 {
         let mut stmt = conn.prepare(base)?;
         let rows = stmt.query_map([], |r| r.get(0))?;

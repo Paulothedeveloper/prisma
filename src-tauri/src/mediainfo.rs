@@ -464,6 +464,75 @@ pub fn health_summary(info: &MediaInfo) -> (String, String) {
     (level.to_string(), flags.join(","))
 }
 
+/// Limiar (dB) abaixo do qual a trilha de áudio é considerada MUDA/silenciosa.
+/// PCM digitalmente silencioso reporta ~-91 dB; ambiente real bem baixo raramente passa de -50.
+const SILENT_AUDIO_DB: f64 = -60.0;
+
+/// Mede o volume de PICO real do áudio com ffmpeg `volumedetect` (só a trilha de áudio via `-vn`,
+/// então é rápido — não decodifica vídeo). Devolve o `max_volume` em dB (negativo), ou None se falhar.
+/// Diferente do ffprobe (metadados): aqui DECODIFICAMOS pra saber se há som de verdade.
+pub fn audio_max_volume_db(path: &Path) -> Option<f64> {
+    let ff = thumbs::bin_path("ffmpeg");
+    let out = cmd(ff)
+        .args(["-hide_banner", "-nostats", "-vn", "-i"])
+        .arg(path)
+        .args(["-af", "volumedetect", "-f", "null", "-"])
+        .output()
+        .ok()?;
+    // O volumedetect imprime as estatísticas no STDERR: "[Parsed_volumedetect_0 @ ..] max_volume: -91.0 dB"
+    let log = String::from_utf8_lossy(&out.stderr);
+    for line in log.lines() {
+        if let Some(idx) = line.find("max_volume:") {
+            let num = line[idx + "max_volume:".len()..]
+                .trim()
+                .trim_end_matches("dB")
+                .trim();
+            if let Ok(v) = num.parse::<f64>() {
+                return Some(v);
+            }
+        }
+    }
+    None
+}
+
+/// True se o arquivo TEM trilha de áudio mas ela está MUDA/silenciosa (pico ≤ -60 dB).
+/// (Diferente de "sem áudio", que é não ter trilha nenhuma.)
+pub fn audio_is_silent(info: &MediaInfo, path: &Path) -> bool {
+    if info.audio.is_none() {
+        return false;
+    }
+    matches!(audio_max_volume_db(path), Some(db) if db <= SILENT_AUDIO_DB)
+}
+
+/// Achado de saúde "Áudio mudo" (pro inspetor). O front traduz por `health.silentaudio.*`.
+pub fn silent_audio_finding() -> HealthFinding {
+    HealthFinding {
+        level: "yellow".into(),
+        label: "Áudio mudo".into(),
+        detail: "O arquivo TEM trilha de áudio, mas ela está SILENCIOSA (pico ≤ -60 dB) — provavelmente exportado sem som ou a câmera não captou áudio.".into(),
+        fix: None,
+        key: "silentaudio".into(),
+        arg: None,
+    }
+}
+
+/// `health_summary` + detecção de "áudio mudo". Decodifica o áudio (ffmpeg), então NÃO fica no
+/// `probe()` puro — só é chamado nos pontos que toleram o custo (import/varredura/abrir arquivo).
+pub fn health_with_audio(info: &MediaInfo, path: &Path) -> (String, String) {
+    let (mut level, mut flags) = health_summary(info);
+    if audio_is_silent(info, path) {
+        if flags.is_empty() {
+            flags = "silentaudio".to_string();
+        } else if !flags.split(',').any(|f| f == "silentaudio") {
+            flags.push_str(",silentaudio");
+        }
+        if level == "green" {
+            level = "yellow".to_string();
+        }
+    }
+    (level, flags)
+}
+
 /// Playbook por tipo de arquivo (Briefing 6 §5) — determinístico. Reconhece o tipo e
 /// resume conserto · CST · método. Complementa o plano da IA (que explica em detalhe).
 fn playbook(v: &VideoInfo, make: Option<&str>, cst: &CstRec, is_709: bool) -> Option<Playbook> {
