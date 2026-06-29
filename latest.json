@@ -1,11 +1,11 @@
 {
-    "version":  "0.9.12",
-    "notes":  "Causa real do delete lento de pasta: um gatilho do indice de busca disparava 1 operacao por arquivo (27k = dezenas de seg). Agora apaga com o gatilho desligado (~1s) e reconstroi o indice de uma vez. Remove pasta gigante = some na hora, ~1s, e nao volta.",
-    "pub_date":  "2026-06-26T02:11:45Z",
-    "platforms":  {
-                      "windows-x86_64":  {
-                                             "signature":  "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTdGejlPdzQ3bjJNS2EyaGIyWVpyRHhlbW45ekZCdlhkZm9VOG41VkVHYVlMSGRvenBJZXdIcitnN2k5cXhaci9jcGs0U0ZzaHZVZjI0d2NPRGVmb0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNDM5ODgyCWZpbGU6UFJJU01BXzAuOS4xMl94NjQtc2V0dXAuZXhlCmxjYzBqY3pHdk5OS3hiTldHU2orUGkyRWJXL0hEUUVPSjRrTFJIeTZGdGtmSE1NVHJENzBxYUx3NlBoZDVpMm4vTXRQeC8wSmo0T3VtVHh2RGtSOEN3PT0K",
-                                             "url":  "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.12/PRISMA_0.9.12_x64-setup.exe"
-                                         }
-                  }
+  "version": "0.9.40",
+  "notes": "Nova identidade visual: icone e logo refeitos em vetor (prisma de vidro, espectro da marca). Variante app (rica) x PC (alto contraste) no .ico. Cascata total: app, instalador, tiles, iOS/Android, favicon, README.",
+  "pub_date": "2026-06-29T19:44:23Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTU4M2ZyNmY4dGRaYlFJT0tJWHA2L0ZVSFhNVFhMQURVWnJSdnR2dVlGeHdLTEVvT2MwaUUyQWhZdnl1Rk16dG1xaVdDUmR3dXNxN2QySDlWeWtQNUFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNzYyMjUyCWZpbGU6UFJJU01BXzAuOS40MF94NjQtc2V0dXAuZXhlCmVPMEF3QkxBVmloQmhDb1RVMUtMNUJhUFJoQ1o4R3dWUmtTUGg5aFhWVGpuUUZpc2RpQXM4cGQ3cERRYllBOTl4aHJKQU8vTEl3ekEwOGJXUE8wVEFBPT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.40/PRISMA_0.9.40_x64-setup.exe"
+    }
+  }
 }

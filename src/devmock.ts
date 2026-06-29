@@ -61,7 +61,7 @@ if (import.meta.env.DEV && !("__TAURI_INTERNALS__" in window)) {
 
   const folders = [
     { dir: "F:\\EDIÇÃO VIDEO\\TRANSIÇÕES E EFEITOS VISUAIS", count: 248, alias: null, hidden: false, cover: null, color: "#0a84ff" },
-    { dir: "C:\\Users\\paulo\\Videos\\EDIÇÃO VIDEO\\BACKGROUNDS", count: 0, alias: null, hidden: false, cover: null, color: null },
+    { dir: "D:\\EDIÇÃO VIDEO\\BACKGROUNDS", count: 0, alias: null, hidden: false, cover: null, color: null },
     { dir: "F:\\ASSETS\\AFFINITY DESIGNER PROJETOS BRANDING", count: 73, alias: "Branding", hidden: false, cover: null, color: "#ff9f0a" },
     { dir: "D:\\TRILHAS E EFEITOS SONOROS SEM COPYRIGHT", count: 512, alias: null, hidden: false, cover: null, color: "#30d158" },
   ];
@@ -113,10 +113,10 @@ if (import.meta.env.DEV && !("__TAURI_INTERNALS__" in window)) {
     list_collections: () => [{ id: 1, name: "Moodboard — Campanha Verão 2026", count: 24 }],
     list_smart: () => [{ id: 1, name: "Vídeos 4K sem proxy ainda", match_mode: "all", rules: "[]", count: 16 }],
     list_presets: () => [],
-    offline_roots_detail: () => [{ root: "F:\\", count: 248 }, { root: "C:\\Users\\paulo\\Videos\\EDIÇÃO VIDEO\\BACKGROUNDS", count: 0 }],
-    offline_dirs: () => ["C:\\Users\\paulo\\Videos\\EDIÇÃO VIDEO\\BACKGROUNDS"],
+    offline_roots_detail: () => [{ root: "F:\\", count: 248 }, { root: "D:\\EDIÇÃO VIDEO\\BACKGROUNDS", count: 0 }],
+    offline_dirs: () => ["D:\\EDIÇÃO VIDEO\\BACKGROUNDS"],
     favorites_count: () => 14,
-    cloud_folders: () => [{ name: "OneDrive", path: "C:\\Users\\paulo\\OneDrive" }, { name: "Google Drive", path: "G:\\Meu Drive" }],
+    cloud_folders: () => [{ name: "OneDrive", path: "C:\\Users\\Voce\\OneDrive" }, { name: "Google Drive", path: "G:\\Meu Drive" }],
     vault_status: () => ({ path: "D:\\VAULTS\\WINDOWS - DAVINCI RESOLVE", count: 320 }),
     quartzo_get_vault: () => "D:\\VAULTS\\WINDOWS - DAVINCI RESOLVE",
     quartzo_notes: () => [],

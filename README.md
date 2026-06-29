@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/prisma-logo.png" alt="PRISMA" width="140" />
+<img src="docs/banner.png" alt="PRISMA — Gerenciador de assets (DAM) pro editor de vídeo & designer" width="100%" />
 
 # PRISMA
 
