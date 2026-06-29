@@ -11,17 +11,74 @@ use std::path::{Path, PathBuf};
 pub struct Settings {
     pub anthropic_key: Option<String>,
     pub model: Option<String>,
+    pub gemini_key: Option<String>,   // chave do Google AI Studio (Gemini) — alternativa à Anthropic
+    pub gemini_model: Option<String>, // modelo Gemini (padrão gemini-3.5-flash)
+    pub provider: Option<String>,     // "anthropic" | "gemini" | None(auto: usa a chave que existir)
     pub autotag_on_import: Option<bool>, // workflow: ao importar, marca itens com o nome da pasta
     pub auto_proxy_on_import: Option<bool>, // ao importar, gera proxy H.264 dos vídeos de codec não-web
     pub vault_path: Option<String>, // pasta do vault de conhecimento (RAG, Briefing 6) — pode ser o vault do Quartzo
     pub quartzo_vault: Option<String>, // pasta do vault do Quartzo (PKM nosso) — integração ler/escrever notas
 }
 
+/// Provedor de IA ativo. O app fala com Claude (Anthropic) OU Gemini (Google) com o MESMO
+/// fluxo (visão por imagem + texto); a chave é sempre DO USUÁRIO.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Provider {
+    Anthropic,
+    Gemini,
+}
+
+fn set(o: &Option<String>) -> bool {
+    o.as_deref().map(|s| !s.trim().is_empty()).unwrap_or(false)
+}
+
 impl Settings {
+    /// Provedor ativo: respeita a escolha explícita; em "auto" (None) usa o Gemini se só a chave
+    /// dele estiver preenchida, senão Anthropic.
+    pub fn provider(&self) -> Provider {
+        match self.provider.as_deref() {
+            Some("gemini") => Provider::Gemini,
+            Some("anthropic") => Provider::Anthropic,
+            _ => {
+                if set(&self.gemini_key) && !set(&self.anthropic_key) {
+                    Provider::Gemini
+                } else {
+                    Provider::Anthropic
+                }
+            }
+        }
+    }
+
+    /// Chave do provedor ativo (vazia → None). Usada pra validar antes de chamar a API.
+    pub fn active_key(&self) -> Option<String> {
+        let k = match self.provider() {
+            Provider::Gemini => &self.gemini_key,
+            Provider::Anthropic => &self.anthropic_key,
+        };
+        k.clone().filter(|s| !s.trim().is_empty()).map(|s| s.trim().to_string())
+    }
+
+    /// Modelo do provedor ativo (com padrão barato e com visão pra cada um).
     pub fn model(&self) -> String {
-        self.model
-            .clone()
-            .unwrap_or_else(|| "claude-haiku-4-5-20251001".to_string())
+        match self.provider() {
+            Provider::Gemini => self
+                .gemini_model
+                .clone()
+                .filter(|s| !s.trim().is_empty())
+                .unwrap_or_else(|| "gemini-3.5-flash".to_string()),
+            Provider::Anthropic => self
+                .model
+                .clone()
+                .filter(|s| !s.trim().is_empty())
+                .unwrap_or_else(|| "claude-haiku-4-5-20251001".to_string()),
+        }
+    }
+
+    pub fn provider_name(&self) -> &'static str {
+        match self.provider() {
+            Provider::Gemini => "gemini",
+            Provider::Anthropic => "anthropic",
+        }
     }
 }
 
@@ -46,6 +103,9 @@ pub fn load_settings(data_dir: &Path) -> Settings {
         let s = |k: &str| v.get(k).and_then(|x| x.as_str()).map(String::from);
         out.anthropic_key = s("anthropic_key");
         out.model = s("model");
+        out.gemini_key = s("gemini_key");
+        out.gemini_model = s("gemini_model");
+        out.provider = s("provider");
         out.vault_path = s("vault_path");
         out.quartzo_vault = s("quartzo_vault");
         out.autotag_on_import = v.get("autotag_on_import").and_then(|x| x.as_bool());
@@ -82,27 +142,41 @@ Olhe a imagem e responda em português, exatamente neste formato e nada mais:\n\
 TAGS: <5 a 10 etiquetas curtas, 1-2 palavras, separadas por vírgula — objetos, cena, pessoas, ambiente, clima/iluminação>\n\
 DESC: <uma frase curta descrevendo o conteúdo>";
 
-/// Envia a thumb pro Claude vision e devolve tags + descrição. Bloqueante (rode numa thread).
-pub fn analyze_image(key: &str, model: &str, thumb_path: &Path) -> Result<AiResult, String> {
-    let bytes = std::fs::read(thumb_path).map_err(|e| format!("thumb: {e}"))?;
-    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
-    let body = serde_json::json!({
-        "model": model,
-        "max_tokens": 400,
-        "messages": [{
-            "role": "user",
-            "content": [
-                { "type": "image", "source": { "type": "base64", "media_type": media_type(thumb_path), "data": b64 } },
-                { "type": "text", "text": PROMPT }
-            ]
-        }]
-    });
+// ---------- Camada de provedor (Anthropic OU Gemini, mesmo fluxo) ----------
 
-    let client = reqwest::blocking::Client::builder()
+fn http() -> Result<reqwest::blocking::Client, String> {
+    reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
         .build()
-        .map_err(|e| e.to_string())?;
-    let resp = client
+        .map_err(|e| e.to_string())
+}
+
+/// Chamada à Anthropic Messages API. `image` = (media_type, base64) opcional; quando ausente é só texto.
+fn anthropic_call(
+    key: &str,
+    model: &str,
+    system: Option<&str>,
+    image: Option<(&str, &str)>,
+    text: &str,
+    max_tokens: u32,
+) -> Result<String, String> {
+    let mut content = Vec::new();
+    if let Some((mime, b64)) = image {
+        content.push(serde_json::json!({
+            "type": "image",
+            "source": { "type": "base64", "media_type": mime, "data": b64 }
+        }));
+    }
+    content.push(serde_json::json!({ "type": "text", "text": text }));
+    let mut body = serde_json::json!({
+        "model": model,
+        "max_tokens": max_tokens,
+        "messages": [{ "role": "user", "content": content }]
+    });
+    if let Some(sys) = system {
+        body["system"] = serde_json::Value::String(sys.to_string());
+    }
+    let resp = http()?
         .post("https://api.anthropic.com/v1/messages")
         .header("x-api-key", key)
         .header("anthropic-version", "2023-06-01")
@@ -110,7 +184,6 @@ pub fn analyze_image(key: &str, model: &str, thumb_path: &Path) -> Result<AiResu
         .json(&body)
         .send()
         .map_err(|e| format!("rede: {e}"))?;
-
     let status = resp.status();
     let json: serde_json::Value = resp.json().map_err(|e| e.to_string())?;
     if !status.is_success() {
@@ -121,104 +194,118 @@ pub fn analyze_image(key: &str, model: &str, thumb_path: &Path) -> Result<AiResu
             .unwrap_or("falha na API");
         return Err(format!("Claude {status}: {msg}"));
     }
-
-    let text = json
+    Ok(json
         .get("content")
         .and_then(|c| c.get(0))
         .and_then(|b| b.get("text"))
         .and_then(|t| t.as_str())
         .unwrap_or("")
-        .to_string();
+        .to_string())
+}
 
+/// Chamada à Google Gemini API (generateContent). Visão por `inline_data` (base64) — mesmo
+/// papel da imagem na Anthropic. A chave vai no header `x-goog-api-key`.
+fn gemini_call(
+    key: &str,
+    model: &str,
+    system: Option<&str>,
+    image: Option<(&str, &str)>,
+    text: &str,
+    max_tokens: u32,
+) -> Result<String, String> {
+    let mut parts = Vec::new();
+    if let Some((mime, b64)) = image {
+        parts.push(serde_json::json!({
+            "inline_data": { "mime_type": mime, "data": b64 }
+        }));
+    }
+    parts.push(serde_json::json!({ "text": text }));
+    let mut body = serde_json::json!({
+        "contents": [{ "role": "user", "parts": parts }],
+        "generationConfig": { "maxOutputTokens": max_tokens }
+    });
+    if let Some(sys) = system {
+        body["system_instruction"] = serde_json::json!({ "parts": [{ "text": sys }] });
+    }
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    );
+    let resp = http()?
+        .post(&url)
+        .header("x-goog-api-key", key)
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .map_err(|e| format!("rede: {e}"))?;
+    let status = resp.status();
+    let json: serde_json::Value = resp.json().map_err(|e| e.to_string())?;
+    if !status.is_success() {
+        let msg = json
+            .get("error")
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+            .unwrap_or("falha na API");
+        return Err(format!("Gemini {status}: {msg}"));
+    }
+    // junta todos os blocos de texto da primeira candidata
+    let txt = json
+        .get("candidates")
+        .and_then(|c| c.get(0))
+        .and_then(|c| c.get("content"))
+        .and_then(|c| c.get("parts"))
+        .and_then(|p| p.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|p| p.get("text").and_then(|t| t.as_str()))
+                .collect::<Vec<_>>()
+                .join("")
+        })
+        .unwrap_or_default();
+    Ok(txt)
+}
+
+/// Despacha pro provedor ativo. Centraliza a escolha Anthropic/Gemini num lugar só.
+fn dispatch(
+    s: &Settings,
+    system: Option<&str>,
+    image: Option<(&str, &str)>,
+    text: &str,
+    max_tokens: u32,
+) -> Result<String, String> {
+    let key = s
+        .active_key()
+        .ok_or("Configure sua chave da API nas configurações.")?;
+    let model = s.model();
+    match s.provider() {
+        Provider::Anthropic => anthropic_call(&key, &model, system, image, text, max_tokens),
+        Provider::Gemini => gemini_call(&key, &model, system, image, text, max_tokens),
+    }
+}
+
+fn read_b64(path: &Path) -> Result<String, String> {
+    let bytes = std::fs::read(path).map_err(|e| format!("arquivo: {e}"))?;
+    Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
+}
+
+/// Envia a thumb pro provedor (Claude/Gemini vision) e devolve tags + descrição. Bloqueante.
+pub fn analyze_image(s: &Settings, thumb_path: &Path) -> Result<AiResult, String> {
+    let b64 = read_b64(thumb_path)?;
+    let text = dispatch(s, None, Some((media_type(thumb_path), &b64)), PROMPT, 400)?;
     Ok(parse_result(&text))
 }
 
 /// AI Action (plugin do Eagle): pergunta LIVRE sobre a imagem (descreva, que texto tem,
 /// sugira nome, etc.). Manda a thumb + a pergunta do usuário e devolve a resposta crua.
 /// Bloqueante (rode numa thread).
-pub fn ask_image(key: &str, model: &str, thumb_path: &Path, question: &str) -> Result<String, String> {
-    let bytes = std::fs::read(thumb_path).map_err(|e| format!("thumb: {e}"))?;
-    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
-    let body = serde_json::json!({
-        "model": model,
-        "max_tokens": 700,
-        "messages": [{
-            "role": "user",
-            "content": [
-                { "type": "image", "source": { "type": "base64", "media_type": media_type(thumb_path), "data": b64 } },
-                { "type": "text", "text": question }
-            ]
-        }]
-    });
-    let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
-        .build()
-        .map_err(|e| e.to_string())?;
-    let resp = client
-        .post("https://api.anthropic.com/v1/messages")
-        .header("x-api-key", key)
-        .header("anthropic-version", "2023-06-01")
-        .header("content-type", "application/json")
-        .json(&body)
-        .send()
-        .map_err(|e| format!("rede: {e}"))?;
-    let status = resp.status();
-    let json: serde_json::Value = resp.json().map_err(|e| e.to_string())?;
-    if !status.is_success() {
-        let msg = json
-            .get("error")
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("falha na API");
-        return Err(format!("Claude {status}: {msg}"));
-    }
-    Ok(json
-        .get("content")
-        .and_then(|c| c.get(0))
-        .and_then(|b| b.get("text"))
-        .and_then(|t| t.as_str())
-        .unwrap_or("")
-        .to_string())
+pub fn ask_image(s: &Settings, thumb_path: &Path, question: &str) -> Result<String, String> {
+    let b64 = read_b64(thumb_path)?;
+    dispatch(s, None, Some((media_type(thumb_path), &b64)), question, 700)
 }
 
 /// Chamada de TEXTO ao Claude (sem imagem) — usada pelo Plano de Color (Briefing 6 §4).
 /// Bloqueante (rode numa thread). Retorna o texto da resposta.
-pub fn ask_text(key: &str, model: &str, system: &str, user: &str) -> Result<String, String> {
-    let body = serde_json::json!({
-        "model": model,
-        "max_tokens": 1200,
-        "system": system,
-        "messages": [{ "role": "user", "content": user }]
-    });
-    let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
-        .build()
-        .map_err(|e| e.to_string())?;
-    let resp = client
-        .post("https://api.anthropic.com/v1/messages")
-        .header("x-api-key", key)
-        .header("anthropic-version", "2023-06-01")
-        .header("content-type", "application/json")
-        .json(&body)
-        .send()
-        .map_err(|e| format!("rede: {e}"))?;
-    let status = resp.status();
-    let json: serde_json::Value = resp.json().map_err(|e| e.to_string())?;
-    if !status.is_success() {
-        let msg = json
-            .get("error")
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("falha na API");
-        return Err(format!("Claude {status}: {msg}"));
-    }
-    Ok(json
-        .get("content")
-        .and_then(|c| c.get(0))
-        .and_then(|b| b.get("text"))
-        .and_then(|t| t.as_str())
-        .unwrap_or("")
-        .to_string())
+pub fn ask_text(s: &Settings, system: &str, user: &str) -> Result<String, String> {
+    dispatch(s, Some(system), None, user, 1200)
 }
 
 // ---------- Reorganizar SFX (classificação de elemento de edição por espectrograma + features) ----------
@@ -244,58 +331,18 @@ Responda APENAS um JSON válido (sem texto antes ou depois, sem markdown), exata
 No nome_sugerido NÃO inclua a extensão; use só letras/números/underscore.";
 
 /// Classifica um elemento de edição (SFX) a partir do espectrograma + features. Bloqueante.
+/// Usa o provedor ativo (Claude OU Gemini) — o espectrograma vai como imagem (visão).
 pub fn classify_sfx(
-    key: &str,
-    model: &str,
+    s: &Settings,
     spectro_png: &Path,
     filename: &str,
     features: &str,
 ) -> Result<SfxClass, String> {
-    let bytes = std::fs::read(spectro_png).map_err(|e| format!("espectrograma: {e}"))?;
-    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
-    let user_text = format!(
-        "{SFX_PROMPT}\n\nNome do arquivo: {filename}\nFeatures (ffmpeg): {features}"
-    );
-    let body = serde_json::json!({
-        "model": model,
-        "max_tokens": 500,
-        "messages": [{
-            "role": "user",
-            "content": [
-                { "type": "image", "source": { "type": "base64", "media_type": "image/png", "data": b64 } },
-                { "type": "text", "text": user_text }
-            ]
-        }]
-    });
-    let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
-        .build()
-        .map_err(|e| e.to_string())?;
-    let resp = client
-        .post("https://api.anthropic.com/v1/messages")
-        .header("x-api-key", key)
-        .header("anthropic-version", "2023-06-01")
-        .header("content-type", "application/json")
-        .json(&body)
-        .send()
-        .map_err(|e| format!("rede: {e}"))?;
-    let status = resp.status();
-    let json: serde_json::Value = resp.json().map_err(|e| e.to_string())?;
-    if !status.is_success() {
-        let msg = json
-            .get("error")
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("falha na API");
-        return Err(format!("Claude {status}: {msg}"));
-    }
-    let text = json
-        .get("content")
-        .and_then(|c| c.get(0))
-        .and_then(|b| b.get("text"))
-        .and_then(|t| t.as_str())
-        .unwrap_or("");
-    parse_sfx(text).ok_or_else(|| "resposta da IA não veio em JSON válido".to_string())
+    let b64 = read_b64(spectro_png)?;
+    let user_text =
+        format!("{SFX_PROMPT}\n\nNome do arquivo: {filename}\nFeatures (ffmpeg): {features}");
+    let text = dispatch(s, None, Some(("image/png", &b64)), &user_text, 500)?;
+    parse_sfx(&text).ok_or_else(|| "resposta da IA não veio em JSON válido".to_string())
 }
 
 /// Extrai o JSON da resposta (tolerante a texto/markdown em volta) e monta o SfxClass.

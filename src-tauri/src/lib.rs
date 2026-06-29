@@ -1372,6 +1372,9 @@ fn resolve_dup(app: tauri::AppHandle, existing_id: i64, incoming_id: i64, action
 pub struct AiStatus {
     has_key: bool,
     model: String,
+    provider: String,    // provedor ativo: "anthropic" | "gemini"
+    has_anthropic: bool, // chave da Anthropic preenchida?
+    has_gemini: bool,    // chave do Gemini preenchida?
     autotag_on_import: bool,
     auto_proxy_on_import: bool,
 }
@@ -1380,9 +1383,13 @@ pub struct AiStatus {
 fn ai_status(app: tauri::AppHandle) -> Result<AiStatus, String> {
     let state = app.state::<AppState>();
     let s = ai::load_settings(&state.data_dir);
+    let nonempty = |o: &Option<String>| o.as_deref().map(|k| !k.trim().is_empty()).unwrap_or(false);
     Ok(AiStatus {
-        has_key: s.anthropic_key.as_deref().map(|k| !k.is_empty()).unwrap_or(false),
+        has_key: s.active_key().is_some(),
         model: s.model(),
+        provider: s.provider_name().to_string(),
+        has_anthropic: nonempty(&s.anthropic_key),
+        has_gemini: nonempty(&s.gemini_key),
         autotag_on_import: s.autotag_on_import.unwrap_or(false),
         auto_proxy_on_import: s.auto_proxy_on_import.unwrap_or(true),
     })
@@ -1414,22 +1421,42 @@ fn set_ai_key(app: tauri::AppHandle, key: String) -> Result<(), String> {
     ai::save_settings(&state.data_dir, &s)
 }
 
+/// Salva a chave do Gemini (Google AI Studio). Alternativa à Anthropic — mesmo fluxo de visão.
+#[tauri::command]
+fn set_gemini_key(app: tauri::AppHandle, key: String) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let mut s = ai::load_settings(&state.data_dir);
+    s.gemini_key = if key.trim().is_empty() { None } else { Some(key.trim().to_string()) };
+    ai::save_settings(&state.data_dir, &s)
+}
+
+/// Escolhe o provedor de IA: "anthropic", "gemini" ou "auto" (usa a chave que existir).
+#[tauri::command]
+fn set_ai_provider(app: tauri::AppHandle, provider: String) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let mut s = ai::load_settings(&state.data_dir);
+    s.provider = match provider.trim() {
+        "anthropic" => Some("anthropic".into()),
+        "gemini" => Some("gemini".into()),
+        _ => None, // auto
+    };
+    ai::save_settings(&state.data_dir, &s)
+}
+
 /// Analisa UM asset com a IA: gera tags + descrição de conteúdo e grava. Devolve as tags.
 #[tauri::command]
 fn ai_analyze(app: tauri::AppHandle, id: i64) -> Result<Vec<String>, String> {
     let state = app.state::<AppState>();
     let settings = ai::load_settings(&state.data_dir);
-    let key = settings
-        .anthropic_key
-        .clone()
-        .filter(|k| !k.is_empty())
+    settings
+        .active_key()
         .ok_or("Configure sua chave da API nas configurações.")?;
     let thumb = {
         let conn = state.db.lock().map_err(|e| e.to_string())?;
         db::thumb_of(&conn, id).map_err(|e| e.to_string())?
     };
     let thumb = thumb.ok_or("Este item não tem miniatura pra analisar.")?;
-    let res = ai::analyze_image(&key, &settings.model(), std::path::Path::new(&thumb))?;
+    let res = ai::analyze_image(&settings, std::path::Path::new(&thumb))?;
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     for t in &res.tags {
         if let Ok(tid) = db::create_tag(&conn, t, None) {
@@ -1449,8 +1476,7 @@ fn ai_analyze(app: tauri::AppHandle, id: i64) -> Result<Vec<String>, String> {
 fn run_ai_batch(
     app: tauri::AppHandle,
     db: Arc<Mutex<Connection>>,
-    key: String,
-    model: String,
+    settings: ai::Settings,
     ids: Vec<i64>,
 ) {
     const WORKERS: usize = 6; // chamadas simultâneas à API (equilíbrio velocidade × limites)
@@ -1460,7 +1486,7 @@ fn run_ai_batch(
         let id = *id;
         let thumb = db.lock().ok().and_then(|conn| db::thumb_of(&conn, id).ok().flatten());
         if let Some(thumb) = thumb {
-            if let Ok(res) = ai::analyze_image(&key, &model, std::path::Path::new(&thumb)) {
+            if let Ok(res) = ai::analyze_image(&settings, std::path::Path::new(&thumb)) {
                 if let Ok(conn) = db.lock() {
                     for t in &res.tags {
                         if let Ok(tid) = db::create_tag(&conn, t, None) {
@@ -1481,12 +1507,10 @@ fn run_ai_batch(
 fn ai_analyze_many(app: tauri::AppHandle, ids: Vec<i64>) -> Result<(), String> {
     let state = app.state::<AppState>();
     let settings = ai::load_settings(&state.data_dir);
-    let key = settings
-        .anthropic_key
-        .clone()
-        .filter(|k| !k.is_empty())
+    settings
+        .active_key()
         .ok_or("Configure sua chave da API nas configurações.")?;
-    run_ai_batch(app.clone(), state.db.clone(), key, settings.model(), ids);
+    run_ai_batch(app.clone(), state.db.clone(), settings, ids);
     Ok(())
 }
 
@@ -1499,12 +1523,9 @@ fn ai_analyze_many(app: tauri::AppHandle, ids: Vec<i64>) -> Result<(), String> {
 fn reorganize_sfx(app: tauri::AppHandle, ids: Vec<i64>, force: bool) -> Result<usize, String> {
     let state = app.state::<AppState>();
     let settings = ai::load_settings(&state.data_dir);
-    let key = settings
-        .anthropic_key
-        .clone()
-        .filter(|k| !k.is_empty())
+    settings
+        .active_key()
         .ok_or("Configure sua chave da API nas configurações.")?;
-    let model = settings.model();
     let db = state.db.clone();
     let items = {
         let conn = db.lock().map_err(|e| e.to_string())?;
@@ -1520,15 +1541,14 @@ fn reorganize_sfx(app: tauri::AppHandle, ids: Vec<i64>, force: bool) -> Result<u
     let spectro_dir = state.data_dir.join("sfx-spectro");
     std::fs::create_dir_all(&spectro_dir).ok();
     let n = items.len();
-    run_sfx_batch(app.clone(), db, key, model, coll, spectro_dir, items);
+    run_sfx_batch(app.clone(), db, settings, coll, spectro_dir, items);
     Ok(n)
 }
 
 fn run_sfx_batch(
     app: tauri::AppHandle,
     db: Arc<Mutex<Connection>>,
-    key: String,
-    model: String,
+    settings: ai::Settings,
     coll: i64,
     spectro_dir: PathBuf,
     items: Vec<(i64, String, String)>,
@@ -1549,7 +1569,7 @@ fn run_sfx_batch(
             .map(|v| format!("{v:.1} dB"))
             .unwrap_or_else(|| "?".into());
         let features = format!("duracao ~{dur:.1}s; pico {peak}");
-        let res = ai::classify_sfx(&key, &model, &spectro, &filename, &features);
+        let res = ai::classify_sfx(&settings, &spectro, &filename, &features);
         let _ = std::fs::remove_file(&spectro);
         let Ok(c) = res else {
             return;
@@ -1597,10 +1617,8 @@ fn run_sfx_batch(
 fn ai_ask_image(app: tauri::AppHandle, id: i64, question: String) -> Result<String, String> {
     let state = app.state::<AppState>();
     let settings = ai::load_settings(&state.data_dir);
-    let key = settings
-        .anthropic_key
-        .clone()
-        .filter(|k| !k.is_empty())
+    settings
+        .active_key()
         .ok_or("Configure sua chave da API nas configurações.")?;
     let thumb: Option<String> = state
         .reads
@@ -1613,7 +1631,7 @@ fn ai_ask_image(app: tauri::AppHandle, id: i64, question: String) -> Result<Stri
         })
         .map_err(|e| e.to_string())?;
     let thumb = thumb.filter(|t| !t.is_empty()).ok_or("Este item não tem miniatura para a IA olhar.")?;
-    ai::ask_image(&key, &settings.model(), std::path::Path::new(&thumb), question.trim())
+    ai::ask_image(&settings, std::path::Path::new(&thumb), question.trim())
 }
 
 /// Quantos assets ainda não têm descrição de IA (pra mostrar no botão "Analisar todas").
@@ -1628,17 +1646,15 @@ fn ai_pending_count(app: tauri::AppHandle) -> Result<i64, String> {
 fn ai_analyze_untagged(app: tauri::AppHandle, limit: i64) -> Result<usize, String> {
     let state = app.state::<AppState>();
     let settings = ai::load_settings(&state.data_dir);
-    let key = settings
-        .anthropic_key
-        .clone()
-        .filter(|k| !k.is_empty())
+    settings
+        .active_key()
         .ok_or("Configure sua chave da API nas configurações.")?;
     let ids = {
         let conn = state.db.lock().map_err(|e| e.to_string())?;
         db::assets_needing_ai(&conn, limit).map_err(|e| e.to_string())?
     };
     let n = ids.len();
-    run_ai_batch(app.clone(), state.db.clone(), key, settings.model(), ids);
+    run_ai_batch(app.clone(), state.db.clone(), settings, ids);
     Ok(n)
 }
 
@@ -2124,17 +2140,14 @@ fn color_plan(app: tauri::AppHandle, path: String, lang: Option<String>) -> Resu
         }
     }
 
-    let key = match settings.anthropic_key.clone().filter(|k| !k.is_empty()) {
-        Some(k) => k,
-        None => {
-            return Ok(ColorPlanOut {
-                ok: false,
-                plan: String::new(),
-                sources,
-                note: "Configure a chave da IA (Configurações › IA e busca) pra montar o plano explicado. O CST e o diagnóstico acima já funcionam offline.".into(),
-            })
-        }
-    };
+    if settings.active_key().is_none() {
+        return Ok(ColorPlanOut {
+            ok: false,
+            plan: String::new(),
+            sources,
+            note: "Configure a chave da IA (Configurações › IA e busca) pra montar o plano explicado. O CST e o diagnóstico acima já funcionam offline.".into(),
+        });
+    }
 
     let cst = &info.cst;
     let diag = info
@@ -2187,7 +2200,7 @@ REGRAS DE OURO: (1) NÃO invente nada — se não houver base nas notas pra algu
         "METADADOS:\n{meta}\n\nDIAGNÓSTICO (selos):\n{diag}\n\nCST (determinístico):\n{cst_txt}\n\nNOTAS DO VAULT:\n{vault_text}\n\nCONTEXTO FIXO DO EDITOR: institucional (SEPAT) + clientes (Mentors); entrega Reels/web Rec.709; usa método de 2 nós + tempero La Creme.\n\nMonte o plano cobrindo: tipo detectado; precisa CFR?; método de nós; alvos de exposição; LUT de tempero e dosagem; avisos. Cite as notas usadas."
     );
 
-    match ai::ask_text(&key, &settings.model(), &system, &user) {
+    match ai::ask_text(&settings, &system, &user) {
         Ok(plan) => Ok(ColorPlanOut { ok: true, plan, sources, note: String::new() }),
         Err(e) => Ok(ColorPlanOut {
             ok: false,
@@ -2326,6 +2339,9 @@ fn reset_app(app: tauri::AppHandle) -> Result<(), String> {
     let kept = ai::Settings {
         anthropic_key: s.anthropic_key,
         model: s.model,
+        gemini_key: s.gemini_key,
+        gemini_model: s.gemini_model,
+        provider: s.provider,
         autotag_on_import: None,
         auto_proxy_on_import: None,
         vault_path: s.vault_path,
@@ -2682,6 +2698,8 @@ pub fn run() {
             remove_asset,
             ai_status,
             set_ai_key,
+            set_gemini_key,
+            set_ai_provider,
             ai_analyze,
             ai_analyze_many,
             reorganize_sfx,

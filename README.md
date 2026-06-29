@@ -151,6 +151,12 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.39** — Provedor de IA **Gemini** (Google) como alternativa ao Claude
+- 🤖 Agora você escolhe o **provedor de IA**: **Claude (Anthropic)** OU **Gemini (Google)** — em **Configurações › IA e busca** há um seletor **Claude/Gemini**; cole a chave do que preferir. A do Gemini é **gratuita** em `aistudio.google.com/apikey` e mais barata. Vale pra **tudo**: busca por conteúdo, descrições, Plano de Color e **Reorganizar SFX**.
+- 🧠 O fluxo é **idêntico** nos dois: a imagem (thumb / espectrograma) vai como **visão**. Camada de provedor única no backend (`ai.rs`) — Anthropic Messages API ou Google `generateContent`. Modelo padrão Gemini: `gemini-3.5-flash` (com visão); Claude: `claude-haiku-4-5`.
+- ⌨️ Novo comando na paleta **Ctrl+K**: **"IA e busca (provedor, chave)"** — abre direto na aba pra trocar Claude/Gemini e colar a chave, sem garimpar menu.
+- 🔒 A chave fica **só neste PC**; nada é enviado sem você clicar.
+
 **0.9.38** — Reorganizar SFX por IA (classifica elementos de edição)
 - 🎚️ Novo **"Reorganizar (SFX)"** na barra de seleção (e na paleta Ctrl+K): seleciona os áudios de edição (whoosh, riser, impact, foley…) e a **IA classifica** cada um e organiza **na biblioteca** — tags + **categoria** + **subtipo** + um **nome padronizado sugerido**, e junta tudo na coleção **"Elementos de Edição organizados"**.
 - 🔊 Como a IA "ouve": o **ffmpeg gera o espectrograma** de cada áudio (imagem das frequências no tempo) + features (duração, pico) e o **Claude classifica VENDO o espectrograma** (whoosh = varredura, impact = pico, riser = rampa), usando o conhecimento das bibliotecas (Artlist, Epidemic Sound, Boom Library). *(A API da Claude não aceita áudio cru — espectrograma + visão é o caminho certo e mais confiável.)*

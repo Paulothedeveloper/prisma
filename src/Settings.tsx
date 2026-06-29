@@ -5,6 +5,8 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import {
   aiStatus,
   setAiKey,
+  setGeminiKey,
+  setAiProvider,
   aiAnalyzeUntagged,
   aiPendingCount,
   exportCatalog,
@@ -44,13 +46,14 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.38";
+const APP_VERSION = "0.9.39";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
-  "Novo: \"Reorganizar (SFX)\" — selecione seus áudios de edição (whoosh, riser, impact, foley…) e a IA CLASSIFICA cada um e organiza na biblioteca: gera tags + categoria + subtipo + um nome padronizado sugerido, e junta tudo numa coleção \"Elementos de Edição organizados\". O botão aparece na barra de seleção (e na paleta Ctrl+K).",
-  "Como a IA \"ouve\" o som: o ffmpeg gera o ESPECTROGRAMA de cada áudio (a imagem das frequências no tempo) + as features (duração, pico), e o Claude classifica VENDO o espectrograma — um whoosh é uma varredura, um impact é um pico, um riser é uma rampa. Usa o conhecimento dele das bibliotecas (Artlist, Epidemic Sound, Boom Library) pra nomear certo.",
-  "100% não-destrutivo: NÃO renomeia nem move seus arquivos no disco — só organiza na biblioteca (reversível). O rename real dos arquivos virá como um botão opcional separado, com preview. É IA opt-in (sua chave), processa em lote (cancelável) e guarda o resultado em cache.",
+  "Novo: escolha o provedor de IA — Claude (Anthropic) OU Gemini (Google). Em Configurações › IA e busca há um seletor Claude/Gemini; cole a chave do que preferir. A do Gemini é gratuita em aistudio.google.com/apikey e mais barata. Vale pra TUDO: busca por conteúdo, descrições, Plano de Color e Reorganizar SFX.",
+  "Por que dois provedores: o Gemini Flash é mais barato e tem visão; o Claude Haiku é ótimo e estável. O fluxo é idêntico nos dois — a imagem (thumb/espectrograma) vai como visão. A chave fica só neste PC; nada é enviado sem você clicar.",
+  "Reorganizar (SFX): selecione seus áudios de edição (whoosh, riser, impact, foley…) e a IA classifica cada um e organiza na biblioteca — tags + categoria + subtipo + nome padronizado sugerido + coleção \"Elementos de Edição organizados\". 100% não-destrutivo (não toca nos arquivos). Agora roda com Claude ou Gemini.",
+  "Atalho: na paleta de comandos (Ctrl+K) há \"IA e busca (provedor, chave)\" — abre direto na aba pra trocar Claude/Gemini e colar a chave, sem garimpar menu.",
 ];
 
 // Estimativa grosseira de custo da análise por IA (modelo Haiku, miniatura 512px + prompt
@@ -61,8 +64,8 @@ function aiCost(n: number): string {
   return "~ US$ " + usd.toFixed(2).replace(".", ",");
 }
 
-export function Settings({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<Tab>("geral");
+export function Settings({ onClose, initialTab }: { onClose: () => void; initialTab?: string }) {
+  const [tab, setTab] = useState<Tab>((initialTab as Tab) ?? "geral");
   const modalRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const t = setTimeout(() => fireTip("settings", modalRef.current), 350);
@@ -81,6 +84,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const [key, setKey] = useState("");
   const [hasKey, setHasKey] = useState(false);
   const [model, setModel] = useState("");
+  const [provider, setProvider] = useState("anthropic"); // provedor ativo: "anthropic" | "gemini"
+  const [hasAnthropic, setHasAnthropic] = useState(false);
+  const [hasGemini, setHasGemini] = useState(false);
   const [saved, setSaved] = useState(false);
   const [aiMsg, setAiMsg] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
@@ -140,6 +146,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
       .then((s) => {
         setHasKey(s.has_key);
         setModel(s.model);
+        setProvider(s.provider);
+        setHasAnthropic(s.has_anthropic);
+        setHasGemini(s.has_gemini);
         setAutotag(s.autotag_on_import);
         setAutoProxy(s.auto_proxy_on_import);
         if (s.has_key) aiPendingCount().then(setPending).catch(() => {});
@@ -203,13 +212,30 @@ export function Settings({ onClose }: { onClose: () => void }) {
     savePrefs(next);
   };
 
-  const saveKey = async () => {
-    await setAiKey(key);
+  const refreshAi = async () => {
     const s = await aiStatus();
     setHasKey(s.has_key);
+    setModel(s.model);
+    setProvider(s.provider);
+    setHasAnthropic(s.has_anthropic);
+    setHasGemini(s.has_gemini);
+    if (s.has_key) aiPendingCount().then(setPending).catch(() => {});
+  };
+
+  const saveKey = async () => {
+    if (provider === "gemini") await setGeminiKey(key);
+    else await setAiKey(key);
+    await refreshAi();
     setKey("");
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
+  };
+
+  const changeProvider = async (p: string) => {
+    setProvider(p);
+    setKey("");
+    await setAiProvider(p);
+    await refreshAi();
   };
 
   const runBulk = async (n: number) => {
@@ -496,11 +522,36 @@ export function Settings({ onClose }: { onClose: () => void }) {
                 <div className="pref-group">
                   <div className="pref-label">{t("set.aiSearch")}</div>
                   <div className="pref-help">{t("set.aiSearchHelp")}</div>
+                  {/* Provedor de IA: Claude (Anthropic) ou Gemini (Google). Mesmo fluxo. */}
+                  <div className="set-seg" role="tablist">
+                    {([
+                      ["anthropic", "Claude", hasAnthropic],
+                      ["gemini", "Gemini", hasGemini],
+                    ] as const).map(([p, label, set]) => (
+                      <button
+                        key={p}
+                        className={`set-seg-btn ${provider === p ? "on" : ""}`}
+                        onClick={() => changeProvider(p)}
+                      >
+                        {label}
+                        {set && <span className="set-seg-dot" title={t("set.keyOk")} />}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="pref-help">
+                    {provider === "gemini" ? t("set.geminiHelp") : t("set.claudeHelp")}
+                  </div>
                   <div className="set-row">
                     <input
                       className="field"
                       type="password"
-                      placeholder={hasKey ? t("set.keySaved") : "sk-ant-..."}
+                      placeholder={
+                        (provider === "gemini" ? hasGemini : hasAnthropic)
+                          ? t("set.keySaved")
+                          : provider === "gemini"
+                            ? "AIza..."
+                            : "sk-ant-..."
+                      }
                       value={key}
                       onChange={(e) => setKey(e.target.value)}
                     />

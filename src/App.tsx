@@ -286,6 +286,7 @@ export default function App() {
     setImportPaused(!!dupPairs).catch(() => {});
   }, [dupPairs]);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<string | undefined>(undefined); // aba inicial ao abrir Config.
   const [cmdkOpen, setCmdkOpen] = useState(false);
   const [offlineDetail, setOfflineDetail] = useState<OfflineRoot[]>([]);
   const [relinkOpen, setRelinkOpen] = useState(false);
@@ -1316,7 +1317,8 @@ export default function App() {
       { id: "go-trash", label: t("app.trash"), hint: t("cmdk.go"), icon: "trash", run: () => setView({ t: "trash" }) },
       { id: "add-folders", label: t("app.addFolders"), hint: t("cmdk.action"), icon: "folder", run: () => void addFolders() },
       { id: "add-files", label: t("app.addFiles"), hint: t("cmdk.action"), icon: "image", run: () => void addFiles() },
-      { id: "cmd-settings", label: t("app.settings"), hint: t("cmdk.action"), icon: "sliders", run: () => setShowSettings(true) },
+      { id: "cmd-settings", label: t("app.settings"), hint: t("cmdk.action"), icon: "sliders", run: () => { setSettingsTab(undefined); setShowSettings(true); } },
+      { id: "cmd-ai", label: t("cmdk.aiSettings"), hint: t("cmdk.action"), icon: "sparkles", keywords: "ia ai claude gemini chave key api busca provedor", run: () => { setSettingsTab("ia"); setShowSettings(true); } },
       { id: "cmd-search", label: t("cmdk.search"), hint: t("cmdk.action"), icon: "search", run: () => searchRef.current?.focus() },
       { id: "lay-grid", label: t("app.layoutGrid"), hint: t("cmdk.layout"), icon: "layoutGrid", run: () => setLayout("grid") },
       { id: "lay-list", label: t("app.layoutList"), hint: t("cmdk.layout"), icon: "layoutList", run: () => setLayout("list") },
@@ -1610,7 +1612,7 @@ export default function App() {
               {offlineDetail.reduce((n, r) => n + r.count, 0)} {t("relink.offlineShort")}
             </button>
           )}
-          <button className="icon-btn tb-gear" onClick={() => setShowSettings(true)} title={t("app.settings")}>
+          <button className="icon-btn tb-gear" onClick={() => { setSettingsTab(undefined); setShowSettings(true); }} title={t("app.settings")}>
             <Icon name="sliders" size={16} />
           </button>
           <div className="add-wrap">
@@ -2398,7 +2400,7 @@ export default function App() {
         />
       )}
 
-      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+      {showSettings && <Settings onClose={() => setShowSettings(false)} initialTab={settingsTab} />}
       {cmdkOpen && <CommandPalette commands={cmdkCommands} onClose={() => setCmdkOpen(false)} />}
       {relinkOpen && (
         <Relink

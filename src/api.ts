@@ -482,6 +482,9 @@ export const removeAsset = (id: number) => invoke<void>("remove_asset", { id });
 export interface AiStatus {
   has_key: boolean;
   model: string;
+  provider: string; // "anthropic" | "gemini"
+  has_anthropic: boolean;
+  has_gemini: boolean;
   autotag_on_import: boolean;
   auto_proxy_on_import: boolean;
 }
@@ -491,6 +494,10 @@ export const setAutotagImport = (on: boolean) =>
 export const setAutoProxyImport = (on: boolean) =>
   invoke<void>("set_auto_proxy_import", { on });
 export const setAiKey = (key: string) => invoke<void>("set_ai_key", { key });
+export const setGeminiKey = (key: string) =>
+  invoke<void>("set_gemini_key", { key });
+export const setAiProvider = (provider: string) =>
+  invoke<void>("set_ai_provider", { provider });
 export const aiAnalyze = (id: number) => invoke<string[]>("ai_analyze", { id });
 export const aiAnalyzeMany = (ids: number[]) =>
   invoke<void>("ai_analyze_many", { ids });
