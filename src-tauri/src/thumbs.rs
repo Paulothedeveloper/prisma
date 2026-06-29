@@ -71,6 +71,56 @@ fn cmd(path: PathBuf) -> Command {
     c
 }
 
+// Limites de tempo: um ffmpeg/ffprobe travado (arquivo corrompido, codec esquisito ou um soluço
+// de drive USB com IO retries) NÃO pode prender o worker pra sempre — era isso que congelava a
+// indexação. Passou do limite → mata o processo e segue (o asset fica na biblioteca, só sem thumb).
+const THUMB_TIMEOUT_SECS: u64 = 45; // gerar 1 frame/waveform é segundos; 45s = folga enorme
+const PROBE_TIMEOUT_SECS: u64 = 20; // ffprobe lê só metadados
+
+/// Roda um `Command` com TIMEOUT. Mata o processo se exceder. stdout/stderr descartados.
+fn status_timeout(mut c: Command, secs: u64) -> Result<std::process::ExitStatus, String> {
+    use std::process::Stdio;
+    let mut child = c
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(secs);
+    loop {
+        match child.try_wait().map_err(|e| e.to_string())? {
+            Some(status) => return Ok(status),
+            None => {
+                if std::time::Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(format!("ffmpeg excedeu {secs}s — processo morto (arquivo problemático ou drive lento)"));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(80));
+            }
+        }
+    }
+}
+
+/// Igual, mas captura o stdout (pro ffprobe, que devolve metadados). Timeout → None.
+fn output_timeout(mut c: Command, secs: u64) -> Option<std::process::Output> {
+    use std::process::Stdio;
+    let mut child = c.stdout(Stdio::piped()).stderr(Stdio::null()).spawn().ok()?;
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(secs);
+    loop {
+        match child.try_wait().ok()? {
+            Some(_) => return child.wait_with_output().ok(),
+            None => {
+                if std::time::Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return None;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+        }
+    }
+}
+
 /// Gera a thumb e extrai metadados. Retorna (Some(thumb_path) ou None, Meta).
 /// Nunca entra em panico: erro -> sem thumb, asset ainda fica na biblioteca.
 pub fn generate(src: &Path, ext: &str, out_dir: &Path, id: i64) -> (Option<String>, Meta) {
@@ -332,23 +382,22 @@ fn svg_thumb(src: &Path, out: &Path) -> Option<(u32, u32)> {
 
 /// Fallback: deixa o ffmpeg decodificar a imagem (CMYK jpeg, formatos raros).
 fn image_thumb_ffmpeg(src: &Path, out: &Path) -> Result<(), String> {
-    let status = cmd(ffmpeg())
-        .args([
-            "-y",
-            "-i",
-            &src.to_string_lossy(),
-            "-frames:v",
-            "1",
-            "-update",
-            "1",
-            "-vf",
-            &format!("scale={THUMB_MAX}:-1:force_original_aspect_ratio=decrease"),
-            "-q:v",
-            "4",
-            &out.to_string_lossy(),
-        ])
-        .status()
-        .map_err(|e| e.to_string())?;
+    let mut c = cmd(ffmpeg());
+    c.args([
+        "-y",
+        "-i",
+        &src.to_string_lossy(),
+        "-frames:v",
+        "1",
+        "-update",
+        "1",
+        "-vf",
+        &format!("scale={THUMB_MAX}:-1:force_original_aspect_ratio=decrease"),
+        "-q:v",
+        "4",
+        &out.to_string_lossy(),
+    ]);
+    let status = status_timeout(c, THUMB_TIMEOUT_SECS)?;
     if status.success() && out.exists() {
         Ok(())
     } else {
@@ -359,25 +408,22 @@ fn image_thumb_ffmpeg(src: &Path, out: &Path) -> Result<(), String> {
 fn video_thumb(src: &Path, out: &Path, _duration: Option<f64>) -> Result<(), String> {
     // Filtro `thumbnail`: analisa 200 frames e escolhe o mais REPRESENTATIVO
     // (histograma mais distinto) — evita os frames pretos do início/fade-in.
-    let status = cmd(ffmpeg())
-        .args([
-            "-y",
-            "-i",
-            &src.to_string_lossy(),
-            "-vf",
-            &format!(
-                "thumbnail=n=120,scale={THUMB_MAX}:-1:force_original_aspect_ratio=decrease"
-            ),
-            "-frames:v",
-            "1",
-            "-update",
-            "1",
-            "-q:v",
-            "3",
-            &out.to_string_lossy(),
-        ])
-        .status()
-        .map_err(|e| e.to_string())?;
+    let mut c = cmd(ffmpeg());
+    c.args([
+        "-y",
+        "-i",
+        &src.to_string_lossy(),
+        "-vf",
+        &format!("thumbnail=n=120,scale={THUMB_MAX}:-1:force_original_aspect_ratio=decrease"),
+        "-frames:v",
+        "1",
+        "-update",
+        "1",
+        "-q:v",
+        "3",
+        &out.to_string_lossy(),
+    ]);
+    let status = status_timeout(c, THUMB_TIMEOUT_SECS)?;
     if status.success() && out.exists() {
         Ok(())
     } else {
@@ -386,22 +432,18 @@ fn video_thumb(src: &Path, out: &Path, _duration: Option<f64>) -> Result<(), Str
 }
 
 fn waveform(src: &Path, out: &Path) -> Result<(), String> {
-    let status = cmd(ffmpeg())
-        .args([
-            "-y",
-            "-i",
-            &src.to_string_lossy(),
-            "-filter_complex",
-            &format!(
-                "showwavespic=s={THUMB_MAX}x{}:colors=#E8B44A",
-                THUMB_MAX / 3
-            ),
-            "-frames:v",
-            "1",
-            &out.to_string_lossy(),
-        ])
-        .status()
-        .map_err(|e| e.to_string())?;
+    let mut c = cmd(ffmpeg());
+    c.args([
+        "-y",
+        "-i",
+        &src.to_string_lossy(),
+        "-filter_complex",
+        &format!("showwavespic=s={THUMB_MAX}x{}:colors=#E8B44A", THUMB_MAX / 3),
+        "-frames:v",
+        "1",
+        &out.to_string_lossy(),
+    ]);
+    let status = status_timeout(c, THUMB_TIMEOUT_SECS)?;
     if status.success() && out.exists() {
         Ok(())
     } else {
@@ -591,18 +633,17 @@ struct ProbeMeta {
 /// Diferente de `ffprobe_meta`, NÃO filtra por stream de vídeo — serve pra não apagar como
 /// "corrompido" um arquivo válido que apenas não gerou miniatura (ex.: um .mov só com áudio).
 pub fn probe_readable(src: &Path) -> bool {
-    let output = cmd(ffprobe())
-        .args([
-            "-v",
-            "error",
-            "-show_entries",
-            "format=duration,nb_streams",
-            "-of",
-            "default=noprint_wrappers=1:nokey=1",
-            &src.to_string_lossy(),
-        ])
-        .output();
-    if let Ok(out) = output {
+    let mut output = cmd(ffprobe());
+    output.args([
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration,nb_streams",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        &src.to_string_lossy(),
+    ]);
+    if let Some(out) = output_timeout(output, PROBE_TIMEOUT_SECS) {
         for line in String::from_utf8_lossy(&out.stdout).lines() {
             let t = line.trim();
             if t.is_empty() || t == "N/A" {
@@ -623,20 +664,19 @@ fn ffprobe_meta(src: &Path) -> ProbeMeta {
         height: None,
         duration: None,
     };
-    let output = cmd(ffprobe())
-        .args([
-            "-v",
-            "error",
-            "-select_streams",
-            "v:0",
-            "-show_entries",
-            "stream=width,height:format=duration",
-            "-of",
-            "default=noprint_wrappers=1",
-            &src.to_string_lossy(),
-        ])
-        .output();
-    if let Ok(out) = output {
+    let mut output = cmd(ffprobe());
+    output.args([
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "stream=width,height:format=duration",
+        "-of",
+        "default=noprint_wrappers=1",
+        &src.to_string_lossy(),
+    ]);
+    if let Some(out) = output_timeout(output, PROBE_TIMEOUT_SECS) {
         let text = String::from_utf8_lossy(&out.stdout);
         for line in text.lines() {
             if let Some(v) = line.strip_prefix("width=") {

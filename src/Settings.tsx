@@ -9,6 +9,8 @@ import {
   setAiProvider,
   aiAnalyzeUntagged,
   aiPendingCount,
+  reorganizeSfxAll,
+  sfxPendingCount,
   exportCatalog,
   importCatalog,
   backupCatalog,
@@ -46,10 +48,12 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.40";
+const APP_VERSION = "0.9.41";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
+  "Correção importante: a indexação podia TRAVAR o app quando o ffmpeg empacava num arquivo problemático (corrompido/codec raro) ou num soluço do drive (USB/rede). Agora toda geração de miniatura tem TIMEOUT: se passar do limite, mata o processo e segue pro próximo — um arquivo ruim nunca mais congela a biblioteca inteira.",
+  "Reorganizar SFX agora em LOTE: além de itens selecionados, dá pra reorganizar uma PASTA inteira (botão direito na pasta › \"Reorganizar SFX\") ou TODOS os áudios da biblioteca de uma vez (Configurações › IA e busca › \"Reorganizar todos\"). Não-destrutivo, com cache (pula os já feitos).",
   "Nova identidade visual: ícone e logo do PRISMA refeitos em VETOR — um prisma de vidro refratando a luz no espectro da marca, estética liquid-glass. Original (substitui a arte antiga), nítido de 16px a 1024px, com variante simplificada e de alto contraste para tamanhos pequenos (taskbar/tray do Windows). Atualizado em tudo: app, instalador, tiles, iOS/Android, favicon e README.",
   "Novo: escolha o provedor de IA — Claude (Anthropic) OU Gemini (Google). Em Configurações › IA e busca há um seletor Claude/Gemini; cole a chave do que preferir. A do Gemini é gratuita em aistudio.google.com/apikey e mais barata. Vale pra TUDO: busca por conteúdo, descrições, Plano de Color e Reorganizar SFX.",
   "Por que dois provedores: o Gemini Flash é mais barato e tem visão; o Claude Haiku é ótimo e estável. O fluxo é idêntico nos dois — a imagem (thumb/espectrograma) vai como visão. A chave fica só neste PC; nada é enviado sem você clicar.",
@@ -92,6 +96,9 @@ export function Settings({ onClose, initialTab }: { onClose: () => void; initial
   const [aiMsg, setAiMsg] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [pending, setPending] = useState<number | null>(null);
+  const [sfxPending, setSfxPending] = useState<number | null>(null); // áudios faltando reorganizar
+  const [sfxMsg, setSfxMsg] = useState("");
+  const [sfxBusy, setSfxBusy] = useState(false);
   const [confirmN, setConfirmN] = useState<number | null>(null); // lote aguardando confirmação de custo
   const [vault, setVault] = useState<{ path: string | null; count: number }>({ path: null, count: 0 });
   const [vaultMsg, setVaultMsg] = useState("");
@@ -152,7 +159,10 @@ export function Settings({ onClose, initialTab }: { onClose: () => void; initial
         setHasGemini(s.has_gemini);
         setAutotag(s.autotag_on_import);
         setAutoProxy(s.auto_proxy_on_import);
-        if (s.has_key) aiPendingCount().then(setPending).catch(() => {});
+        if (s.has_key) {
+          aiPendingCount().then(setPending).catch(() => {});
+          sfxPendingCount().then(setSfxPending).catch(() => {});
+        }
       })
       .catch(() => {}); // falha de backend não deixa a aba IA em estado default sem feedback
 
@@ -220,7 +230,23 @@ export function Settings({ onClose, initialTab }: { onClose: () => void; initial
     setProvider(s.provider);
     setHasAnthropic(s.has_anthropic);
     setHasGemini(s.has_gemini);
-    if (s.has_key) aiPendingCount().then(setPending).catch(() => {});
+    if (s.has_key) {
+      aiPendingCount().then(setPending).catch(() => {});
+      sfxPendingCount().then(setSfxPending).catch(() => {});
+    }
+  };
+
+  const runSfxAll = async () => {
+    setSfxBusy(true);
+    setSfxMsg("");
+    try {
+      const c = await reorganizeSfxAll(false);
+      setSfxMsg(c > 0 ? `${t("set.sfxStarted")} (${c})` : t("set.sfxNone"));
+    } catch (e) {
+      setSfxMsg(`${t("common.error")}: ${String(e)}`);
+    } finally {
+      setSfxBusy(false);
+    }
   };
 
   const saveKey = async () => {
@@ -623,6 +649,34 @@ export function Settings({ onClose, initialTab }: { onClose: () => void; initial
                     {aiMsg && (
                       <div className="set-status">
                         <span className="set-dot on" /> {aiMsg}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {hasKey && (
+                  <div className="pref-group">
+                    <div className="pref-label">{t("set.sfxBatch")}</div>
+                    <div className="pref-help">
+                      {t("set.sfxBatchHelp")}{" "}
+                      {sfxPending !== null && (
+                        <b>{sfxPending.toLocaleString()} {t("set.sfxPending")}</b>
+                      )}
+                    </div>
+                    <div className="set-bulk-row">
+                      <button
+                        className="set-bulk-btn set-bulk-all"
+                        disabled={sfxBusy || sfxPending === 0}
+                        onClick={runSfxAll}
+                        title={t("set.sfxAllTitle")}
+                      >
+                        <Icon name="sliders" size={13} /> {t("set.sfxAll")}
+                        {sfxPending ? ` (${sfxPending.toLocaleString()})` : ""}
+                      </button>
+                    </div>
+                    {sfxMsg && (
+                      <div className="set-status">
+                        <span className="set-dot on" /> {sfxMsg}
                       </div>
                     )}
                   </div>

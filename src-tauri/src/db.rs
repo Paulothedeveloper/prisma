@@ -845,6 +845,44 @@ pub fn audio_assets_to_reorg(
     Ok(out)
 }
 
+/// TODOS os áudios (elementos de edição) que faltam reorganizar. `force` ignora o cache.
+pub fn audio_to_reorg_all(conn: &Connection, force: bool) -> rusqlite::Result<Vec<(i64, String, String)>> {
+    let sql = if force {
+        "SELECT id, path, filename FROM assets WHERE type='audio' AND trashed=0"
+    } else {
+        "SELECT id, path, filename FROM assets WHERE type='audio' AND trashed=0 AND (suggested_name IS NULL OR suggested_name='')"
+    };
+    let mut stmt = conn.prepare(sql)?;
+    let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?;
+    Ok(rows.filter_map(|x| x.ok()).collect())
+}
+
+/// Áudios DENTRO de uma pasta (prefixo de caminho). Reorganiza a pasta inteira de uma vez.
+pub fn audio_to_reorg_folder(
+    conn: &Connection,
+    root: &str,
+    force: bool,
+) -> rusqlite::Result<Vec<(i64, String, String)>> {
+    let like = format!("{root}%");
+    let sql = if force {
+        "SELECT id, path, filename FROM assets WHERE type='audio' AND trashed=0 AND path LIKE ?1"
+    } else {
+        "SELECT id, path, filename FROM assets WHERE type='audio' AND trashed=0 AND path LIKE ?1 AND (suggested_name IS NULL OR suggested_name='')"
+    };
+    let mut stmt = conn.prepare(sql)?;
+    let rows = stmt.query_map(params![like], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?;
+    Ok(rows.filter_map(|x| x.ok()).collect())
+}
+
+/// Quantos áudios ainda faltam reorganizar (sem suggested_name) — pro botão "Reorganizar todos (N)".
+pub fn count_audio_to_reorg(conn: &Connection) -> rusqlite::Result<i64> {
+    conn.query_row(
+        "SELECT COUNT(*) FROM assets WHERE type='audio' AND trashed=0 AND (suggested_name IS NULL OR suggested_name='')",
+        [],
+        |r| r.get(0),
+    )
+}
+
 /// Grava o nome sugerido pela IA (não toca no arquivo no disco).
 pub fn set_suggested_name(conn: &Connection, id: i64, name: &str) -> rusqlite::Result<()> {
     conn.execute("UPDATE assets SET suggested_name=?2 WHERE id=?1", params![id, name])?;

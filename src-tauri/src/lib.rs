@@ -1522,18 +1522,55 @@ fn ai_analyze_many(app: tauri::AppHandle, ids: Vec<i64>) -> Result<(), String> {
 #[tauri::command]
 fn reorganize_sfx(app: tauri::AppHandle, ids: Vec<i64>, force: bool) -> Result<usize, String> {
     let state = app.state::<AppState>();
+    let items = {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        db::audio_assets_to_reorg(&conn, &ids, force).map_err(|e| e.to_string())?
+    };
+    launch_sfx_reorg(&app, items)
+}
+
+/// Reorganiza TODOS os áudios da biblioteca (escopo "tudo"). `force` reprocessa os já feitos.
+#[tauri::command]
+fn reorganize_sfx_all(app: tauri::AppHandle, force: bool) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let items = {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        db::audio_to_reorg_all(&conn, force).map_err(|e| e.to_string())?
+    };
+    launch_sfx_reorg(&app, items)
+}
+
+/// Reorganiza todos os áudios DENTRO de uma pasta (escopo "por pasta").
+#[tauri::command]
+fn reorganize_sfx_folder(app: tauri::AppHandle, root: String, force: bool) -> Result<usize, String> {
+    let state = app.state::<AppState>();
+    let root = indexer::normalize_root(&root);
+    let items = {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        db::audio_to_reorg_folder(&conn, &root, force).map_err(|e| e.to_string())?
+    };
+    launch_sfx_reorg(&app, items)
+}
+
+/// Quantos áudios ainda faltam reorganizar (pro botão "Reorganizar todos (N)").
+#[tauri::command]
+fn sfx_pending_count(app: tauri::AppHandle) -> Result<i64, String> {
+    let state = app.state::<AppState>();
+    state.reads.with(|conn| db::count_audio_to_reorg(conn)).map_err(|e| e.to_string())
+}
+
+/// Coração compartilhado dos 3 escopos (seleção / pasta / tudo): valida a chave, cria a coleção
+/// e dispara o lote. 100% não-destrutivo. Retorna quantos entraram na fila.
+fn launch_sfx_reorg(app: &tauri::AppHandle, items: Vec<(i64, String, String)>) -> Result<usize, String> {
+    let state = app.state::<AppState>();
     let settings = ai::load_settings(&state.data_dir);
     settings
         .active_key()
         .ok_or("Configure sua chave da API nas configurações.")?;
-    let db = state.db.clone();
-    let items = {
-        let conn = db.lock().map_err(|e| e.to_string())?;
-        db::audio_assets_to_reorg(&conn, &ids, force).map_err(|e| e.to_string())?
-    };
     if items.is_empty() {
         return Ok(0);
     }
+    let db = state.db.clone();
     let coll = {
         let conn = db.lock().map_err(|e| e.to_string())?;
         db::create_collection(&conn, "Elementos de Edição organizados").map_err(|e| e.to_string())?
@@ -2703,6 +2740,9 @@ pub fn run() {
             ai_analyze,
             ai_analyze_many,
             reorganize_sfx,
+            reorganize_sfx_all,
+            reorganize_sfx_folder,
+            sfx_pending_count,
             ai_analyze_untagged,
             set_folder_alias,
             set_folder_hidden,

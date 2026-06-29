@@ -506,6 +506,14 @@ export const aiAnalyzeMany = (ids: number[]) =>
 // quantos áudios entraram na fila. force=true reprocessa os já classificados.
 export const reorganizeSfx = (ids: number[], force = false) =>
   invoke<number>("reorganize_sfx", { ids, force });
+// Escopo "tudo": reorganiza TODOS os áudios da biblioteca.
+export const reorganizeSfxAll = (force = false) =>
+  invoke<number>("reorganize_sfx_all", { force });
+// Escopo "por pasta": reorganiza todos os áudios dentro de uma pasta.
+export const reorganizeSfxFolder = (root: string, force = false) =>
+  invoke<number>("reorganize_sfx_folder", { root, force });
+// Quantos áudios ainda faltam reorganizar (pro botão "Reorganizar todos (N)").
+export const sfxPendingCount = () => invoke<number>("sfx_pending_count");
 // AI Action: pergunta livre sobre uma imagem (descreva, que texto há, sugira nome…)
 export const aiAskImage = (id: number, question: string) =>
   invoke<string>("ai_ask_image", { id, question });

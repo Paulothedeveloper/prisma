@@ -72,6 +72,7 @@ function TreeNode({
   onRescan,
   onColor,
   onAutotag,
+  onReorganizeSfx,
   onRemoveFolder,
 }: {
   node: Node;
@@ -85,6 +86,7 @@ function TreeNode({
   onRescan: (dir: string) => void;
   onColor: (dir: string, color: string | null) => void;
   onAutotag: (dir: string) => void;
+  onReorganizeSfx: (dir: string) => void;
   onRemoveFolder: (dir: string) => void;
 }) {
   const [open, setOpen] = useState(depth < 1);
@@ -216,6 +218,9 @@ function TreeNode({
               <button className="ctx-item" onClick={() => { setMenu(null); onAutotag(node.path); }}>
                 <Icon name="tag" size={14} /> <span>{t("fld.autotag")}</span>
               </button>
+              <button className="ctx-item" onClick={() => { setMenu(null); onReorganizeSfx(node.path); }}>
+                <Icon name="sliders" size={14} /> <span>{t("fld.reorgSfx")}</span>
+              </button>
               <button className="ctx-item" onClick={() => { setMenu(null); onRescan(node.path); }}>
                 <Icon name="refresh" size={14} /> <span>{t("fld.rescan")}</span>
               </button>
@@ -272,6 +277,7 @@ function TreeNode({
             onRescan={onRescan}
             onColor={onColor}
             onAutotag={onAutotag}
+            onReorganizeSfx={onReorganizeSfx}
             onRemoveFolder={onRemoveFolder}
           />
         ))}
@@ -289,6 +295,7 @@ function FolderTreeImpl({
   onRescan,
   onColor,
   onAutotag,
+  onReorganizeSfx,
   onRemoveFolder,
 }: {
   dirs: FolderRow[];
@@ -300,6 +307,7 @@ function FolderTreeImpl({
   onRescan: (dir: string) => void;
   onColor: (dir: string, color: string | null) => void;
   onAutotag: (dir: string) => void;
+  onReorganizeSfx: (dir: string) => void;
   onRemoveFolder: (dir: string) => void;
 }) {
   const roots = useMemo(() => buildTree(dirs).map(collapse), [dirs]);
@@ -325,6 +333,7 @@ function FolderTreeImpl({
           onRescan={onRescan}
           onColor={onColor}
           onAutotag={onAutotag}
+          onReorganizeSfx={onReorganizeSfx}
           onRemoveFolder={onRemoveFolder}
         />
       ))}

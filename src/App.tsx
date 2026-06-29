@@ -54,6 +54,7 @@ import {
   deleteSmart,
   aiAnalyzeMany,
   reorganizeSfx,
+  reorganizeSfxFolder,
   subfolders,
   searchFolders,
   clipSearch,
@@ -1295,6 +1296,18 @@ export default function App() {
     }
   }, [selectedIds, assets]);
 
+  // Reorganizar SFX de uma PASTA inteira (todos os áudios dela), pelo menu de contexto da pasta.
+  const reorgSfxFolder = useCallback(async (dir: string) => {
+    const name = dir.split(/[\\/]/).pop() || dir;
+    if (!window.confirm(t("sfx.folderConfirm").replace("{dir}", name))) return;
+    try {
+      const n = await reorganizeSfxFolder(dir, false);
+      window.alert(n === 0 ? t("sfx.folderNone") : t("sfx.folderStarted").replace("{n}", String(n)));
+    } catch (e) {
+      window.alert(`${t("common.error")}: ${String(e)}`);
+    }
+  }, []);
+
   // Comandos da paleta (Ctrl+K): navegação + ações + destinos (tags/coleções). Recalcula quando
   // a seleção/tags/coleções mudam (ações de seleção entram no topo).
   const cmdkCommands = useMemo<Command[]>(() => {
@@ -1962,6 +1975,7 @@ export default function App() {
                 onRescan={(dir) => rescanFolder(dir)}
                 onColor={(dir, color) => setFolderColor(dir, color).then(refreshMeta)}
                 onAutotag={(dir) => autotagFolder(dir).then(() => { runSearch(true); refreshMeta(); })}
+                onReorganizeSfx={reorgSfxFolder}
                 onRemoveFolder={(dir) =>
                   setConfirmDlg({
                     title: t("fld.remove"),

@@ -151,6 +151,10 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.41** — Correção do **travamento na indexação** + Reorganizar SFX em **lote**
+- 🛠️ **Fix do freeze:** a indexação podia **travar o app** quando o `ffmpeg` empacava num arquivo problemático (corrompido/codec raro) ou num **soluço do drive** (USB/rede, IO retries). Toda chamada de ffmpeg/ffprobe da geração de miniatura agora tem **timeout + kill** (thumb 45s, probe 20s): um arquivo ruim mata só a si mesmo e a fila segue — nunca mais congela a biblioteca inteira.
+- 🎚️ **Reorganizar SFX em lote:** além da seleção, agora dá pra reorganizar **uma pasta inteira** (botão direito na pasta → **"Reorganizar SFX"**) ou **TODOS os áudios** da biblioteca (**Configurações › IA e busca › "Reorganizar todos (N)"**). 3 escopos no mesmo motor não-destrutivo + **cache**. i18n PT/EN/ES.
+
 **0.9.40** — Nova **identidade visual** (ícone + logo em vetor)
 - 🎨 **Ícone e logo refeitos em vetor (SVG)** — um **prisma de vidro** refratando a luz no **espectro da marca** (cores de sistema Apple), estética *liquid-glass*. **Original** (substitui a arte raster antiga), **nítido de 16px a 1024px**.
 - 🪟 **Variação app × software PC** (pedido): variante **rica** (vidro + 7 raios + glow) para tamanhos grandes / loja / instalador, e variante **simplificada de alto contraste** (triângulo bold + 5 raios) embutida no `.ico` para os tamanhos pequenos do Windows (taskbar/tray) — onde a rica empastaria.
