@@ -35,3 +35,6 @@ Thumbs.db
 
 # Chave PRIVADA do updater (NUNCA versionar)
 src-tauri/prisma-update.key
+
+# previews descartáveis do branding
+branding/_*.png

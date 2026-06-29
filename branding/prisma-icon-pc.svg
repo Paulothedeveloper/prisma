@@ -1,0 +1,31 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0.18" y1="0" x2="0.82" y2="1">
+      <stop offset="0" stop-color="#26262E"/>
+      <stop offset="1" stop-color="#0C0C0F"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#7FA0E0" stop-opacity="0.06"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="229" fill="url(#bg)"/>
+  <rect x="3" y="3" width="1018" height="1018" rx="226" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="2"/>
+
+  <!-- feixe de entrada (mais grosso p/ ler pequeno) -->
+  <path d="M150 426 L405 496" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round"/>
+
+  <!-- espectro: 5 raios fortes -->
+  <g stroke-width="40" stroke-linecap="round">
+    <path d="M620 500 L900 446" stroke="#FF453A"/>
+    <path d="M620 500 L912 540" stroke="#FFD60A"/>
+    <path d="M620 500 L890 632" stroke="#30D158"/>
+    <path d="M620 500 L840 712" stroke="#0A84FF"/>
+    <path d="M620 500 L770 778" stroke="#BF5AF2"/>
+  </g>
+
+  <!-- prisma sólido (stroke grosso) -->
+  <path d="M512 250 L700 660 L324 660 Z" fill="url(#glass)"
+        stroke="#FFFFFF" stroke-width="30" stroke-linejoin="round"/>
+</svg>

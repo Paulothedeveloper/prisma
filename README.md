@@ -151,6 +151,11 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.40** — Nova **identidade visual** (ícone + logo em vetor)
+- 🎨 **Ícone e logo refeitos em vetor (SVG)** — um **prisma de vidro** refratando a luz no **espectro da marca** (cores de sistema Apple), estética *liquid-glass*. **Original** (substitui a arte raster antiga), **nítido de 16px a 1024px**.
+- 🪟 **Variação app × software PC** (pedido): variante **rica** (vidro + 7 raios + glow) para tamanhos grandes / loja / instalador, e variante **simplificada de alto contraste** (triângulo bold + 5 raios) embutida no `.ico` para os tamanhos pequenos do Windows (taskbar/tray) — onde a rica empastaria.
+- 🌊 **Cascata total**: app (`.ico/.icns/png`), **instalador** (header + sidebar), tiles do Windows, **iOS/Android**, **favicon**, **logo na UI** e **README** — tudo na marca nova. Fontes vetoriais versionadas em `branding/`.
+
 **0.9.39** — Provedor de IA **Gemini** (Google) como alternativa ao Claude
 - 🤖 Agora você escolhe o **provedor de IA**: **Claude (Anthropic)** OU **Gemini (Google)** — em **Configurações › IA e busca** há um seletor **Claude/Gemini**; cole a chave do que preferir. A do Gemini é **gratuita** em `aistudio.google.com/apikey` e mais barata. Vale pra **tudo**: busca por conteúdo, descrições, Plano de Color e **Reorganizar SFX**.
 - 🧠 O fluxo é **idêntico** nos dois: a imagem (thumb / espectrograma) vai como **visão**. Camada de provedor única no backend (`ai.rs`) — Anthropic Messages API ou Google `generateContent`. Modelo padrão Gemini: `gemini-3.5-flash` (com visão); Claude: `claude-haiku-4-5`.

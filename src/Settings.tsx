@@ -46,10 +46,11 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.39";
+const APP_VERSION = "0.9.40";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
+  "Nova identidade visual: ícone e logo do PRISMA refeitos em VETOR — um prisma de vidro refratando a luz no espectro da marca, estética liquid-glass. Original (substitui a arte antiga), nítido de 16px a 1024px, com variante simplificada e de alto contraste para tamanhos pequenos (taskbar/tray do Windows). Atualizado em tudo: app, instalador, tiles, iOS/Android, favicon e README.",
   "Novo: escolha o provedor de IA — Claude (Anthropic) OU Gemini (Google). Em Configurações › IA e busca há um seletor Claude/Gemini; cole a chave do que preferir. A do Gemini é gratuita em aistudio.google.com/apikey e mais barata. Vale pra TUDO: busca por conteúdo, descrições, Plano de Color e Reorganizar SFX.",
   "Por que dois provedores: o Gemini Flash é mais barato e tem visão; o Claude Haiku é ótimo e estável. O fluxo é idêntico nos dois — a imagem (thumb/espectrograma) vai como visão. A chave fica só neste PC; nada é enviado sem você clicar.",
   "Reorganizar (SFX): selecione seus áudios de edição (whoosh, riser, impact, foley…) e a IA classifica cada um e organiza na biblioteca — tags + categoria + subtipo + nome padronizado sugerido + coleção \"Elementos de Edição organizados\". 100% não-destrutivo (não toca nos arquivos). Agora roda com Claude ou Gemini.",
