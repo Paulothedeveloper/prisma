@@ -151,6 +151,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.42** — IA Gemini **muito mais rápida** (modelo padrão certo)
+- ⚡ O padrão do Gemini passou de `gemini-3.5-flash` (modelo **"pensador"** — 30–130s, estourava o timeout de 60s e ignorava o formato terso) para **`gemini-flash-lite-latest`**: classifica em **~2s** e obedece o formato. Comprovado **testando com a chave real** (riser sintético → classificado certo como "Riser" em 1.9s; banner → tags/descrição corretas em 1.6s). Alias `-latest` = resiliente a desligamento de versão (lição do 2.0-flash desligado).
+
 **0.9.41** — Correção do **travamento na indexação** + Reorganizar SFX em **lote**
 - 🛠️ **Fix do freeze:** a indexação podia **travar o app** quando o `ffmpeg` empacava num arquivo problemático (corrompido/codec raro) ou num **soluço do drive** (USB/rede, IO retries). Toda chamada de ffmpeg/ffprobe da geração de miniatura agora tem **timeout + kill** (thumb 45s, probe 20s): um arquivo ruim mata só a si mesmo e a fila segue — nunca mais congela a biblioteca inteira.
 - 🎚️ **Reorganizar SFX em lote:** além da seleção, agora dá pra reorganizar **uma pasta inteira** (botão direito na pasta → **"Reorganizar SFX"**) ou **TODOS os áudios** da biblioteca (**Configurações › IA e busca › "Reorganizar todos (N)"**). 3 escopos no mesmo motor não-destrutivo + **cache**. i18n PT/EN/ES.

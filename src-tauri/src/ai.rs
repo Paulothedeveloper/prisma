@@ -12,7 +12,7 @@ pub struct Settings {
     pub anthropic_key: Option<String>,
     pub model: Option<String>,
     pub gemini_key: Option<String>,   // chave do Google AI Studio (Gemini) — alternativa à Anthropic
-    pub gemini_model: Option<String>, // modelo Gemini (padrão gemini-3.5-flash)
+    pub gemini_model: Option<String>, // modelo Gemini (padrão gemini-flash-lite-latest: rápido + obedece formato)
     pub provider: Option<String>,     // "anthropic" | "gemini" | None(auto: usa a chave que existir)
     pub autotag_on_import: Option<bool>, // workflow: ao importar, marca itens com o nome da pasta
     pub auto_proxy_on_import: Option<bool>, // ao importar, gera proxy H.264 dos vídeos de codec não-web
@@ -65,7 +65,10 @@ impl Settings {
                 .gemini_model
                 .clone()
                 .filter(|s| !s.trim().is_empty())
-                .unwrap_or_else(|| "gemini-3.5-flash".to_string()),
+                // flash-lite: ~2s e OBEDECE o formato terso. O gemini-3.5-flash (modelo "pensador")
+                // levava 30-130s (estourava o timeout) e ignorava o formato (testado com a chave real).
+                // Alias "-latest" = resiliente a desligamento de versão (lição do 2.0-flash desligado).
+                .unwrap_or_else(|| "gemini-flash-lite-latest".to_string()),
             Provider::Anthropic => self
                 .model
                 .clone()
