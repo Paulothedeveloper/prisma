@@ -2472,6 +2472,30 @@ fn restore_catalog(app: tauri::AppHandle, src: String) -> Result<(), String> {
     app.restart()
 }
 
+// ── Anti-tela-preta (watchdog de heartbeat) ────────────────────────────────
+// O WebView2 pode ficar PRETO se o processo de render (msedgewebview2.exe) for
+// morto por fora (ex.: outro app/ferramenta rodando `taskkill /IM msedgewebview2`
+// mata TODOS os WebView2 do sistema, não só os deste app) ou se o compositor da
+// GPU cair. Nesses casos o JS para de rodar. O front pinga `prisma_heartbeat`
+// a cada 2s; se o Rust ficar >6s sem ouvir (e a janela NÃO está minimizada), a
+// webview está morta/preta → recriamos navegando pro root (recria o render) +
+// nudge de 1px (recria a surface). Recupera sozinho, sem o usuário fazer nada.
+static APP_START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+static LAST_BEAT_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static BOOT_URL: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+
+fn uptime_ms() -> u64 {
+    APP_START
+        .get_or_init(std::time::Instant::now)
+        .elapsed()
+        .as_millis() as u64
+}
+
+#[tauri::command]
+fn prisma_heartbeat() {
+    LAST_BEAT_MS.store(uptime_ms(), std::sync::atomic::Ordering::Relaxed);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Logs estruturados. Controlável via env PRISMA_LOG (ex.: PRISMA_LOG=debug);
@@ -2673,6 +2697,51 @@ pub fn run() {
                     }
                 });
             }
+            // ANTI-TELA-PRETA (watchdog de heartbeat): recupera a webview se o render
+            // morreu (kill externo de msedgewebview2 / crash / perda de compositor GPU).
+            // Guarda a URL de boot pra poder RE-NAVEGAR (recria o processo de render mesmo
+            // que ele tenha sido morto — `eval`/reload não funcionaria com o render morto).
+            #[cfg(windows)]
+            {
+                if let Some(w) = app.get_webview_window("main") {
+                    if let Ok(u) = w.url() {
+                        let _ = BOOT_URL.set(u.to_string());
+                    }
+                }
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    // grace inicial: dá tempo do front montar e começar a pingar
+                    std::thread::sleep(std::time::Duration::from_secs(8));
+                    LAST_BEAT_MS.store(uptime_ms(), std::sync::atomic::Ordering::Relaxed);
+                    loop {
+                        std::thread::sleep(std::time::Duration::from_secs(2));
+                        let Some(w) = handle.get_webview_window("main") else { continue };
+                        // não conta tempo enquanto minimizado (o JS pode ser suspenso)
+                        if w.is_minimized().unwrap_or(false) {
+                            LAST_BEAT_MS.store(uptime_ms(), std::sync::atomic::Ordering::Relaxed);
+                            continue;
+                        }
+                        let last = LAST_BEAT_MS.load(std::sync::atomic::Ordering::Relaxed);
+                        if uptime_ms().saturating_sub(last) > 6000 {
+                            // sem heartbeat há >6s com a janela visível = webview morta/preta.
+                            // nudge (recria a surface) + re-navega pro root (recria o render).
+                            if let Ok(sz) = w.inner_size() {
+                                let _ = w.set_size(tauri::PhysicalSize::new(sz.width + 1, sz.height));
+                                std::thread::sleep(std::time::Duration::from_millis(40));
+                                let _ = w.set_size(sz);
+                            }
+                            if let Some(u) = BOOT_URL.get() {
+                                if let Ok(url) = u.parse() {
+                                    let _ = w.navigate(url);
+                                }
+                            }
+                            // dá um respiro pro reload e re-arma o relógio (evita loop)
+                            std::thread::sleep(std::time::Duration::from_secs(6));
+                            LAST_BEAT_MS.store(uptime_ms(), std::sync::atomic::Ordering::Relaxed);
+                        }
+                    }
+                });
+            }
             // Reindexa o vault Obsidian no boot + inicia o watcher (reindexa a cada edição de nota).
             {
                 let settings = ai::load_settings(&data_dir);
@@ -2731,6 +2800,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            prisma_heartbeat,
             feature_flags,
             mutate_asset,
             folder_meta,

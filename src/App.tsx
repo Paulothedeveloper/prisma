@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } fr
 import { createPortal } from "react-dom";
 import { VirtuosoGrid, Virtuoso } from "react-virtuoso";
 import { listen } from "@tauri-apps/api/event";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import {
@@ -261,6 +261,18 @@ export default function App() {
   useEffect(() => {
     removingDirsRef.current = removingDirs;
   }, [removingDirs]);
+
+  // Heartbeat anti-tela-preta: pinga o Rust a cada 2s. Se o render do WebView2 for
+  // morto por fora (ex.: outro app rodando `taskkill /IM msedgewebview2`) ou o
+  // compositor da GPU cair, o JS para e o Rust deixa de receber o ping → ele recria
+  // a webview sozinho (ver watchdog em lib.rs). No navegador (dev) o invoke falha e
+  // é ignorado.
+  useEffect(() => {
+    const ping = () => { invoke("prisma_heartbeat").catch(() => {}); };
+    ping();
+    const id = setInterval(ping, 2000);
+    return () => clearInterval(id);
+  }, []);
   const isRemoving = useCallback(
     (dir: string | null | undefined) => {
       if (!dir || removingDirs.size === 0) return false;
