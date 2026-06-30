@@ -2618,6 +2618,43 @@ pub fn run() {
                     indexer::backfill_traits(handle, db_traits);
                 });
             }
+            // ANTI-TELA-BRANCA (robusto): o WebView2 às vezes vem em BRANCO ao restaurar de
+            // minimizado — o Chromium descarta a surface/compositor (e o Windows pode suspender o
+            // processo) quando a janela fica oculta muito tempo. O flag CalculateNativeWinOcclusion
+            // (additionalBrowserArgs) ajuda mas NÃO basta sozinho. Aqui vigiamos minimizar→restaurar
+            // por POLLING (o evento Resized 0x0 não é confiável no Windows). Ao restaurar:
+            //   • nudge de 1px no tamanho → força o WebView2 a recriar a surface (caso leve);
+            //   • se ficou ≥40s minimizado (o caso "muito tempo" do usuário) → reload da webview,
+            //     que SEMPRE limpa o branco. O estado da tela reseta só nesse caso (usuário estava
+            //     fora; o catálogo é re-lido do SQLite) — aceitável e infinitamente melhor que branco.
+            #[cfg(windows)]
+            {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    let mut was_min = false;
+                    let mut since = std::time::Instant::now();
+                    loop {
+                        std::thread::sleep(std::time::Duration::from_millis(700));
+                        let Some(w) = handle.get_webview_window("main") else { continue };
+                        let is_min = w.is_minimized().unwrap_or(false);
+                        if is_min && !was_min {
+                            was_min = true;
+                            since = std::time::Instant::now();
+                        } else if !is_min && was_min {
+                            was_min = false;
+                            let secs = since.elapsed().as_secs();
+                            if let Ok(sz) = w.inner_size() {
+                                let _ = w.set_size(tauri::PhysicalSize::new(sz.width + 1, sz.height));
+                                std::thread::sleep(std::time::Duration::from_millis(40));
+                                let _ = w.set_size(sz);
+                            }
+                            if secs >= 40 {
+                                let _ = w.eval("setTimeout(function(){location.reload()},60)");
+                            }
+                        }
+                    }
+                });
+            }
             // Reindexa o vault Obsidian no boot + inicia o watcher (reindexa a cada edição de nota).
             {
                 let settings = ai::load_settings(&data_dir);
@@ -2805,36 +2842,6 @@ pub fn run() {
             backup_catalog,
             restore_catalog
         ])
-        // 2ª camada anti-tela-branca: mesmo com o flag de occlusion, se o WebView2 descartar a
-        // surface depois de muito tempo minimizado, ao restaurar pode vir branco. Detectamos o
-        // restore (Focused(true) logo após um Resized 0x0 = minimizado) e damos um "empurrão" de
-        // 1px no tamanho e de volta — força o WebView2 a RECRIAR a surface e repintar, sem perder
-        // o estado do app (não é reload).
-        .on_window_event(|window, event| {
-            use std::sync::atomic::{AtomicBool, Ordering};
-            use std::sync::OnceLock;
-            static WAS_MIN: OnceLock<AtomicBool> = OnceLock::new();
-            let was_min = WAS_MIN.get_or_init(|| AtomicBool::new(false));
-            match event {
-                tauri::WindowEvent::Resized(sz) if sz.width == 0 || sz.height == 0 => {
-                    was_min.store(true, Ordering::Relaxed);
-                }
-                tauri::WindowEvent::Focused(true) => {
-                    if was_min.swap(false, Ordering::Relaxed) {
-                        let w = window.clone();
-                        std::thread::spawn(move || {
-                            std::thread::sleep(std::time::Duration::from_millis(70));
-                            if let Ok(sz) = w.inner_size() {
-                                let _ = w.set_size(tauri::PhysicalSize::new(sz.width + 1, sz.height));
-                                std::thread::sleep(std::time::Duration::from_millis(20));
-                                let _ = w.set_size(sz);
-                            }
-                        });
-                    }
-                }
-                _ => {}
-            }
-        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

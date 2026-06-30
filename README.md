@@ -151,6 +151,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.45** — Tela branca ao minimizar: **defesa robusta** (watcher + reload)
+- 🛡️ As tentativas anteriores (flag de oclusão) não bastavam. Agora um **watcher por polling** detecta de forma confiável o minimizar→restaurar (o evento `Resized 0×0` não dispara no Windows) e, ao restaurar: **nudge de 1px** (recria a surface do WebView2) + se ficou **≥40s minimizado** (o caso "muito tempo"), **reload automático** da tela — que SEMPRE limpa o branco (catálogo re-lido do SQLite na hora). Mantém o flag `CalculateNativeWinOcclusion` como 1ª linha.
+
 **0.9.44** — Correção da **tela branca ao minimizar** (caminho certo + repaint)
 - 🩹 A 0.9.43 tentou desligar a oclusão por **variável de ambiente** (`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`), mas o **Tauri sobrescreve** isso com os próprios `additionalBrowserArgs` (confirmei inspecionando o processo do WebView2 — o flag não estava lá). Agora vai pelo lugar certo: **`additionalBrowserArgs` na config da janela** (`--disable-features=msSmartScreenProtection,CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows`, preservando o default do Tauri).
 - 🛟 **2ª camada:** ao restaurar de minimizado (detectado por `Resized 0x0` → `Focused(true)`), um **micro-nudge de 1px** no tamanho força o WebView2 a recriar a surface e repintar — **sem reload** (não perde o estado da tela). Verificado que o flag agora está no processo.
