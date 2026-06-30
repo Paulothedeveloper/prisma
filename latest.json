@@ -1,11 +1,11 @@
 {
-  "version": "0.9.40",
-  "notes": "Nova identidade visual: icone e logo refeitos em vetor (prisma de vidro, espectro da marca). Variante app (rica) x PC (alto contraste) no .ico. Cascata total: app, instalador, tiles, iOS/Android, favicon, README.",
-  "pub_date": "2026-06-29T19:44:23Z",
+  "version": "0.9.46",
+  "notes": "Redesign premium passo 1: sistema unificado de movimento (curvas ease-out-expo estilo Linear/Vercel), micro-interacoes tateis, hover com elevacao e brilho, item ativo em vidro. Zero truncamento de texto.",
+  "pub_date": "2026-06-30T14:20:36Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTU4M2ZyNmY4dGRaYlFJT0tJWHA2L0ZVSFhNVFhMQURVWnJSdnR2dVlGeHdLTEVvT2MwaUUyQWhZdnl1Rk16dG1xaVdDUmR3dXNxN2QySDlWeWtQNUFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyNzYyMjUyCWZpbGU6UFJJU01BXzAuOS40MF94NjQtc2V0dXAuZXhlCmVPMEF3QkxBVmloQmhDb1RVMUtMNUJhUFJoQ1o4R3dWUmtTUGg5aFhWVGpuUUZpc2RpQXM4cGQ3cERRYllBOTl4aHJKQU8vTEl3ekEwOGJXUE8wVEFBPT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.40/PRISMA_0.9.40_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWThlTDlRRmc4bVdqZE51WVd3Nytlb3VUWUM0WitDZzdtQzllUmRYL0duWFRGK2Rhb1V2WVBRZUU4blBqYnVadnRiQXQ2d3RRWjNPdVptRU5wYUtqMGdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODI5MTk0CWZpbGU6UFJJU01BXzAuOS40Nl94NjQtc2V0dXAuZXhlClpENDVvMDc0Z2ZKbEJhSUlob3pMQmZXYmdoQmtucHR4U2I0L1MwZzdxblpGUm1BWFhBRFhBZnNMMWlndFFXbkVXdUNmbkNTQ3RFT2Z3WVozekhUb0J3PT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.46/PRISMA_0.9.46_x64-setup.exe"
     }
   }
 }
