@@ -48,10 +48,11 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.47";
+const APP_VERSION = "0.9.48";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
+  "Polimento PREMIUM (passo 3 do redesign): aberturas mais cinematográficas e consistentes. O visualizador (lightbox) agora SOBE e assenta ao abrir (curva enfática, sensação Eagle) em vez de só aparecer; o menu de contexto e as superfícies de vidro usam todas a mesma linguagem de movimento. Verificado no navegador: o zoom da miniatura no hover está exatamente em 1.06, lightbox e menu abrem fluidos, e zero texto cortado (nomes longos quebram em linhas, nunca '...').",
   "TELA BRANCA — agora estruturalmente IMPOSSÍVEL pela causa-raiz. O branco vinha do cache de shaders (GPUCache) do WebView2 corrompendo (force-kill, crash de driver de vídeo, desligamento sujo). Agora o app (1) manda o WebView2 NÃO gravar esse cache em disco — sem arquivo, não há o que corromper; e (2) ao abrir, apaga por garantia qualquer resíduo de cache de shader/código ANTES da tela subir. Seus dados (biblioteca, favoritos, configurações) não são tocados. Não depende mais de você minimizar/restaurar.",
   "Polimento PREMIUM (passo 2 do redesign — gesto-assinatura do Eagle): ao passar o mouse num card, a miniatura agora CRESCE suave por dentro (recortada pelas bordas arredondadas), com um leve escurecido no rodapé que dá leitura aos selos (duração, nota). Movimento de 60fps (só transform/opacity), com a mesma curva suave do resto. Respeita 'menos movimento' do sistema.",
   "Polimento PREMIUM (passo 1 do redesign): sistema de movimento unificado — antes havia 31 curvas de animação soltas; agora tudo usa as mesmas curvas suaves (estilo Linear/Vercel, sem 'bounce'). Resultado: toque mais fluido em tudo — botões e itens 'afundam' de leve ao clicar (feedback tátil), a sidebar desliza no hover, os cards 'sobem' com sombra, e o item selecionado ganhou profundidade de vidro (não é mais um azul chapado). Acessibilidade: respeita 'menos movimento' do sistema. Mais passos do redesign vêm a seguir, referência Eagle.",

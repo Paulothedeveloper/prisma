@@ -6551,6 +6551,28 @@ body {
   z-index: 3;
 }
 
+/* ============================================================================
+   POLISH PREMIUM — iteração 3: aberturas mais cinematográficas e CONSISTENTES.
+   Unifica as superfícies-chave (lightbox, menu) ao sistema de movimento e dá ao
+   preview um "sobe e assenta" (rise) com a curva enfática — sensação Eagle.
+   ========================================================================== */
+@keyframes premiumRise {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+/* Lightbox: backdrop entra suave, o palco SOBE e assenta (não só um pop sutil) */
+.preview-overlay {
+  animation: fadeIn var(--dur-2) var(--ease-out);
+}
+.preview-stage {
+  animation: premiumRise var(--dur-3) var(--ease-emphasized);
+}
+/* Menu de contexto: mesma linguagem (pop curto na curva padrão) */
+.ctx-menu {
+  animation: popIn var(--dur-1) var(--ease);
+  transform-origin: top left;
+}
+
 /* Acessibilidade: respeita quem pediu menos movimento (cobre o sistema novo todo) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -6561,4 +6583,5 @@ body {
   .side-item:hover:not(.active),
   .card:hover { transform: none; }
   .card:hover .thumb .media { transform: none; }
+  .preview-stage { animation: fadeIn 0.01ms; transform: none; }
 }

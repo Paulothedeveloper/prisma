@@ -1,11 +1,11 @@
 {
-  "version": "0.9.47",
-  "notes": "Tela branca agora estruturalmente impossivel (WebView2 nao grava cache de shader + purga residuo no boot). Redesign premium passo 2: thumbnail cresce suave no hover (assinatura Eagle).",
-  "pub_date": "2026-06-30T15:48:32Z",
+  "version": "0.9.48",
+  "notes": "Redesign premium passo 3: lightbox abre subindo (curva enfatica, sensacao Eagle) + linguagem de movimento unificada nos menus/superficies. Verificado no navegador (hover-zoom 1.06, zero truncamento).",
+  "pub_date": "2026-06-30T16:12:20Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXl1MlRjSDR2U3krYVErNHVib1p2ejF2aFIxYmpwa1QvSVJQcldTd0gvQ1RHKzdVWmRIMEUxcEpYTjd3NDAzMXJBa3JpVUNRK09PL1djL0VISnB1Z0FrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODM0NDg3CWZpbGU6UFJJU01BXzAuOS40N194NjQtc2V0dXAuZXhlCjJRb0ViUHZVNDUvNlFwb1hHbk9kOHAxaDUrMWFuVUFvVTE0WUVaMXg5dEhTSHhPeG50RlNLWFdSNnFpZVFhQUR6MUVlODNWdEkvUnowSDJiVlBoSkRnPT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.47/PRISMA_0.9.47_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXdqSWFKU1ZtdVNxdDE2SGYzRjk4eEZNWnprWHIrVDFQV3NhbU5rMWlxRWRQTm4yZkV5cjJNZHZwbHNHQTE0Z3B4SHpKcUl5WEN6VWZUck96OE5OMFFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODM1OTE1CWZpbGU6UFJJU01BXzAuOS40OF94NjQtc2V0dXAuZXhlCnMrOTI0N3FPSUw3NDJucVhzeEwreGFkTXRLcGdiYy9jUG9jL3ZrUUEvMmJaa25GZFBlbGlkNkpxUlBmZzZCYTJJMC9oRFl1bWNpdEg0N2VUeUsrYUNnPT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.48/PRISMA_0.9.48_x64-setup.exe"
     }
   }
 }
