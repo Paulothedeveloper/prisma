@@ -2713,20 +2713,35 @@ pub fn run() {
                     // grace inicial: dá tempo do front montar e começar a pingar
                     std::thread::sleep(std::time::Duration::from_secs(8));
                     LAST_BEAT_MS.store(uptime_ms(), std::sync::atomic::Ordering::Relaxed);
+                    // já tentamos o conserto BARATO (navigate) nesta "morte"? evita reiniciar à toa
+                    // antes de tentar recuperar sem perder o processo.
+                    let mut navigated = false;
                     loop {
                         std::thread::sleep(std::time::Duration::from_secs(2));
-                        let Some(w) = handle.get_webview_window("main") else { continue };
-                        // não conta tempo enquanto minimizado (o JS pode ser suspenso)
-                        if w.is_minimized().unwrap_or(false) {
-                            LAST_BEAT_MS.store(uptime_ms(), std::sync::atomic::Ordering::Relaxed);
-                            continue;
+                        let win = handle.get_webview_window("main");
+                        // não conta tempo enquanto minimizado (o JS pode ser suspenso pelo Windows)
+                        if let Some(w) = &win {
+                            if w.is_minimized().unwrap_or(false) {
+                                LAST_BEAT_MS
+                                    .store(uptime_ms(), std::sync::atomic::Ordering::Relaxed);
+                                navigated = false;
+                                continue;
+                            }
                         }
                         let last = LAST_BEAT_MS.load(std::sync::atomic::Ordering::Relaxed);
-                        if uptime_ms().saturating_sub(last) > 6000 {
-                            // sem heartbeat há >6s com a janela visível = webview morta/preta.
-                            // nudge (recria a surface) + re-navega pro root (recria o render).
+                        if uptime_ms().saturating_sub(last) <= 6000 {
+                            navigated = false; // vivo, pingando normal
+                            continue;
+                        }
+                        // === sem heartbeat há >6s: webview morta/preta ou janela destruída ===
+                        if let (Some(w), false) = (&win, navigated) {
+                            // 1ª tentativa BARATA: render morto com a JANELA VIVA (o caso real do
+                            // usuário — só a tela preta). nudge recria a surface + navigate recria o
+                            // processo de render. Se o ambiente WebView2 ainda está vivo, isso cura
+                            // sem reiniciar o app.
                             if let Ok(sz) = w.inner_size() {
-                                let _ = w.set_size(tauri::PhysicalSize::new(sz.width + 1, sz.height));
+                                let _ = w
+                                    .set_size(tauri::PhysicalSize::new(sz.width + 1, sz.height));
                                 std::thread::sleep(std::time::Duration::from_millis(40));
                                 let _ = w.set_size(sz);
                             }
@@ -2735,10 +2750,19 @@ pub fn run() {
                                     let _ = w.navigate(url);
                                 }
                             }
-                            // dá um respiro pro reload e re-arma o relógio (evita loop)
-                            std::thread::sleep(std::time::Duration::from_secs(6));
-                            LAST_BEAT_MS.store(uptime_ms(), std::sync::atomic::Ordering::Relaxed);
+                            navigated = true;
+                            // espera o reload acontecer e o front voltar a pingar
+                            std::thread::sleep(std::time::Duration::from_secs(8));
+                            continue;
                         }
+                        // Chegou aqui = a janela SUMIU, OU o navigate não curou (ambiente WebView2
+                        // envenenado porque MATARAM TODOS os processos msedgewebview2, inclusive o
+                        // "browser"/environment — ex.: `taskkill /IM msedgewebview2` system-wide).
+                        // Recriar janela no mesmo processo não pinta (ambiente morto). A única cura
+                        // real é REINICIAR o processo → ambiente WebView2 NOVO e limpo. O catálogo é
+                        // re-lido do SQLite; o usuário não perde nada. (Fechar pra sair não cai aqui:
+                        // o app encerra em ~1s, antes do gate de 6s.)
+                        handle.restart();
                     }
                 });
             }

@@ -1,11 +1,11 @@
 {
-  "version": "0.9.50",
-  "notes": "Tela PRETA morta na causa-raiz: watchdog de heartbeat recria a webview sozinho se o render for morto por fora (taskkill de msedgewebview2 system-wide), crash ou perda de compositor GPU. Recupera em segundos sem perder dados.",
-  "pub_date": "2026-06-30T17:23:42Z",
+  "version": "0.9.52",
+  "notes": "Tela PRETA morta de vez (testado): watchdog de heartbeat auto-recupera nos dois casos — janela preta (recria a tela) ou WebView2 morto por completo (reinicia o app sozinho, ambiente novo). Causa real: taskkill /IM msedgewebview2 system-wide de outra ferramenta no PC.",
+  "pub_date": "2026-06-30T17:50:22Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWThiZWZMRmR6YzVPdVJGRzBFOGhHblpRZDZlVUVVYkxrTlZhNjkyVElFN3dSc24rZU9WbnViQUQ0WGlKYmV2ZkpsNDNQbUlxV1dIdnV3dEZ1Uzk0M0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODQwMTg4CWZpbGU6UFJJU01BXzAuOS41MF94NjQtc2V0dXAuZXhlCjlyRGYzaUNsUGk0TEpyS3RRTmMzZGhwOUFvOEVKeHhDZ0FSUjVYMmtNM3hLYzVTRUNtZEdLNXZWbFk1cFJaa2ptb3AvamVVcS9jRkR0bUMwVUh5UEFnPT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.50/PRISMA_0.9.50_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXpCN1lRMFZjcDFjY3MwR1JqYmdmUFd1RkhwSlRlQlRxSGcxQjgzMGxQNTRvN3NMQ0JzaTZiM2dTdi9TVERGRlU0TlRXbHJ6M3NaSGhjeU9vSUpyVUFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODQxNjYwCWZpbGU6UFJJU01BXzAuOS41Ml94NjQtc2V0dXAuZXhlCnVETnVnNWo3NjI5UVJWSFB5VEUwOHg4ZjlrRTU0SjBhWEZuOTRpNjdBK2IzaUswZWpic2IwcGdHV0VNTzVzWmxtUjMzTjVTdzlmUTAwMHl3N1YrSUNnPT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.52/PRISMA_0.9.52_x64-setup.exe"
     }
   }
 }
