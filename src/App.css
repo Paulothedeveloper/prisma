@@ -2760,12 +2760,12 @@ body {
   height: 100%;
   overflow-y: auto;
   column-width: var(--thumb);
-  column-gap: 14px;
+  column-gap: 10px;
   padding: 0 2px;
 }
 .wf-item {
   break-inside: avoid;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 /* ---------- Markup / anotação ---------- */
@@ -6574,6 +6574,49 @@ body {
 .ctx-menu {
   animation: popIn var(--dur-1) var(--ease);
   transform-origin: top left;
+}
+
+/* ============================================================================
+   POLISH PREMIUM — iteração 4: ABRIR/FECHAR animado em tudo (pedido do Paulo).
+   ========================================================================== */
+/* Pasta expandindo: os filhos "desdobram" (slide + fade), não aparecem secos */
+@keyframes treeChildrenIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.tree-children {
+  animation: treeChildrenIn var(--dur-2) var(--ease-out);
+  transform-origin: top center;
+}
+/* o "chevron" da pasta gira suave ao abrir/fechar (já existe .open; faltava a transição) */
+.tree-caret {
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.tree-caret.open {
+  transform: rotate(90deg);
+}
+/* Dropdown "Adicionar" (Pastas/Da web/Arquivos) e popovers de menu: mesma linguagem */
+.add-menu,
+.popup-menu,
+.menu-pop,
+.dropdown-pop {
+  animation: popIn var(--dur-1) var(--ease);
+  transform-origin: top right;
+}
+/* Abas das Configurações: o conteúdo entra com um fade-up curto a cada troca
+   (o container .pref-content já tem key={tab} → remonta → a animação dispara) */
+@keyframes tabPanelIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pref-content {
+  animation: tabPanelIn var(--dur-2) var(--ease-out);
+}
+/* Troca de TEMA/COR: crossfade suave da UI inteira (View Transitions API) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-3);
+  animation-timing-function: var(--ease-out);
 }
 
 /* Acessibilidade: respeita quem pediu menos movimento (cobre o sistema novo todo) */

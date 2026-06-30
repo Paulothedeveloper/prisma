@@ -1,11 +1,11 @@
 {
-  "version": "0.9.53",
-  "notes": "Visual premium (redesign passo 5, agora VISIVEL): fundo near-black levemente frio (era cinza), grid mais denso, e pastas com icones COLORIDOS por padrao na barra lateral (assinatura Eagle).",
-  "pub_date": "2026-06-30T18:36:05Z",
+  "version": "0.9.54",
+  "notes": "Fluidez total (passo 6): layout MASONRY por padrao (parede Eagle), pasta expande/colapsa animada, troca de aba com fade, menu Adicionar animado, e troca de cor com crossfade da UI inteira (View Transitions).",
+  "pub_date": "2026-06-30T18:56:41Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTB3QnEzaCs3L0hILzZ2NFFPam5oUHhYTVZXRWMvbHhNaU05T2tFbFJwQ3RjU0VnWE5uMU9lNFBSU1ZubHBSMld3bnhreVUvcW5CT3FNcG9aSGVYOHdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODQ0NTIxCWZpbGU6UFJJU01BXzAuOS41M194NjQtc2V0dXAuZXhlCm1WYnRSbm5LOEJzcXF1c1RFSlNXNFVVMDdSWTRNOTVGOTFNKy9ROUpjcS9jUmZTMmExRTlWQytwdDFuNVNsMEorak9rL3RYdURFNnZ6ZUhhclZpRkNRPT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.53/PRISMA_0.9.53_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWStFMEl2VEpWZXhBMHR0dVoxMXQ1UFpaRVBEcGwwR21pblk0aVg1M2VCRXlPR1JZeEwwNEdRNjZJMkVKZEEzL0VWdk1jZWlBKzR6dWFhNUZ1TFJkR0FjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODQ1NzczCWZpbGU6UFJJU01BXzAuOS41NF94NjQtc2V0dXAuZXhlCnRPSTdhTjlYVDVjcW5wVHhWOUZMaUlHeG4yZVVwVkphektsT3lXNlFESW8yTnQxaEdrSXB2NG5kaW5aR2Nkck8xN092a0ZKdGJKaDBINU5ZbGlUQkRnPT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.54/PRISMA_0.9.54_x64-setup.exe"
     }
   }
 }

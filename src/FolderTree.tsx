@@ -271,25 +271,28 @@ function TreeNode({
           </>,
           document.body
         )}
-      {open &&
-        kids.map((c) => (
-          <TreeNode
-            key={c.path}
-            node={c}
-            depth={depth + 1}
-            selected={selected}
-            meta={meta}
-            showHidden={showHidden}
-            onSelect={onSelect}
-            onAlias={onAlias}
-            onHide={onHide}
-            onRescan={onRescan}
-            onColor={onColor}
-            onAutotag={onAutotag}
-            onReorganizeSfx={onReorganizeSfx}
-            onRemoveFolder={onRemoveFolder}
-          />
-        ))}
+      {open && (
+        <div className="tree-children">
+          {kids.map((c) => (
+            <TreeNode
+              key={c.path}
+              node={c}
+              depth={depth + 1}
+              selected={selected}
+              meta={meta}
+              showHidden={showHidden}
+              onSelect={onSelect}
+              onAlias={onAlias}
+              onHide={onHide}
+              onRescan={onRescan}
+              onColor={onColor}
+              onAutotag={onAutotag}
+              onReorganizeSfx={onReorganizeSfx}
+              onRemoveFolder={onRemoveFolder}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
