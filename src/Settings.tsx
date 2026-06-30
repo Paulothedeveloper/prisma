@@ -48,10 +48,12 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.46";
+const APP_VERSION = "0.9.47";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
+  "TELA BRANCA — agora estruturalmente IMPOSSÍVEL pela causa-raiz. O branco vinha do cache de shaders (GPUCache) do WebView2 corrompendo (force-kill, crash de driver de vídeo, desligamento sujo). Agora o app (1) manda o WebView2 NÃO gravar esse cache em disco — sem arquivo, não há o que corromper; e (2) ao abrir, apaga por garantia qualquer resíduo de cache de shader/código ANTES da tela subir. Seus dados (biblioteca, favoritos, configurações) não são tocados. Não depende mais de você minimizar/restaurar.",
+  "Polimento PREMIUM (passo 2 do redesign — gesto-assinatura do Eagle): ao passar o mouse num card, a miniatura agora CRESCE suave por dentro (recortada pelas bordas arredondadas), com um leve escurecido no rodapé que dá leitura aos selos (duração, nota). Movimento de 60fps (só transform/opacity), com a mesma curva suave do resto. Respeita 'menos movimento' do sistema.",
   "Polimento PREMIUM (passo 1 do redesign): sistema de movimento unificado — antes havia 31 curvas de animação soltas; agora tudo usa as mesmas curvas suaves (estilo Linear/Vercel, sem 'bounce'). Resultado: toque mais fluido em tudo — botões e itens 'afundam' de leve ao clicar (feedback tátil), a sidebar desliza no hover, os cards 'sobem' com sombra, e o item selecionado ganhou profundidade de vidro (não é mais um azul chapado). Acessibilidade: respeita 'menos movimento' do sistema. Mais passos do redesign vêm a seguir, referência Eagle.",
   "TELA BRANCA ao restaurar de minimizado — agora com defesa robusta. Além do flag de oclusão (verificado no processo), o app agora VIGIA o minimizar→restaurar e, ao voltar: dá um micro-empurrão na janela pra forçar o WebView2 a repintar; e se ficou MUITO tempo minimizado (40s+), recarrega a tela automaticamente — isso SEMPRE limpa o branco (o catálogo é re-lido na hora; você não perde nada). Direcionado exatamente ao caso de ficar muito tempo minimizado.",
   "IA com Gemini ficou MUITO mais rápida: o modelo padrão passou de gemini-3.5-flash (um modelo \"pensador\", que levava 30-130s e estourava o tempo limite) para gemini-flash-lite-latest — classifica em ~2s e obedece o formato. Testado de verdade com a chave real (um riser sintético foi classificado certo como \"Riser\" em 1.9s).",

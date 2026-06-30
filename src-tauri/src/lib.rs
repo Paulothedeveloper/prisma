@@ -2483,6 +2483,24 @@ pub fn run() {
         )
         .try_init();
 
+    // Blindagem anti-tela-branca: o GPUCache/shader-cache do WebView2 corrompe (force-kill,
+    // crash de driver, desligamento sujo) e o app abre BRANCO. Já desligamos a escrita em disco
+    // desse cache via additionalBrowserArgs (--disable-gpu-shader-disk-cache/program-cache); aqui,
+    // por garantia, apagamos qualquer resíduo ANTES de o WebView2 subir (este código roda antes do
+    // Builder criar a janela). Não toca em Local Storage/IndexedDB (dados do usuário). Idempotente.
+    #[cfg(windows)]
+    {
+        if let Ok(local) = std::env::var("LOCALAPPDATA") {
+            let base = std::path::Path::new(&local)
+                .join("com.paulo.prisma")
+                .join("EBWebView")
+                .join("Default");
+            for sub in ["GPUCache", "Code Cache", "GrShaderCache", "ShaderCache"] {
+                let _ = std::fs::remove_dir_all(base.join(sub));
+            }
+        }
+    }
+
     tauri::Builder::default()
         // single-instance PRIMEIRO (recomendação do Tauri): se o usuário clica um prisma:// no
         // Obsidian e o PRISMA já está aberto, o SO chama isto na instância existente (em vez de

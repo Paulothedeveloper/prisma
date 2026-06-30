@@ -1,11 +1,11 @@
 {
-  "version": "0.9.46",
-  "notes": "Redesign premium passo 1: sistema unificado de movimento (curvas ease-out-expo estilo Linear/Vercel), micro-interacoes tateis, hover com elevacao e brilho, item ativo em vidro. Zero truncamento de texto.",
-  "pub_date": "2026-06-30T14:20:36Z",
+  "version": "0.9.47",
+  "notes": "Tela branca agora estruturalmente impossivel (WebView2 nao grava cache de shader + purga residuo no boot). Redesign premium passo 2: thumbnail cresce suave no hover (assinatura Eagle).",
+  "pub_date": "2026-06-30T15:48:32Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWThlTDlRRmc4bVdqZE51WVd3Nytlb3VUWUM0WitDZzdtQzllUmRYL0duWFRGK2Rhb1V2WVBRZUU4blBqYnVadnRiQXQ2d3RRWjNPdVptRU5wYUtqMGdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODI5MTk0CWZpbGU6UFJJU01BXzAuOS40Nl94NjQtc2V0dXAuZXhlClpENDVvMDc0Z2ZKbEJhSUlob3pMQmZXYmdoQmtucHR4U2I0L1MwZzdxblpGUm1BWFhBRFhBZnNMMWlndFFXbkVXdUNmbkNTQ3RFT2Z3WVozekhUb0J3PT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.46/PRISMA_0.9.46_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXl1MlRjSDR2U3krYVErNHVib1p2ejF2aFIxYmpwa1QvSVJQcldTd0gvQ1RHKzdVWmRIMEUxcEpYTjd3NDAzMXJBa3JpVUNRK09PL1djL0VISnB1Z0FrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODM0NDg3CWZpbGU6UFJJU01BXzAuOS40N194NjQtc2V0dXAuZXhlCjJRb0ViUHZVNDUvNlFwb1hHbk9kOHAxaDUrMWFuVUFvVTE0WUVaMXg5dEhTSHhPeG50RlNLWFdSNnFpZVFhQUR6MUVlODNWdEkvUnowSDJiVlBoSkRnPT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.47/PRISMA_0.9.47_x64-setup.exe"
     }
   }
 }
