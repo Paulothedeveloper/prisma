@@ -48,10 +48,11 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.52";
+const APP_VERSION = "0.9.53";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
+  "VISUAL PREMIUM (redesign passo 5 — agora dá pra VER): a base inteira mudou pra ficar à altura do Eagle. Fundo passou de cinza-quente (#1a1a1c) pra QUASE-PRETO levemente frio — os painéis de vidro flutuam e as miniaturas saltam (o grid vira o herói). Grid mais DENSO (miniatura menor + menos espaço = parede de imagens, não cards soltos). E as PASTAS na barra lateral agora têm ÍCONES COLORIDOS por padrão (assinatura do Eagle — cada pasta ganha uma cor estável, e você pode trocar). Não é mais o 'padrão' cinza: é escuro, denso e premium.",
   "TELA PRETA — causa-raiz encontrada e MORTA (testada de verdade). Não era a GPU (zero resets de driver nos logs) nem o código: era o WebView2 sendo MORTO por fora. Um 'taskkill /IM msedgewebview2' (de outra ferramenta/app no PC) mata TODOS os WebView2 do sistema de uma vez — não só os de um app. Agora o PRISMA tem um WATCHDOG que pinga a si mesmo a cada 2s e se auto-recupera em segundos nos DOIS casos: (a) render morto/janela preta → recria a tela na hora (sem reiniciar); (b) WebView2 morto por completo (ambiente envenenado, janela some) → reinicia o app sozinho, com ambiente novo e limpo. Provado matando os 6 processos de WebView2 do app e vendo ele voltar sozinho. Você não perde a biblioteca (é re-lida do banco).",
   "Caça ao texto cortado (redesign passo 4): no painel de Detalhes, o botão aparecia como \"Buscar semel…\" — uma abreviação com reticências que PARECIA corte. Agora é \"Buscar semelhantes\" por extenso (quebra em 2 linhas se precisar, nunca '...'). Auditei TODOS os textos do app: os '...' que sobraram são todos legítimos (abrem diálogo como \"Pastas…\", estados de progresso como \"Indexando…\", ou \"etc.\" em listas) — zero corte de texto real em qualquer idioma.",
   "Polimento PREMIUM (passo 3 do redesign): aberturas mais cinematográficas e consistentes. O visualizador (lightbox) agora SOBE e assenta ao abrir (curva enfática, sensação Eagle) em vez de só aparecer; o menu de contexto e as superfícies de vidro usam todas a mesma linguagem de movimento. Verificado no navegador: o zoom da miniatura no hover está exatamente em 1.06, lightbox e menu abrem fluidos, e zero texto cortado (nomes longos quebram em linhas, nunca '...').",

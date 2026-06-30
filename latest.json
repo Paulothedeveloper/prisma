@@ -1,11 +1,11 @@
 {
-  "version": "0.9.52",
-  "notes": "Tela PRETA morta de vez (testado): watchdog de heartbeat auto-recupera nos dois casos — janela preta (recria a tela) ou WebView2 morto por completo (reinicia o app sozinho, ambiente novo). Causa real: taskkill /IM msedgewebview2 system-wide de outra ferramenta no PC.",
-  "pub_date": "2026-06-30T17:50:22Z",
+  "version": "0.9.53",
+  "notes": "Visual premium (redesign passo 5, agora VISIVEL): fundo near-black levemente frio (era cinza), grid mais denso, e pastas com icones COLORIDOS por padrao na barra lateral (assinatura Eagle).",
+  "pub_date": "2026-06-30T18:36:05Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXpCN1lRMFZjcDFjY3MwR1JqYmdmUFd1RkhwSlRlQlRxSGcxQjgzMGxQNTRvN3NMQ0JzaTZiM2dTdi9TVERGRlU0TlRXbHJ6M3NaSGhjeU9vSUpyVUFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODQxNjYwCWZpbGU6UFJJU01BXzAuOS41Ml94NjQtc2V0dXAuZXhlCnVETnVnNWo3NjI5UVJWSFB5VEUwOHg4ZjlrRTU0SjBhWEZuOTRpNjdBK2IzaUswZWpic2IwcGdHV0VNTzVzWmxtUjMzTjVTdzlmUTAwMHl3N1YrSUNnPT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.52/PRISMA_0.9.52_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTB3QnEzaCs3L0hILzZ2NFFPam5oUHhYTVZXRWMvbHhNaU05T2tFbFJwQ3RjU0VnWE5uMU9lNFBSU1ZubHBSMld3bnhreVUvcW5CT3FNcG9aSGVYOHdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODQ0NTIxCWZpbGU6UFJJU01BXzAuOS41M194NjQtc2V0dXAuZXhlCm1WYnRSbm5LOEJzcXF1c1RFSlNXNFVVMDdSWTRNOTVGOTFNKy9ROUpjcS9jUmZTMmExRTlWQytwdDFuNVNsMEorak9rL3RYdURFNnZ6ZUhhclZpRkNRPT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.53/PRISMA_0.9.53_x64-setup.exe"
     }
   }
 }

@@ -331,7 +331,7 @@ export default function App() {
   const navJump = useRef(false);
   const [, setNavTick] = useState(0);
   const [booted, setBooted] = useState(false);
-  const [thumbSize, setThumbSize] = useState(190);
+  const [thumbSize, setThumbSize] = useState(162);
   const [layout, setLayout] = useState<"grid" | "list" | "waterfall">("grid");
   const [boardMode, setBoardMode] = useState(false); // moodboard (só em coleção)
   const [simThreshold, setSimThreshold] = useState(22); // tolerância da busca por similaridade

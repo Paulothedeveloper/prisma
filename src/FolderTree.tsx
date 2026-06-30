@@ -20,6 +20,15 @@ interface Meta {
 
 const FOLDER_COLORS = ["#FF453A", "#FF9F0A", "#FFD60A", "#30D158", "#40C8E0", "#0A84FF", "#BF5AF2", "#FF6482"];
 
+// Cor-PADRÃO da pasta (estilo Eagle: sidebar colorida por padrão). Quando o usuário não
+// escolheu cor, deriva uma estável do caminho (mesmo nome → mesma cor sempre). O usuário
+// pode sobrescrever no menu de cor; aí `m.color` vence.
+function defaultFolderColor(path: string): string {
+  let h = 0;
+  for (let i = 0; i < path.length; i++) h = (h * 31 + path.charCodeAt(i)) | 0;
+  return FOLDER_COLORS[Math.abs(h) % FOLDER_COLORS.length];
+}
+
 function buildTree(dirs: FolderRow[]): Node[] {
   const root = new Map<string, Node>();
   for (const { dir, count } of dirs) {
@@ -138,7 +147,7 @@ function TreeNode({
         >
           {hasKids ? <Icon name="chevronRight" size={13} /> : null}
         </span>
-        <span className="tree-folder-ico" style={m?.color ? { color: m.color } : undefined}>
+        <span className="tree-folder-ico" style={{ color: m?.color ?? defaultFolderColor(node.path) }}>
           <Icon name="folder" size={16} />
         </span>
         {editing ? (
