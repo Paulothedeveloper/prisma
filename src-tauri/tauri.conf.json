@@ -32,7 +32,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis"],
     "createUpdaterArtifacts": true,
     "resources": ["binaries/*", "binaries/gyroflow/**/*"],
     "icon": [
