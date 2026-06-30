@@ -151,8 +151,11 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
-**0.9.43** — Correção da **tela branca ao minimizar** (WebView2 occlusion)
-- 🩹 O app ficava **em branco** depois de minimizado por muito tempo: o Chromium do WebView2 marca a janela como "ocluída" e **descarta o renderizador** (economia de memória) → volta branco ao restaurar. Desligado via `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows` (env lido pelo runtime do WebView2 — **appenda** aos args do Tauri, não quebra o drag do titlebar). Sem mexer no timer-throttling (poupa CPU/bateria ao minimizar).
+**0.9.44** — Correção da **tela branca ao minimizar** (caminho certo + repaint)
+- 🩹 A 0.9.43 tentou desligar a oclusão por **variável de ambiente** (`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`), mas o **Tauri sobrescreve** isso com os próprios `additionalBrowserArgs` (confirmei inspecionando o processo do WebView2 — o flag não estava lá). Agora vai pelo lugar certo: **`additionalBrowserArgs` na config da janela** (`--disable-features=msSmartScreenProtection,CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows`, preservando o default do Tauri).
+- 🛟 **2ª camada:** ao restaurar de minimizado (detectado por `Resized 0x0` → `Focused(true)`), um **micro-nudge de 1px** no tamanho força o WebView2 a recriar a surface e repintar — **sem reload** (não perde o estado da tela). Verificado que o flag agora está no processo.
+
+**0.9.43** — (tentativa via env, substituída pela 0.9.44)
 
 **0.9.42** — IA Gemini **muito mais rápida** (modelo padrão certo)
 - ⚡ O padrão do Gemini passou de `gemini-3.5-flash` (modelo **"pensador"** — 30–130s, estourava o timeout de 60s e ignorava o formato terso) para **`gemini-flash-lite-latest`**: classifica em **~2s** e obedece o formato. Comprovado **testando com a chave real** (riser sintético → classificado certo como "Riser" em 1.9s; banner → tags/descrição corretas em 1.6s). Alias `-latest` = resiliente a desligamento de versão (lição do 2.0-flash desligado).

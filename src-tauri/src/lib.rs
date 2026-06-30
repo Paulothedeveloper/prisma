@@ -2483,24 +2483,6 @@ pub fn run() {
         )
         .try_init();
 
-    // FIX tela branca ao minimizar muito tempo: o Chromium do WebView2 marca a janela como
-    // "ocluída" quando fica minimizada/coberta e DESCARTA o renderizador (economia de memória) —
-    // ao restaurar, volta em branco. `--disable-features=CalculateNativeWinOcclusion` desliga esse
-    // cálculo (mesmo flag usado em Electron). Via env WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (lido
-    // pelo runtime do WebView2): ele APPENDA aos args do Tauri, então NÃO quebra o drag do titlebar
-    // custom (decorations:false). Tem que ser setado ANTES da webview ser criada.
-    #[cfg(windows)]
-    {
-        let prev = std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").unwrap_or_default();
-        // occlusion calc OFF + não "backgroundar" janela ocluída (a dupla que conserta o branco).
-        // NÃO mexo no timer-throttling (deixar throttle quando minimizado = menos CPU/bateria).
-        let flag = "--disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows";
-        if !prev.contains("CalculateNativeWinOcclusion") {
-            let merged = if prev.trim().is_empty() { flag.to_string() } else { format!("{prev} {flag}") };
-            std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", merged);
-        }
-    }
-
     tauri::Builder::default()
         // single-instance PRIMEIRO (recomendação do Tauri): se o usuário clica um prisma:// no
         // Obsidian e o PRISMA já está aberto, o SO chama isto na instância existente (em vez de
@@ -2823,6 +2805,36 @@ pub fn run() {
             backup_catalog,
             restore_catalog
         ])
+        // 2ª camada anti-tela-branca: mesmo com o flag de occlusion, se o WebView2 descartar a
+        // surface depois de muito tempo minimizado, ao restaurar pode vir branco. Detectamos o
+        // restore (Focused(true) logo após um Resized 0x0 = minimizado) e damos um "empurrão" de
+        // 1px no tamanho e de volta — força o WebView2 a RECRIAR a surface e repintar, sem perder
+        // o estado do app (não é reload).
+        .on_window_event(|window, event| {
+            use std::sync::atomic::{AtomicBool, Ordering};
+            use std::sync::OnceLock;
+            static WAS_MIN: OnceLock<AtomicBool> = OnceLock::new();
+            let was_min = WAS_MIN.get_or_init(|| AtomicBool::new(false));
+            match event {
+                tauri::WindowEvent::Resized(sz) if sz.width == 0 || sz.height == 0 => {
+                    was_min.store(true, Ordering::Relaxed);
+                }
+                tauri::WindowEvent::Focused(true) => {
+                    if was_min.swap(false, Ordering::Relaxed) {
+                        let w = window.clone();
+                        std::thread::spawn(move || {
+                            std::thread::sleep(std::time::Duration::from_millis(70));
+                            if let Ok(sz) = w.inner_size() {
+                                let _ = w.set_size(tauri::PhysicalSize::new(sz.width + 1, sz.height));
+                                std::thread::sleep(std::time::Duration::from_millis(20));
+                                let _ = w.set_size(sz);
+                            }
+                        });
+                    }
+                }
+                _ => {}
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
