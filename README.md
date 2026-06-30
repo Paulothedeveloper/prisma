@@ -151,6 +151,9 @@ Contrato técnico da integração: **[docs/INTEGRATION.md](docs/INTEGRATION.md)*
 
 ## 🆕 Histórico de versões · Changelog
 
+**0.9.43** — Correção da **tela branca ao minimizar** (WebView2 occlusion)
+- 🩹 O app ficava **em branco** depois de minimizado por muito tempo: o Chromium do WebView2 marca a janela como "ocluída" e **descarta o renderizador** (economia de memória) → volta branco ao restaurar. Desligado via `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows` (env lido pelo runtime do WebView2 — **appenda** aos args do Tauri, não quebra o drag do titlebar). Sem mexer no timer-throttling (poupa CPU/bateria ao minimizar).
+
 **0.9.42** — IA Gemini **muito mais rápida** (modelo padrão certo)
 - ⚡ O padrão do Gemini passou de `gemini-3.5-flash` (modelo **"pensador"** — 30–130s, estourava o timeout de 60s e ignorava o formato terso) para **`gemini-flash-lite-latest`**: classifica em **~2s** e obedece o formato. Comprovado **testando com a chave real** (riser sintético → classificado certo como "Riser" em 1.9s; banner → tags/descrição corretas em 1.6s). Alias `-latest` = resiliente a desligamento de versão (lição do 2.0-flash desligado).
 

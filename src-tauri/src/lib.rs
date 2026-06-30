@@ -2483,6 +2483,24 @@ pub fn run() {
         )
         .try_init();
 
+    // FIX tela branca ao minimizar muito tempo: o Chromium do WebView2 marca a janela como
+    // "ocluída" quando fica minimizada/coberta e DESCARTA o renderizador (economia de memória) —
+    // ao restaurar, volta em branco. `--disable-features=CalculateNativeWinOcclusion` desliga esse
+    // cálculo (mesmo flag usado em Electron). Via env WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (lido
+    // pelo runtime do WebView2): ele APPENDA aos args do Tauri, então NÃO quebra o drag do titlebar
+    // custom (decorations:false). Tem que ser setado ANTES da webview ser criada.
+    #[cfg(windows)]
+    {
+        let prev = std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").unwrap_or_default();
+        // occlusion calc OFF + não "backgroundar" janela ocluída (a dupla que conserta o branco).
+        // NÃO mexo no timer-throttling (deixar throttle quando minimizado = menos CPU/bateria).
+        let flag = "--disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows";
+        if !prev.contains("CalculateNativeWinOcclusion") {
+            let merged = if prev.trim().is_empty() { flag.to_string() } else { format!("{prev} {flag}") };
+            std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", merged);
+        }
+    }
+
     tauri::Builder::default()
         // single-instance PRIMEIRO (recomendação do Tauri): se o usuário clica um prisma:// no
         // Obsidian e o PRISMA já está aberto, o SO chama isto na instância existente (em vez de

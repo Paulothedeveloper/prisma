@@ -48,10 +48,11 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.42";
+const APP_VERSION = "0.9.43";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
+  "Correção: o app ficava com a TELA BRANCA depois de minimizado por muito tempo. Era o WebView2 (Chromium) descartando o renderizador quando achava a janela \"oculta\". Desligamos esse comportamento (CalculateNativeWinOcclusion + backgrounding de janela oculta) — agora volta normal do minimizado.",
   "IA com Gemini ficou MUITO mais rápida: o modelo padrão passou de gemini-3.5-flash (um modelo \"pensador\", que levava 30-130s e estourava o tempo limite) para gemini-flash-lite-latest — classifica em ~2s e obedece o formato. Testado de verdade com a chave real (um riser sintético foi classificado certo como \"Riser\" em 1.9s).",
   "Correção importante: a indexação podia TRAVAR o app quando o ffmpeg empacava num arquivo problemático (corrompido/codec raro) ou num soluço do drive (USB/rede). Agora toda geração de miniatura tem TIMEOUT: se passar do limite, mata o processo e segue pro próximo — um arquivo ruim nunca mais congela a biblioteca inteira.",
   "Reorganizar SFX agora em LOTE: além de itens selecionados, dá pra reorganizar uma PASTA inteira (botão direito na pasta › \"Reorganizar SFX\") ou TODOS os áudios da biblioteca de uma vez (Configurações › IA e busca › \"Reorganizar todos\"). Não-destrutivo, com cache (pula os já feitos).",
