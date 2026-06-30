@@ -48,10 +48,11 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.45";
+const APP_VERSION = "0.9.46";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
+  "Polimento PREMIUM (passo 1 do redesign): sistema de movimento unificado — antes havia 31 curvas de animação soltas; agora tudo usa as mesmas curvas suaves (estilo Linear/Vercel, sem 'bounce'). Resultado: toque mais fluido em tudo — botões e itens 'afundam' de leve ao clicar (feedback tátil), a sidebar desliza no hover, os cards 'sobem' com sombra, e o item selecionado ganhou profundidade de vidro (não é mais um azul chapado). Acessibilidade: respeita 'menos movimento' do sistema. Mais passos do redesign vêm a seguir, referência Eagle.",
   "TELA BRANCA ao restaurar de minimizado — agora com defesa robusta. Além do flag de oclusão (verificado no processo), o app agora VIGIA o minimizar→restaurar e, ao voltar: dá um micro-empurrão na janela pra forçar o WebView2 a repintar; e se ficou MUITO tempo minimizado (40s+), recarrega a tela automaticamente — isso SEMPRE limpa o branco (o catálogo é re-lido na hora; você não perde nada). Direcionado exatamente ao caso de ficar muito tempo minimizado.",
   "IA com Gemini ficou MUITO mais rápida: o modelo padrão passou de gemini-3.5-flash (um modelo \"pensador\", que levava 30-130s e estourava o tempo limite) para gemini-flash-lite-latest — classifica em ~2s e obedece o formato. Testado de verdade com a chave real (um riser sintético foi classificado certo como \"Riser\" em 1.9s).",
   "Correção importante: a indexação podia TRAVAR o app quando o ffmpeg empacava num arquivo problemático (corrompido/codec raro) ou num soluço do drive (USB/rede). Agora toda geração de miniatura tem TIMEOUT: se passar do limite, mata o processo e segue pro próximo — um arquivo ruim nunca mais congela a biblioteca inteira.",
