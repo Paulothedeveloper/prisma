@@ -48,10 +48,11 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.48";
+const APP_VERSION = "0.9.49";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
+  "Caça ao texto cortado (redesign passo 4): no painel de Detalhes, o botão aparecia como \"Buscar semel…\" — uma abreviação com reticências que PARECIA corte. Agora é \"Buscar semelhantes\" por extenso (quebra em 2 linhas se precisar, nunca '...'). Auditei TODOS os textos do app: os '...' que sobraram são todos legítimos (abrem diálogo como \"Pastas…\", estados de progresso como \"Indexando…\", ou \"etc.\" em listas) — zero corte de texto real em qualquer idioma.",
   "Polimento PREMIUM (passo 3 do redesign): aberturas mais cinematográficas e consistentes. O visualizador (lightbox) agora SOBE e assenta ao abrir (curva enfática, sensação Eagle) em vez de só aparecer; o menu de contexto e as superfícies de vidro usam todas a mesma linguagem de movimento. Verificado no navegador: o zoom da miniatura no hover está exatamente em 1.06, lightbox e menu abrem fluidos, e zero texto cortado (nomes longos quebram em linhas, nunca '...').",
   "TELA BRANCA — agora estruturalmente IMPOSSÍVEL pela causa-raiz. O branco vinha do cache de shaders (GPUCache) do WebView2 corrompendo (force-kill, crash de driver de vídeo, desligamento sujo). Agora o app (1) manda o WebView2 NÃO gravar esse cache em disco — sem arquivo, não há o que corromper; e (2) ao abrir, apaga por garantia qualquer resíduo de cache de shader/código ANTES da tela subir. Seus dados (biblioteca, favoritos, configurações) não são tocados. Não depende mais de você minimizar/restaurar.",
   "Polimento PREMIUM (passo 2 do redesign — gesto-assinatura do Eagle): ao passar o mouse num card, a miniatura agora CRESCE suave por dentro (recortada pelas bordas arredondadas), com um leve escurecido no rodapé que dá leitura aos selos (duração, nota). Movimento de 60fps (só transform/opacity), com a mesma curva suave do resto. Respeita 'menos movimento' do sistema.",

@@ -1,11 +1,11 @@
 {
-  "version": "0.9.48",
-  "notes": "Redesign premium passo 3: lightbox abre subindo (curva enfatica, sensacao Eagle) + linguagem de movimento unificada nos menus/superficies. Verificado no navegador (hover-zoom 1.06, zero truncamento).",
-  "pub_date": "2026-06-30T16:12:20Z",
+  "version": "0.9.49",
+  "notes": "Caca ao texto cortado: botao 'Buscar semel...' do painel de Detalhes virou 'Buscar semelhantes' por extenso. Auditoria completa de reticencias em todos os idiomas.",
+  "pub_date": "2026-06-30T16:55:04Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXdqSWFKU1ZtdVNxdDE2SGYzRjk4eEZNWnprWHIrVDFQV3NhbU5rMWlxRWRQTm4yZkV5cjJNZHZwbHNHQTE0Z3B4SHpKcUl5WEN6VWZUck96OE5OMFFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODM1OTE1CWZpbGU6UFJJU01BXzAuOS40OF94NjQtc2V0dXAuZXhlCnMrOTI0N3FPSUw3NDJucVhzeEwreGFkTXRLcGdiYy9jUG9jL3ZrUUEvMmJaa25GZFBlbGlkNkpxUlBmZzZCYTJJMC9oRFl1bWNpdEg0N2VUeUsrYUNnPT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.48/PRISMA_0.9.48_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTFWeUk1UkpHQ0xiM01uSW8reFBEZW51ZG04RncydFN3dU5Db3lJYTI5QlppWUFJNytXeWx3NE5JOUlsRmtDckNNcXRVaVR1dStTT1U5MkFVY24zaVFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODM4NDg0CWZpbGU6UFJJU01BXzAuOS40OV94NjQtc2V0dXAuZXhlCnd3Uit4TW8xVGNPczYrc1YrSllVVDk0aGpodUVzZEtXY2xvWFRVSVg5U0VESVcxNk9JMUxGYzV4WlpzWUdLMC9lUmNCNEtKdEVTQmhITVp4MndoV0NBPT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.49/PRISMA_0.9.49_x64-setup.exe"
     }
   }
 }
