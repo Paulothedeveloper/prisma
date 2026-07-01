@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { VideoPlayer } from "./VideoPlayer";
-import { probeMedia } from "./api";
+import { probeMedia, openExternal, revealInExplorer } from "./api";
+import { Icon } from "./Icons";
 import { t } from "./i18n";
 import "./App.css";
-
-const WEB_VIDEO = new Set(["h264", "vp8", "vp9", "av1", "avc1"]);
 
 // Janela própria (multi-window) pra ver/comparar um asset lado a lado.
 export function PreviewWindow() {
@@ -15,29 +14,37 @@ export function PreviewWindow() {
   const name = params.get("name") || "";
   const url = convertFileSrc(path);
   const [fps, setFps] = useState(30);
-  const [playable, setPlayable] = useState<boolean | null>(type === "video" ? null : true);
+  // tenta tocar o original direto; só cai pra mensagem se o <video> falhar DE VERDADE.
+  const [err, setErr] = useState(false);
 
   useEffect(() => {
     document.title = name || "PRISMA";
+    setErr(false);
     if (type !== "video") return;
+    // só pra saber o fps (a decisão de tocar é pelo onError real, não pelo codec).
     probeMedia(path)
       .then((info) => {
-        const c = info.video?.codec?.toLowerCase();
-        setPlayable(!!c && WEB_VIDEO.has(c));
         if (info.video?.fps) setFps(info.video.fps);
       })
-      .catch(() => setPlayable(false));
+      .catch(() => {});
   }, [path, type, name]);
 
   return (
     <div className="pwin">
       {type === "video" ? (
-        playable === false ? (
-          <div className="pwin-msg">{t("prev.codecUnsupported")}</div>
-        ) : playable ? (
-          <VideoPlayer src={url} fps={fps} />
+        !err ? (
+          <VideoPlayer src={url} fps={fps} onError={() => setErr(true)} />
         ) : (
-          <div className="pwin-msg">{t("prev.loading")}</div>
+          <div className="pwin-msg">
+            {t("prev.codecUnsupported")}
+            <button
+              className="preview-openext"
+              style={{ marginTop: 12 }}
+              onClick={() => openExternal(path).catch(() => revealInExplorer(path))}
+            >
+              <Icon name="play" size={15} /> {t("prev.openExternal")}
+            </button>
+          </div>
         )
       ) : type === "audio" ? (
         <audio src={url} controls autoPlay />

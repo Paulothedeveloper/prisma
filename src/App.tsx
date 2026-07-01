@@ -80,6 +80,7 @@ import {
 import { AssetCard } from "./AssetCard";
 import { CommandPalette, type Command } from "./CommandPalette";
 import { Relink } from "./Relink";
+import { copyText } from "./clipboard";
 import { Moodboard } from "./Moodboard";
 import { AssetRow } from "./AssetRow";
 import { Inspector } from "./Inspector";
@@ -262,6 +263,10 @@ export default function App() {
   const [removingDirs, setRemovingDirs] = useState<Set<string>>(new Set());
   const [removeToast, setRemoveToast] = useState<{ name: string; done: boolean } | null>(null);
   const removeToastTimer = useRef<number | null>(null);
+  // Toast geral de ação (copiar, converter, duplicar…) — dá feedback pros itens do menu de
+  // contexto, que antes rodavam em silêncio e pareciam "não funcionar".
+  const [actionToast, setActionToast] = useState<string | null>(null);
+  const actionToastTimer = useRef<number | null>(null);
   // Toast do "Atualizar pasta": resumo do diff (novos / renomeados / removidos) ou aviso de offline.
   const [syncToast, setSyncToast] = useState<{ added: number; renamed: number; removed: number; offline: boolean } | null>(null);
   const syncToastTimer = useRef<number | null>(null);
@@ -1194,6 +1199,32 @@ export default function App() {
     });
   };
 
+  // Toast rápido de feedback (some sozinho). Usado pelo menu de contexto.
+  const flash = useCallback((msg: string) => {
+    setActionToast(msg);
+    if (actionToastTimer.current) clearTimeout(actionToastTimer.current);
+    actionToastTimer.current = window.setTimeout(() => setActionToast(null), 2600);
+  }, []);
+
+  // Envolve uma ação assíncrona do menu de contexto com feedback (trabalhando → ok/erro).
+  const ctxRun = useCallback(
+    (p: Promise<unknown>, working: string, done: string) => {
+      flash(working);
+      p.then(() => {
+        flash(done);
+        onMutate();
+      }).catch((e) => flash(`${t("common.error")}: ${String(e).slice(0, 90)}`));
+    },
+    [flash, onMutate],
+  );
+
+  const copyToClip = useCallback(
+    (text: string) => {
+      void copyText(text).then((ok) => flash(ok ? t("ctx.copied") : t("common.error")));
+    },
+    [flash],
+  );
+
   // Roda uma ferramenta assíncrona (ampliar/remover fundo/GIF) com feedback na HUD.
   const runTool = (fn: () => Promise<string>, working: string, showResult = false) => {
     if (toolTimer.current) clearTimeout(toolTimer.current);
@@ -1225,25 +1256,28 @@ export default function App() {
         ? [{ label: t("prev.openExternal"), icon: "play" as const, onClick: () => openExternal(a.path).catch(() => revealInExplorer(a.path)) }]
         : []),
       { sep: true, label: "" },
-      { label: t("insp.copyPath"), icon: "copy", onClick: () => navigator.clipboard.writeText(a.path) },
-      { label: t("insp.copyFolder"), icon: "folder", onClick: () => navigator.clipboard.writeText(folder) },
-      { label: many ? `${t("ctx.renameMany")}${n}` : t("ctx.duplicate"), icon: many ? "pencil" : "copy", onClick: () => (many ? setBatchRename(true) : duplicateAsset(a.id).then(onMutate)) },
+      { label: t("insp.copyPath"), icon: "copy", onClick: () => copyToClip(a.path) },
+      { label: t("insp.copyFolder"), icon: "folder", onClick: () => copyToClip(folder) },
+      { label: many ? `${t("ctx.renameMany")}${n}` : t("ctx.duplicate"), icon: many ? "pencil" : "copy", onClick: () => (many ? setBatchRename(true) : ctxRun(duplicateAsset(a.id), t("ctx.duplicating"), t("ctx.duplicated"))) },
       {
         label: t("ctx.setCover"),
         icon: "image",
-        onClick: () => a.thumbnail_path && setFolderCover(folder, a.thumbnail_path).then(refreshMeta),
+        onClick: () =>
+          a.thumbnail_path
+            ? ctxRun(setFolderCover(folder, a.thumbnail_path).then(refreshMeta), t("ctx.settingCover"), t("ctx.coverSet"))
+            : flash(t("common.error")),
       },
       { sep: true, label: "" },
       ...(a.type === "image" || a.type === "gif" ? [{ label: t("ctx.markup"), icon: "pencil" as const, onClick: () => setMarkup(a) }] : []),
       ...(a.type === "image" ? [{ label: t("ctx.wmErase"), icon: "sparkles" as const, onClick: () => setWmErase(a) }] : []),
       ...(a.type === "image" ? [{ label: t("ctx.crop"), icon: "image" as const, onClick: () => setCropping(a) }] : []),
-      ...(a.type === "video" ? [{ label: t("ctx.toGif"), icon: "video" as const, onClick: () => void videoGif(a.id).then(onMutate) }] : []),
+      ...(a.type === "video" ? [{ label: t("ctx.toGif"), icon: "video" as const, onClick: () => ctxRun(videoGif(a.id), t("tool.gifWorking"), t("tool.done")) }] : []),
       { label: t("ctx.findSimilar"), icon: "search", onClick: () => setView({ t: "similar", v: a.id, label: a.name || a.filename }) },
       ...(a.type === "image" || a.type === "gif" || a.type === "video"
         ? [{ label: t("ctx.findSimilarAI"), icon: "sparkles" as const, onClick: () => setView({ t: "clipimg", v: a.id, label: a.name || a.filename }) }]
         : []),
-      { label: `${t("batch.ai")}${n}`, icon: "sliders", onClick: () => aiAnalyzeMany(ids) },
-      { label: `${t("ctx.autotagClip")}${n}`, icon: "sparkles", onClick: () => clipAutotag(ids) },
+      { label: `${t("batch.ai")}${n}`, icon: "sliders", onClick: () => ctxRun(aiAnalyzeMany(ids), t("ctx.analyzing"), t("tool.done")) },
+      { label: `${t("ctx.autotagClip")}${n}`, icon: "sparkles", onClick: () => ctxRun(clipAutotag(ids), t("ctx.autotagging"), t("tool.done")) },
       ...(many
         ? [{
             label: `${t("ctx.contactSheet")}${n}`,
@@ -2540,6 +2574,14 @@ export default function App() {
               ? t("fld.removed").replace("{x}", removeToast.name)
               : t("fld.removing").replace("{x}", removeToast.name)}
           </span>
+        </div>
+      )}
+
+      {/* Toast geral de ação (menu de contexto: copiar/converter/duplicar…) */}
+      {actionToast && (
+        <div className="remove-toast done action-toast">
+          <Icon name="check" size={15} />
+          <span>{actionToast}</span>
         </div>
       )}
 

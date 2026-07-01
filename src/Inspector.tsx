@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
+import { copyText } from "./clipboard";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
@@ -438,7 +439,7 @@ function InspectorImpl({
     extractPalette(previewUrl, 6).then(setPalette);
   }, [previewUrl]);
   const copyHex = (hex: string) => {
-    navigator.clipboard.writeText(hex);
+    copyText(hex);
     setCopiedHex(hex);
     window.setTimeout(() => setCopiedHex((c) => (c === hex ? null : c)), 1100);
   };
@@ -538,8 +539,8 @@ function InspectorImpl({
       <div className="insp-actions">
         <button onClick={() => onPreview(asset)}>{t("insp.view")}</button>
         <button onClick={() => revealInExplorer(asset.path)}>{t("insp.explorer")}</button>
-        <button onClick={() => navigator.clipboard.writeText(asset.path)}>{t("insp.copyPath")}</button>
-        <button onClick={() => navigator.clipboard.writeText(folderPath)}>{t("insp.copyFolder")}</button>
+        <button onClick={() => copyText(asset.path)}>{t("insp.copyPath")}</button>
+        <button onClick={() => copyText(folderPath)}>{t("insp.copyFolder")}</button>
         <button onClick={() => setRenaming(true)}>{t("insp.rename")}</button>
         <button onClick={doDuplicate}>{t("insp.duplicate")}</button>
         <button onClick={doRefreshThumb}>{t("insp.updateThumb")}</button>
@@ -787,7 +788,7 @@ function InspectorImpl({
                 <textarea className="ocr-text" readOnly value={ocrText} rows={Math.min(10, ocrText.split("\n").length + 1)} />
                 <button
                   className="ai-btn ocr-copy"
-                  onClick={() => navigator.clipboard.writeText(ocrText)}
+                  onClick={() => copyText(ocrText)}
                 >
                   <Icon name="copy" size={12} /> {t("insp.ocrCopy")}
                 </button>

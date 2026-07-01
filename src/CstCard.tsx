@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { copyText } from "./clipboard";
 import { PopupButton } from "./Menu";
 import { Icon } from "./Icons";
 import { t } from "./i18n";
@@ -39,7 +40,7 @@ function nodeCopy(title: string, n: Node): string {
 function NodeBlock({ title, color, n }: { title: string; color: "in" | "out"; n: Node }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
-    navigator.clipboard.writeText(nodeCopy(title, n));
+    copyText(nodeCopy(title, n));
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -137,7 +138,7 @@ export function CstCard({ info }: { info: MediaInfo }) {
           <button
             className="cst-copy-both"
             onClick={() =>
-              navigator.clipboard.writeText(
+              copyText(
                 `${nodeCopy(t("cst.nodeIn"), nodeIn)}\n\n${nodeCopy(t("cst.nodeOut"), nodeOut)}`,
               )
             }

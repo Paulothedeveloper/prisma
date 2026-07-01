@@ -1,4 +1,5 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { copyText } from "./clipboard";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icons";
 import { revealInExplorer, type FolderRow } from "./api";
@@ -234,7 +235,7 @@ function TreeNode({
                 <Icon name="refresh" size={14} /> <span>{t("fld.rescan")}</span>
               </button>
               <div className="ctx-sep" />
-              <button className="ctx-item" onClick={() => { setMenu(null); navigator.clipboard.writeText(node.path); }}>
+              <button className="ctx-item" onClick={() => { setMenu(null); copyText(node.path); }}>
                 <Icon name="copy" size={14} /> <span>{t("fld.copyPath")}</span>
               </button>
               <button className="ctx-item" onClick={() => { setMenu(null); revealInExplorer(node.path); }}>

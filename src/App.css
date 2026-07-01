@@ -6035,6 +6035,10 @@ body {
 .remove-toast.done {
   color: #4ade80;
 }
+/* toast de ação do menu de contexto — sobe um pouco pra não colidir com outros toasts */
+.action-toast {
+  bottom: 74px;
+}
 .remove-toast.done :last-child {
   color: var(--text-1);
 }
