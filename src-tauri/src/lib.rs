@@ -433,11 +433,17 @@ fn video_download_info(app: tauri::AppHandle, url: String) -> Result<extras::Dow
 
 /// Baixa o vídeo/áudio pro Inbox e JÁ cataloga no PRISMA. Retorna o caminho final.
 #[tauri::command]
-fn video_download(app: tauri::AppHandle, url: String, audio_only: bool) -> Result<String, String> {
+fn video_download(
+    app: tauri::AppHandle,
+    url: String,
+    audio_only: bool,
+    quality: Option<String>,
+) -> Result<String, String> {
     let state = app.state::<AppState>();
     let inbox = state.data_dir.join("Inbox");
     let ffmpeg = thumbs::bin_path("ffmpeg");
-    let out = extras::download(&state.data_dir, &ffmpeg, &inbox, url.trim(), audio_only)?;
+    let q = quality.unwrap_or_else(|| "best".into());
+    let out = extras::download(&state.data_dir, &ffmpeg, &inbox, url.trim(), audio_only, &q)?;
     let db = state.db.clone();
     let thumbs_dir = state.thumbs_dir.clone();
     indexer::index_one(&db, &thumbs_dir, &out).ok_or("baixado mas falhou ao catalogar")?;

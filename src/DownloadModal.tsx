@@ -16,6 +16,7 @@ export function DownloadModal({
   const [url, setUrl] = useState("");
   const [info, setInfo] = useState<DownloadInfo | null>(null);
   const [audioOnly, setAudioOnly] = useState(false);
+  const [quality, setQuality] = useState("best"); // best | 1080 | 720 | 480
   const [busy, setBusy] = useState<"" | "check" | "dl">("");
   const [status, setStatus] = useState<{ kind: "ok" | "err" | "first"; msg: string } | null>(null);
 
@@ -61,7 +62,7 @@ export function DownloadModal({
     setBusy("dl");
     setStatus(null);
     try {
-      await videoDownload(url.trim(), audioOnly);
+      await videoDownload(url.trim(), audioOnly, quality);
       sfx.notify?.();
       setStatus({ kind: "ok", msg: t("dl.done") });
       onDone();
@@ -121,6 +122,27 @@ export function DownloadModal({
             <Icon name="audio" size={14} /> {t("dl.audio")}
           </button>
         </div>
+
+        {/* Qualidade — só pra vídeo. "Melhor" pega o máximo (4K/1080…); os demais limitam a altura. */}
+        {!audioOnly && (
+          <div className="dl-quality">
+            <span className="dl-qlabel">{t("dl.quality")}</span>
+            {[
+              ["best", t("dl.qBest")],
+              ["1080", "1080p"],
+              ["720", "720p"],
+              ["480", "480p"],
+            ].map(([q, label]) => (
+              <button
+                key={q}
+                className={`dl-qbtn ${quality === q ? "on" : ""}`}
+                onClick={() => setQuality(q)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {status && <div className={`dl-status ${status.kind}`}>{status.msg}</div>}
 

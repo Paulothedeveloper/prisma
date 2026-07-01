@@ -92,6 +92,7 @@ pub fn download(
     dest_dir: &Path,
     url: &str,
     audio_only: bool,
+    quality: &str,
 ) -> Result<PathBuf, String> {
     let yt = ytdlp_path(data_dir)?;
     std::fs::create_dir_all(dest_dir).map_err(|e| e.to_string())?;
@@ -106,7 +107,15 @@ pub fn download(
     if audio_only {
         c.args(["-x", "--audio-format", "m4a", "-f", "bestaudio/best"]);
     } else {
-        c.args(["-f", "bv*+ba/b", "--merge-output-format", "mp4"]);
+        // Qualidade: "best" = melhor absoluto; "1080/720/480" limitam a altura máxima.
+        // Vale pra YouTube, INSTAGRAM, TikTok, Vimeo e qualquer site suportado pelo yt-dlp.
+        let fmt = match quality {
+            "1080" => "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
+            "720" => "bv*[height<=720]+ba/b[height<=720]/bv*+ba/b",
+            "480" => "bv*[height<=480]+ba/b[height<=480]/bv*+ba/b",
+            _ => "bv*+ba/b", // best
+        };
+        c.args(["-f", fmt, "--merge-output-format", "mp4"]);
     }
     // imprime o caminho final do arquivo na última linha
     c.args(["--print", "after_move:filepath", "-o", &template, url]);

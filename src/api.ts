@@ -253,8 +253,8 @@ export interface DownloadInfo {
 }
 export const videoDownloadInfo = (url: string) =>
   invoke<DownloadInfo>("video_download_info", { url });
-export const videoDownload = (url: string, audioOnly: boolean) =>
-  invoke<string>("video_download", { url, audioOnly });
+export const videoDownload = (url: string, audioOnly: boolean, quality = "best") =>
+  invoke<string>("video_download", { url, audioOnly, quality });
 
 // ----- Letras sincronizadas (LRC) -----
 export interface LyricLine {

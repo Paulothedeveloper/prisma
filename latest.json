@@ -1,6 +1,6 @@
 {
-  "version": "0.9.61",
-  "notes": "Plugin 2/N do Eagle nativo: HISTOGRAMA RGB no painel de Detalhes (imagem/video) — as 3 curvas de canal, leitura fotografica classica. Junto do OCR (0.9.60).",
-  "pub_date": "2026-07-01T03:17:35Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTVzUTVoYzEwUXlSSWZmdFV3VElkUVNFVzEzQTBGTVpjUVZoMWVuQTZocDBXS2hOOVh6SVBwSklZZFB0TThhNHdna280YiswYzF0aWZITkhBRXhjOGdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODc1ODMwCWZpbGU6UFJJU01BXzAuOS42MV94NjQtc2V0dXAuZXhlCmFRd1VlNjlOeW5kcHhGNEJVY2RqaURFU2JOdm83YU1KR0l5MHd3bVNXV3NtRFBINENyYXBrbjJqN21IWDJqcFFUVEJNWmg5OUt4YUVxZ1RKYVZ5YUNBPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.61/PRISMA_0.9.61_x64-setup.exe" } }
+  "version": "0.9.62",
+  "notes": "Baixar do INSTAGRAM (e TikTok, YouTube, Vimeo, X…) pelo link — igual ao YouTube, via yt-dlp. Agora com SELETOR DE QUALIDADE (Melhor/1080p/720p/480p) alem do toggle Video/So audio.",
+  "pub_date": "2026-07-01T03:33:25Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTdRUjBpR0dSaVpwaXFRTnBXZVZsU3ZnM1BYenc5S3RVL3c4RS93NG00YjJibnluRlFrVkNicFhUdk0rZUwwRUJLWHZ6L1puSm5ZaDNOdGlSMnhCWmdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODc2Nzc3CWZpbGU6UFJJU01BXzAuOS42Ml94NjQtc2V0dXAuZXhlCko1Qi9QcW1FQ0RWTThudTBoeDl4NHk2Z0JaR040REFGWmYwNExRbm81ci9LeVlBMFhkUTk4eVZlNmQzc2J1bFF6L1JSUDJMR0EyUHUyNmdHd3hZQ0NnPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.62/PRISMA_0.9.62_x64-setup.exe" } }
 }
