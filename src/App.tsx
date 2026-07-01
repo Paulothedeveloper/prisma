@@ -44,6 +44,7 @@ import {
   concatRun,
   oficinaCancel,
   revealInExplorer,
+  openExternal,
   listSmart,
   healthCounts,
   favoritesCount,
@@ -66,7 +67,6 @@ import {
   imageOptimize,
   aiUpscale,
   aiRemoveBg,
-  exportContactSheet,
   type Asset,
   type SubCard,
   type Counts,
@@ -96,6 +96,7 @@ import { WatermarkEraser } from "./WatermarkEraser";
 import { CropModal } from "./CropModal";
 import { CompareModal } from "./CompareModal";
 import { WatermarkAddModal } from "./WatermarkAddModal";
+import { ContactSheetModal } from "./ContactSheetModal";
 import { ContextMenu, type CtxItem } from "./ContextMenu";
 import { FolderTree } from "./FolderTree";
 import { Logo } from "./Logo";
@@ -327,6 +328,7 @@ export default function App() {
   const [cropping, setCropping] = useState<Asset | null>(null);
   const [comparePair, setComparePair] = useState<[Asset, Asset] | null>(null);
   const [wmAdd, setWmAdd] = useState<Asset[] | null>(null);
+  const [contactSheet, setContactSheet] = useState<Asset[] | null>(null);
   const [toolMsg, setToolMsg] = useState<string | null>(null); // feedback da HUD de ferramentas
   const toolTimer = useRef<number | null>(null);
   const [clearing, setClearing] = useState(false); // animação de SAÍDA (esvaziar lixeira / apagar dups)
@@ -1219,6 +1221,9 @@ export default function App() {
       { label: t("ctx.pin"), icon: "star", onClick: () => pinAsset(a) },
       { label: t("ctx.details"), icon: "pencil", onClick: () => { setSelected(a); setInspectorOpen(true); } },
       { label: t("insp.explorer"), icon: "reveal", onClick: () => revealInExplorer(a.path) },
+      ...(a.type === "video" || a.type === "audio"
+        ? [{ label: t("prev.openExternal"), icon: "play" as const, onClick: () => openExternal(a.path).catch(() => revealInExplorer(a.path)) }]
+        : []),
       { sep: true, label: "" },
       { label: t("insp.copyPath"), icon: "copy", onClick: () => navigator.clipboard.writeText(a.path) },
       { label: t("insp.copyFolder"), icon: "folder", onClick: () => navigator.clipboard.writeText(folder) },
@@ -1242,8 +1247,10 @@ export default function App() {
       ...(many
         ? [{
             label: `${t("ctx.contactSheet")}${n}`,
-            icon: "stack" as const,
-            onClick: () => exportContactSheet(ids).then(onMutate).catch((e) => window.alert(String(e))),
+            icon: "layoutGrid" as const,
+            // Abre o modal com preview/opções (colunas, nomes, fundo, título) — melhor que o
+            // export cego. Usa os selecionados que têm miniatura (imagem/vídeo).
+            onClick: () => setContactSheet(assets.filter((x) => ids.includes(x.id))),
           }]
         : []),
       { sep: true, label: "" },
@@ -2618,6 +2625,9 @@ export default function App() {
       {wmAdd && wmAdd.length > 0 && (
         <WatermarkAddModal assets={wmAdd} onClose={() => setWmAdd(null)} onSaved={onMutate} />
       )}
+      {contactSheet && contactSheet.length > 0 && (
+        <ContactSheetModal assets={contactSheet} onClose={() => setContactSheet(null)} onSaved={onMutate} />
+      )}
 
       {batchRename && (
         <BatchRename
@@ -2714,6 +2724,11 @@ export default function App() {
                 {imgs.length > 0 && (
                   <button className="batch-item" onClick={() => setWmAdd(imgs)} title={t("batch.watermark")}>
                     <Icon name="pencil" size={13} /> {t("batch.watermark")}
+                  </button>
+                )}
+                {imgs.length >= 2 && (
+                  <button className="batch-item" onClick={() => setContactSheet(imgs)} title={t("batch.contactSheet")}>
+                    <Icon name="layoutGrid" size={13} /> {t("batch.contactSheet")}
                   </button>
                 )}
                 {(() => {

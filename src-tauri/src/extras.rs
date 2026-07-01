@@ -342,11 +342,14 @@ fn download_once(
     if audio_only {
         c.args(["-x", "--audio-format", "m4a", "-f", "bestaudio/best"]);
     } else {
+        // PREFERE H.264 (avc1) + AAC (mp4a) → toca NATIVO no WebView (nada de Opus-em-mp4 que
+        // fica mudo, nem VP9/AV1 que às vezes não abre). Só cai pra "qualquer bv+ba/best" se o
+        // vídeo não tiver versão H.264 (aí o player faz proxy automático).
         let fmt = match quality {
-            "1080" => "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
-            "720" => "bv*[height<=720]+ba/b[height<=720]/bv*+ba/b",
-            "480" => "bv*[height<=480]+ba/b[height<=480]/bv*+ba/b",
-            _ => "bv*+ba/b", // best
+            "1080" => "bv*[height<=1080][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
+            "720" => "bv*[height<=720][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=720]+ba/b[height<=720]/bv*+ba/b",
+            "480" => "bv*[height<=480][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=480]+ba/b[height<=480]/bv*+ba/b",
+            _ => "bv*[vcodec^=avc1]+ba[acodec^=mp4a]/bv*+ba/b", // best (prioriza H.264/AAC)
         };
         c.args(["-f", fmt, "--merge-output-format", "mp4"]);
     }

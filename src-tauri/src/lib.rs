@@ -360,6 +360,29 @@ fn save_watermarked(app: tauri::AppHandle, near_path: String, data: Vec<u8>) -> 
     Ok(out.to_string_lossy().to_string())
 }
 
+/// Contact Sheet (plugin do Eagle): salva a folha de contatos (PNG) na pasta do primeiro
+/// asset com nome próprio e cataloga. Não-destrutivo.
+#[tauri::command]
+fn save_contact_sheet(app: tauri::AppHandle, near_path: String, data: Vec<u8>) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let p = std::path::PathBuf::from(&near_path);
+    let parent = p.parent().map(|d| d.to_path_buf()).unwrap_or_default();
+    let mut n = 1;
+    let out = loop {
+        let suffix = if n == 1 { String::new() } else { format!(" {n}") };
+        let cand = parent.join(format!("folha_de_contatos{suffix}.png"));
+        if !cand.exists() {
+            break cand;
+        }
+        n += 1;
+    };
+    std::fs::write(&out, &data).map_err(|e| e.to_string())?;
+    let db = state.db.clone();
+    let thumbs_dir = state.thumbs_dir.clone();
+    indexer::index_one(&db, &thumbs_dir, &out).ok_or("falha ao catalogar")?;
+    Ok(out.to_string_lossy().to_string())
+}
+
 /// Image Crop Master (plugin do Eagle): salva o recorte (PNG) ao lado do original com sufixo
 /// "_recortado" e cataloga. Não-destrutivo.
 #[tauri::command]
@@ -3211,6 +3234,7 @@ pub fn run() {
             video_watermark,
             image_optimize,
             save_cropped,
+            save_contact_sheet,
             save_watermarked,
             ai_upscale,
             ai_remove_bg,

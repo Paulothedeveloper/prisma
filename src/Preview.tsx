@@ -7,7 +7,6 @@ import { probeMedia, revealInExplorer, openExternal, makeProxy, type Asset } fro
 import { t } from "./i18n";
 import { sfx } from "./sfx";
 
-const WEB_VIDEO_CODECS = new Set(["h264", "vp8", "vp9", "av1", "avc1"]);
 // Formatos de imagem que o WebView (Chromium) renderiza nativamente. Os demais
 // (RAW, HEIC, TIFF, EXR, DPX, JXL…) mostram a miniatura em cache + abrir externo.
 const WEB_IMAGE_EXTS = new Set([
@@ -24,16 +23,18 @@ interface Props {
 export function Preview({ asset, onClose, onNav, onToggleFav }: Props) {
   const url = convertFileSrc(asset.path);
   const thumbUrl = asset.thumbnail_path ? convertFileSrc(asset.thumbnail_path) : null;
-  // null = ainda checando; evita tela cinza antes de saber o codec
-  const [playable, setPlayable] = useState<boolean | null>(null);
   const [fps, setFps] = useState(30);
   // proxy gerado SOB DEMANDA (botão "Tocar aqui") quando o original não é web e não tem proxy.
   const [madeProxy, setMadeProxy] = useState<string | null>(null);
   const [genning, setGenning] = useState(false);
 
+  // erro REAL de decodificação do original (só então caímos pro proxy/externo)
+  const [origError, setOrigError] = useState(false);
+
   useEffect(() => {
     setMadeProxy(null);
     setGenning(false);
+    setOrigError(false);
   }, [asset.id]);
 
   // proxy H.264 (gerado pelo app pros codecs pro como ProRes): toca INLINE quando o original
@@ -55,14 +56,12 @@ export function Preview({ asset, onClose, onNav, onToggleFav }: Props) {
 
   useEffect(() => {
     if (asset.type !== "video") return;
-    setPlayable(null);
+    // Só pra saber o fps (frame-step do player). A decisão de tocar/fallback é pelo onError real.
     probeMedia(asset.path)
       .then((info) => {
-        const c = info.video?.codec?.toLowerCase();
-        setPlayable(!!c && WEB_VIDEO_CODECS.has(c));
         if (info.video?.fps) setFps(info.video.fps);
       })
-      .catch(() => setPlayable(false));
+      .catch(() => {});
   }, [asset.path, asset.type]);
 
   // som de abertura do preview (entra em tela cheia) — montagem
@@ -115,37 +114,35 @@ export function Preview({ asset, onClose, onNav, onToggleFav }: Props) {
       </button>
       <div key={asset.id} className="preview-stage" onClick={(e) => e.stopPropagation()}>
         {isVideo ? (
-          playable === true ? (
-            <VideoPlayer src={url} fps={fps} />
-          ) : playable === false && proxyUrl ? (
-            // Original não-web (ex.: ProRes) MAS tem proxy → toca o proxy aqui dentro.
+          !origError ? (
+            // Tenta tocar o ORIGINAL direto (autoplay). A maioria (H.264/VP9/AV1 + AAC) toca na
+            // hora. Só se o <video> falhar DE VERDADE é que caímos pro proxy/externo — sem depender
+            // de adivinhar codec. Toca automático, sem botão no meio.
+            <VideoPlayer
+              src={url}
+              fps={fps}
+              onError={() => {
+                setOrigError(true);
+                if (!proxyUrl) doMakeProxy();
+              }}
+            />
+          ) : proxyUrl ? (
+            // Original não-web (ex.: ProRes/Opus) → toca o proxy H.264 aqui dentro, automático.
             <VideoPlayer src={proxyUrl} fps={fps} />
           ) : (
             <div className="preview-unsupported">
               {thumbUrl && <img src={thumbUrl} className="preview-media" alt="" />}
-              {playable === false && (
-                <div className="preview-vidactions">
-                  {/* Tocar AQUI dentro: gera o proxy H.264 na hora (codec pro não toca no WebView).
-                      O player externo vira OPCIONAL. */}
-                  <button className="preview-openext primary" onClick={doMakeProxy} disabled={genning}>
-                    {genning ? (
-                      <>
-                        <span className="spin" /> {t("prev.making")}
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="play" size={16} /> {t("prev.playHere")}
-                      </>
-                    )}
+              <div className="preview-vidactions">
+                {genning ? (
+                  <div className="preview-openext primary">
+                    <span className="spin" /> {t("prev.making")}
+                  </div>
+                ) : (
+                  <button className="preview-openext primary" onClick={doMakeProxy}>
+                    <Icon name="play" size={16} /> {t("prev.playHere")}
                   </button>
-                  <button
-                    className="preview-openext"
-                    onClick={() => openExternal(asset.path).catch(() => revealInExplorer(asset.path))}
-                  >
-                    {t("prev.openExternal")}
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )
         ) : isAudio ? (
@@ -228,6 +225,19 @@ export function Preview({ asset, onClose, onNav, onToggleFav }: Props) {
         {/* barra de progresso do slide atual (reinicia a cada avanço via key) */}
         {playing && <div key={asset.id} className="ss-progress" style={{ animationDuration: `${secs}s` }} />}
       </div>
+      {(isVideo || isAudio) && (
+        <button
+          className="preview-ext-corner"
+          title={t("prev.openExternal")}
+          onClick={(e) => {
+            e.stopPropagation();
+            openExternal(asset.path).catch(() => revealInExplorer(asset.path));
+          }}
+        >
+          <Icon name="reveal" size={15} />
+          <span>{t("prev.openExternal")}</span>
+        </button>
+      )}
       <button className="preview-close" onClick={close}>
         <Icon name="close" size={16} />
       </button>

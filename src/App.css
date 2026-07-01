@@ -2163,6 +2163,32 @@ body {
 .preview-close:hover {
   background: rgba(120, 120, 128, 0.5);
 }
+/* Abrir no player externo — canto superior direito, discreto (saiu do centro da mídia) */
+.preview-ext-corner {
+  position: absolute;
+  top: 18px;
+  right: 66px;
+  height: 34px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 17px;
+  background: rgba(120, 120, 128, 0.3);
+  border: none;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity var(--dur-2) var(--ease-out),
+    background-color var(--dur-2) var(--ease-out);
+}
+.preview-ext-corner:hover {
+  opacity: 1;
+  background: rgba(120, 120, 128, 0.5);
+}
 .prev-nav {
   position: absolute;
   top: 50%;
@@ -6900,6 +6926,128 @@ body {
   font-size: 12px;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
+}
+
+/* Contact Sheet (folha de contatos) — grade de miniaturas + nomes, exporta PNG */
+.cs-modal {
+  width: min(1080px, 94vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur-strong);
+  -webkit-backdrop-filter: var(--blur-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), var(--glass-hi);
+  overflow: hidden;
+  animation: popIn 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.cs-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+}
+.cs-titleinput {
+  flex: 1;
+  min-width: 200px;
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--text);
+  font-size: 13px;
+}
+.cs-cols,
+.cs-bg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.cs-lbl {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-right: 3px;
+}
+.cs-col {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    background-color var(--dur-2) var(--ease-out),
+    color var(--dur-2) var(--ease-out);
+}
+.cs-col.on {
+  background: var(--accent-soft);
+  border-color: rgba(var(--accent-rgb), 0.5);
+  color: color-mix(in oklab, var(--accent) 60%, white);
+}
+.cs-toggle {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 7px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.cs-toggle.on {
+  background: var(--accent-soft);
+  border-color: rgba(var(--accent-rgb), 0.5);
+  color: color-mix(in oklab, var(--accent) 60%, white);
+}
+.cs-bgbtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 2px solid var(--glass-border);
+  cursor: pointer;
+}
+.cs-bgbtn.dark {
+  background: #0e0f13;
+}
+.cs-bgbtn.light {
+  background: #f4f5f7;
+}
+.cs-bgbtn.on {
+  border-color: var(--accent);
+}
+.cs-stage {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+.cs-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-3);
+  font-size: 13px;
+}
+.cs-canvas {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  transition: opacity var(--dur-2) var(--ease-out);
 }
 
 /* Image Comparator (comparar 2 imagens) — divisor arrastável + lado a lado */

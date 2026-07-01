@@ -533,6 +533,9 @@ export const imageOptimize = (id: number) => invoke<string>("image_optimize", { 
 // Image Crop Master (nativo): salva o recorte (PNG) ao lado do original. Retorna o caminho.
 export const saveCropped = (nearPath: string, data: number[]) =>
   invoke<string>("save_cropped", { nearPath, data });
+// Contact Sheet (nativo): salva a folha de contatos (PNG) na pasta do 1º asset. Retorna o caminho.
+export const saveContactSheet = (nearPath: string, data: number[]) =>
+  invoke<string>("save_contact_sheet", { nearPath, data });
 // Batch Watermark (nativo): salva a imagem com marca d'água (PNG) ao lado do original.
 export const saveWatermarked = (nearPath: string, data: number[]) =>
   invoke<string>("save_watermarked", { nearPath, data });
