@@ -528,6 +528,9 @@ export const inpaintWatermark = (id: number, mask: number[]) =>
   invoke<string>("inpaint_watermark", { id, mask });
 // O arquivo ainda existe no disco? (preview avisa "sumiu" em vez de player quebrado).
 export const pathExists = (path: string) => invoke<boolean>("path_exists", { path });
+// Gera um QR Code (nativo) do texto/URL e cataloga o PNG no Inbox. Retorna o caminho.
+export const generateQr = (text: string, scale?: number) =>
+  invoke<string>("generate_qr", { text, scale });
 // Video → GIF (nativo, ffmpeg com paleta). Retorna o caminho do GIF gerado.
 export const videoGif = (id: number) => invoke<string>("video_gif", { id });
 // Otimizar imagem p/ web (nativo): limita 1920px + JPEG q82. Retorna msg "2.4 MB → 310 KB (-87%)".

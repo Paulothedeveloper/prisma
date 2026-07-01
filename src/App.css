@@ -3659,6 +3659,7 @@ body {
   left: 50%;
   bottom: 22px;
   transform: translateX(-50%);
+  transition: bottom var(--dur-3) var(--ease-out);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -7084,6 +7085,80 @@ body {
   transition: opacity var(--dur-2) var(--ease-out);
 }
 
+/* Gerador de QR Code */
+.qr-modal {
+  width: min(460px, 94vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur-strong);
+  -webkit-backdrop-filter: var(--blur-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), var(--glass-hi);
+  overflow: hidden;
+  animation: popIn 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.qr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.qr-input {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--text);
+  font-size: 13.5px;
+}
+.qr-size {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.qr-lbl {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.qr-size input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+.qr-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 16px;
+}
+.qr-img {
+  max-width: 100%;
+  max-height: 280px;
+  image-rendering: pixelated;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+  animation: ssSlideIn var(--dur-2) var(--ease-out);
+}
+.qr-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+.qr-err {
+  color: #f87171;
+  font-size: 12px;
+  text-align: center;
+}
+
 /* Image Comparator (comparar 2 imagens) — divisor arrastável + lado a lado */
 .cmp-modal {
   width: min(1100px, 94vw);
@@ -7203,6 +7278,7 @@ body {
   left: 50%;
   bottom: 22px;
   transform: translateX(-50%);
+  transition: bottom var(--dur-3) var(--ease-out);
   z-index: 190;
   display: flex;
   align-items: center;
@@ -7218,6 +7294,12 @@ body {
   max-width: calc(100vw - 40px);
   flex-wrap: wrap;
   justify-content: center;
+}
+/* Quando o mini-player de áudio está tocando (também no rodapé), sobe o HUD/batch-bar pra
+   NÃO colidir com ele. O mini-player fica em bottom:16px e tem ~90px de altura. */
+.tool-hud.above-player,
+.batch-bar.above-player {
+  bottom: 120px;
 }
 .tool-btn {
   display: inline-flex;

@@ -98,6 +98,7 @@ import { CropModal } from "./CropModal";
 import { CompareModal } from "./CompareModal";
 import { WatermarkAddModal } from "./WatermarkAddModal";
 import { ContactSheetModal } from "./ContactSheetModal";
+import { QRModal } from "./QRModal";
 import { ContextMenu, type CtxItem } from "./ContextMenu";
 import { FolderTree } from "./FolderTree";
 import { Logo } from "./Logo";
@@ -334,6 +335,7 @@ export default function App() {
   const [comparePair, setComparePair] = useState<[Asset, Asset] | null>(null);
   const [wmAdd, setWmAdd] = useState<Asset[] | null>(null);
   const [contactSheet, setContactSheet] = useState<Asset[] | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
   const [toolMsg, setToolMsg] = useState<string | null>(null); // feedback da HUD de ferramentas
   const toolTimer = useRef<number | null>(null);
   const [clearing, setClearing] = useState(false); // animação de SAÍDA (esvaziar lixeira / apagar dups)
@@ -1444,6 +1446,7 @@ export default function App() {
       { id: "go-trash", label: t("app.trash"), hint: t("cmdk.go"), icon: "trash", run: () => setView({ t: "trash" }) },
       { id: "add-folders", label: t("app.addFolders"), hint: t("cmdk.action"), icon: "folder", run: () => void addFolders() },
       { id: "add-files", label: t("app.addFiles"), hint: t("cmdk.action"), icon: "image", run: () => void addFiles() },
+      { id: "gen-qr", label: t("qr.title"), hint: t("cmdk.action"), icon: "layoutGrid", keywords: "qr qrcode codigo link url gerar", run: () => setQrOpen(true) },
       { id: "cmd-settings", label: t("app.settings"), hint: t("cmdk.action"), icon: "sliders", run: () => { setSettingsTab(undefined); setShowSettings(true); } },
       { id: "cmd-ai", label: t("cmdk.aiSettings"), hint: t("cmdk.action"), icon: "sparkles", keywords: "ia ai claude gemini chave key api busca provedor", run: () => { setSettingsTab("ia"); setShowSettings(true); } },
       { id: "cmd-search", label: t("cmdk.search"), hint: t("cmdk.action"), icon: "search", run: () => searchRef.current?.focus() },
@@ -1771,6 +1774,15 @@ export default function App() {
                     >
                       <Icon name="video" size={15} /> {t("app.downloadMedia")}{" "}
                       <span className="add-hint">{t("app.downloadMediaHint")}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAddMenu(false);
+                        setQrOpen(true);
+                      }}
+                    >
+                      <Icon name="layoutGrid" size={15} /> {t("qr.title")}{" "}
+                      <span className="add-hint">{t("qr.hintShort")}</span>
                     </button>
                   </div>
                 </>,
@@ -2670,6 +2682,7 @@ export default function App() {
       {contactSheet && contactSheet.length > 0 && (
         <ContactSheetModal assets={contactSheet} onClose={() => setContactSheet(null)} onSaved={onMutate} />
       )}
+      {qrOpen && <QRModal onClose={() => setQrOpen(false)} onSaved={onMutate} />}
 
       {batchRename && (
         <BatchRename
@@ -2683,7 +2696,7 @@ export default function App() {
 
       {/* HUD de FERRAMENTAS (estilo Eagle): botões evidentes ao selecionar UM item. */}
       {selected && selectedIds.size <= 1 && !previewAsset && !markup && !cropping && !wmErase && !showSettings && (
-        <div className="tool-hud">
+        <div className={`tool-hud${playerAsset ? " above-player" : ""}`}>
           <button className="tool-btn" onClick={() => setPreviewAsset(selected)} title={t("tool.view")}>
             <Icon name="play" size={15} /> {t("tool.view")}
           </button>
@@ -2745,7 +2758,7 @@ export default function App() {
       )}
 
       {selectedIds.size > 1 && (
-        <div className="batch-bar">
+        <div className={`batch-bar${playerAsset ? " above-player" : ""}`}>
           <span className="batch-count">{selectedIds.size} {t("batch.selected")}</span>
           <div className="batch-sep" />
           {/* Comparar 2 imagens (Image Comparator do Eagle) */}

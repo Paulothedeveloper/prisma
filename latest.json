@@ -1,6 +1,6 @@
 {
-  "version": "0.9.79",
-  "notes": "Menu de contexto resolvido de vez: (1) 'Abrir em nova janela' e 'Fixar na tela' agora TOCAM o video (antes so diziam 'codec nao suportado'); (2) Copiar caminho/pasta ficou confiavel (fallback quando o WebView bloqueia) + toast 'Copiado'; (3) Converter GIF / Duplicar / Definir capa / Analisar IA / Auto-tag agora dao FEEDBACK (toast trabalhando→ok/erro) em vez de rodar em silencio. Somado ao 0.9.78 (download em pasta visivel/estavel) e 0.9.77 (video toca automatico).",
-  "pub_date": "2026-07-01T16:39:24Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTFIdlc1aFowQjY3Wk53ckJ0RjhOZHhhZDNmSTYvbEEzZEVob3pZZkxjV0dudStzR1RzN1VNcS9kQ01NTHVkNHUvYmQzRjgrSm9raVlidE82WGdKQVFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTIzOTQyCWZpbGU6UFJJU01BXzAuOS43OV94NjQtc2V0dXAuZXhlCnppQ2FmR0hXK0xZSXJCeHpwMyswaDZjd2RFb0F4TXFieE96YzhUQnNJZXYvWWdsanVHb3JzKzBZZWttYXp1ME5rekZZbkhkNVBmOUdhUUZSdk9VOEFnPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.79/PRISMA_0.9.79_x64-setup.exe" } }
+  "version": "0.9.80",
+  "notes": "Novo plugin: Gerador de QR Code (menu Adicionar + Ctrl+K) — cola um link/texto, gera o PNG nitido e ja cataloga. + CORRECAO: o HUD de ferramentas (Ver/Fixar) e a barra de lote nao colidem mais com o mini-player de audio no rodape — sobem automatico quando ha musica tocando.",
+  "pub_date": "2026-07-01T17:32:29Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTBMTkRVVUZ4Y2h6Qms1aFZFNTJPQmxwKzZRa0ZYR01aTytaNWUraEpHL20rR25MSCtjSnh3b2RpTHROTTV5SUVyNlhvRldiVjNiY3BBOHdlaXRUSFFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTI3MTIwCWZpbGU6UFJJU01BXzAuOS44MF94NjQtc2V0dXAuZXhlCkFSRnU1WTZ2dVA1YVI3L09GYlVydmpoeFYvbFlGdldHdkdJOTVyeU1DZnRUdXE5OHgvRjNNUU5rdVJUbGZYWWdRT1BabldTRFVoMU1BaDh2UkpJWUJnPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.80/PRISMA_0.9.80_x64-setup.exe" } }
 }

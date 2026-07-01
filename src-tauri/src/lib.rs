@@ -564,6 +564,55 @@ fn path_exists(path: String) -> bool {
     std::path::Path::new(&path).exists()
 }
 
+/// Renderiza o QR (correção M) num PNG em tons de cinza. `module` = px por módulo (nitidez).
+fn qr_image(text: &str, module: u32) -> Result<image::GrayImage, qrcode::types::QrError> {
+    use qrcode::{EcLevel, QrCode};
+    let code = QrCode::with_error_correction_level(text.as_bytes(), EcLevel::M)?;
+    Ok(code
+        .render::<image::Luma<u8>>()
+        .module_dimensions(module, module)
+        .quiet_zone(true)
+        .build())
+}
+
+/// Gera um QR Code (plugin do Eagle) do texto/URL e cataloga o PNG no Inbox. Retorna o caminho.
+/// Nível de correção alto (M) — aguenta logo no meio depois. Módulo grande = mais nítido.
+#[tauri::command]
+async fn generate_qr(app: tauri::AppHandle, text: String, scale: Option<u32>) -> Result<String, String> {
+    let (data_dir, db, thumbs_dir) = {
+        let state = app.state::<AppState>();
+        (state.data_dir.clone(), state.db.clone(), state.thumbs_dir.clone())
+    };
+    let txt = text.trim().to_string();
+    if txt.is_empty() {
+        return Err("texto vazio".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let module = scale.unwrap_or(10).clamp(4, 40);
+        let img = qr_image(&txt, module).map_err(|e| format!("QR: {e}"))?;
+        let inbox = app_inbox(&data_dir);
+        std::fs::create_dir_all(&inbox).map_err(|e| e.to_string())?;
+        // nome curto e seguro a partir do texto
+        let slug: String = txt
+            .chars()
+            .map(|c| if c.is_alphanumeric() { c } else { '_' })
+            .take(40)
+            .collect();
+        let mut out = inbox.join(format!("qr_{slug}.png"));
+        let mut n = 1;
+        while out.exists() {
+            out = inbox.join(format!("qr_{slug}_{n}.png"));
+            n += 1;
+        }
+        img.save(&out).map_err(|e| format!("salvar QR: {e}"))?;
+        indexer::index_one(&db, &thumbs_dir, &out).ok_or("QR gerado mas falhou ao catalogar")?;
+        tracing::info!(dest = %out.display(), "generate_qr");
+        Ok::<String, String>(out.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Letras sincronizadas (LRC) pro Music Player.
 #[tauri::command]
 fn fetch_lyrics(artist: String, title: String) -> Result<Vec<extras::LyricLine>, String> {
@@ -3248,6 +3297,7 @@ pub fn run() {
             video_download_info,
             fetch_lyrics,
             path_exists,
+            generate_qr,
             ai_ask_image,
             ai_ocr,
             inpaint_watermark,
@@ -3292,4 +3342,22 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod qr_tests {
+    use super::qr_image;
+
+    #[test]
+    fn gera_qr_que_decodifica_de_volta() {
+        let texto = "https://github.com/Paulothedeveloper/prisma";
+        let img = qr_image(texto, 8).expect("deve gerar o QR");
+        assert!(img.width() > 40 && img.height() > 40, "QR tem dimensões válidas");
+        // decodifica com rqrr e confere que voltou o MESMO texto
+        let mut prep = rqrr::PreparedImage::prepare(img);
+        let grids = prep.detect_grids();
+        assert!(!grids.is_empty(), "deve detectar 1 grade de QR");
+        let (_meta, content) = grids[0].decode().expect("deve decodificar");
+        assert_eq!(content, texto, "o QR deve conter exatamente o texto original");
+    }
 }

@@ -38,8 +38,12 @@ tokenizers = { version = "0.20", default-features = false, features = ["onig"] }
 notify = "6"
 resvg = "0.44"
 ab_glyph = "0.2"
+qrcode = { version = "0.14", default-features = false, features = ["image"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+rqrr = "0.7"
 
 [profile.release]
 # Otimização de tamanho/perf — subconjunto SEGURO. NOTA: o binário (~95MB) é dominado
