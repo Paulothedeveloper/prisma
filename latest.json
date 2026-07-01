@@ -1,6 +1,6 @@
 {
-  "version": "0.9.64",
-  "notes": "REMOVER MARCA D'AGUA nativo (AI Eraser): botao direito na imagem > 'Remover marca d'agua', pinte por cima da marca e o app preenche com a vizinhanca (inpainting em Rust, testado). Gera copia limpa catalogada.",
-  "pub_date": "2026-07-01T04:10:26Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWS9oSEh1QWtzcDVySS94QkJ6em1FRzlIa1pEK1JDUjhndmNnV09IempSTi9wbWdLa29RT2VNZ1luMjVBRXRPUk0zaDdBZnliYWE2Sm1zVXZhV0k5SXdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODc4OTk5CWZpbGU6UFJJU01BXzAuOS42NF94NjQtc2V0dXAuZXhlCjFPeTBZREdNQ2UzNzlXLzV6UnUzRTAycGtPaThKZFYvaGpXNjlYeFBpcHJkMG1PYU5LZnFEVnh3K0lyblQ3SGNwMVNMZjY3a2JFMmVVUnhGYXlWQ0FRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.64/PRISMA_0.9.64_x64-setup.exe" } }
+  "version": "0.9.65",
+  "notes": "Plugin Video->GIF nativo (Eagle 'Video to GIF Converter'): botao direito num video > 'Converter para GIF'. Usa o ffmpeg do app com paleta (nitido, sem serrilhado). Provado gerando GIF valido.",
+  "pub_date": "2026-07-01T04:42:24Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTBVcHorazBOaEpkVWZzN2JRS1ZQTmtzaDFEaWFWMWtlYVdaQm5xN0lTMUxMaEtJSW5zdkRTaWdNWG1NSW5jRzBHUkNsWnNiRU1PRi9LQm01ekZHOWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODgwOTIxCWZpbGU6UFJJU01BXzAuOS42NV94NjQtc2V0dXAuZXhlCkY5d05wNm5qd3hSUW4xTUUrQXpMcG8vYnpaUXpXdGF1cVdBWFgrTzkvSXpGcFcyWS9Ld3ZxL2JWYnpleCtnRzFYSldCL1ZNb29QR2RUSTVaOE4zQ0JRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.65/PRISMA_0.9.65_x64-setup.exe" } }
 }

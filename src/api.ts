@@ -526,6 +526,8 @@ export const aiOcr = (id: number) => invoke<string>("ai_ocr", { id });
 // Remover marca d'água / AI Eraser (nativo): mask = PNG (claro = remover). Retorna o caminho limpo.
 export const inpaintWatermark = (id: number, mask: number[]) =>
   invoke<string>("inpaint_watermark", { id, mask });
+// Video → GIF (nativo, ffmpeg com paleta). Retorna o caminho do GIF gerado.
+export const videoGif = (id: number) => invoke<string>("video_gif", { id });
 
 // ----- CLIP: busca semântica local (AI Search) -----
 export interface ClipStatus {

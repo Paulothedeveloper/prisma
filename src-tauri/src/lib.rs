@@ -543,6 +543,38 @@ fn inpaint_watermark(app: tauri::AppHandle, id: i64, mask: Vec<u8>) -> Result<St
     Ok(out.to_string_lossy().to_string())
 }
 
+/// Video → GIF (plugin "Video to GIF Converter" do Eagle — nativo, via ffmpeg com paleta).
+#[tauri::command]
+fn video_gif(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let path: String = state
+        .reads
+        .with(|conn| {
+            conn.query_row(
+                "SELECT path FROM assets WHERE id=?1",
+                rusqlite::params![id],
+                |r| r.get(0),
+            )
+        })
+        .map_err(|e| e.to_string())?;
+    let src = std::path::Path::new(&path);
+    let ffmpeg = thumbs::bin_path("ffmpeg");
+    // salva ao lado do vídeo numa pasta CONVERTIDO; se não der, cai no Inbox.
+    let dest = src
+        .parent()
+        .map(|p| p.join("CONVERTIDO"))
+        .unwrap_or_else(|| state.data_dir.join("Inbox"));
+    let out = match extras::video_to_gif(&ffmpeg, &dest, src) {
+        Ok(p) => p,
+        Err(_) => extras::video_to_gif(&ffmpeg, &state.data_dir.join("Inbox"), src)?,
+    };
+    let db = state.db.clone();
+    let thumbs_dir = state.thumbs_dir.clone();
+    indexer::index_one(&db, &thumbs_dir, &out).ok_or("GIF gerado mas falhou ao catalogar")?;
+    tracing::info!(src = %path, dest = %out.display(), "video_gif: GIF gerado");
+    Ok(out.to_string_lossy().to_string())
+}
+
 // ---------- CLIP: busca semântica local (plugin "AI Search" do Eagle) ----------
 
 #[derive(serde::Serialize)]
@@ -3008,6 +3040,7 @@ pub fn run() {
             ai_ask_image,
             ai_ocr,
             inpaint_watermark,
+            video_gif,
             ai_upscale,
             ai_remove_bg,
             clip_status,

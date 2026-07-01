@@ -62,6 +62,7 @@ import {
   clipStatus,
   clipIndex,
   clipAutotag,
+  videoGif,
   exportContactSheet,
   type Asset,
   type SubCard,
@@ -1185,6 +1186,7 @@ export default function App() {
       { sep: true, label: "" },
       ...(a.type === "image" || a.type === "gif" ? [{ label: t("ctx.markup"), icon: "pencil" as const, onClick: () => setMarkup(a) }] : []),
       ...(a.type === "image" ? [{ label: t("ctx.wmErase"), icon: "sparkles" as const, onClick: () => setWmErase(a) }] : []),
+      ...(a.type === "video" ? [{ label: t("ctx.toGif"), icon: "video" as const, onClick: () => void videoGif(a.id).then(onMutate) }] : []),
       { label: t("ctx.findSimilar"), icon: "search", onClick: () => setView({ t: "similar", v: a.id, label: a.name || a.filename }) },
       ...(a.type === "image" || a.type === "gif" || a.type === "video"
         ? [{ label: t("ctx.findSimilarAI"), icon: "sparkles" as const, onClick: () => setView({ t: "clipimg", v: a.id, label: a.name || a.filename }) }]

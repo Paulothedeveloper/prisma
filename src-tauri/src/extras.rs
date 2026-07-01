@@ -87,6 +87,39 @@ pub fn info(data_dir: &Path, url: &str) -> Result<DownloadInfo, String> {
 
 /// Baixa o vídeo (ou só o áudio, em m4a) pro `dest_dir`. Usa o ffmpeg do PRISMA pro merge.
 /// Retorna o caminho do arquivo final.
+/// Video → GIF (plugin "Video to GIF Converter" do Eagle — nativo). Usa o ffmpeg do PRISMA com
+/// paleta (palettegen/paletteuse) numa passada só = GIF nítido, sem serrilhado. Escreve GIF novo.
+pub fn video_to_gif(ffmpeg: &Path, dest_dir: &Path, input: &Path) -> Result<PathBuf, String> {
+    std::fs::create_dir_all(dest_dir).map_err(|e| e.to_string())?;
+    let stem = input
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "video".into());
+    let mut out = dest_dir.join(format!("{stem}.gif"));
+    let mut n = 1;
+    while out.exists() {
+        out = dest_dir.join(format!("{stem}_{n}.gif"));
+        n += 1;
+    }
+    // fps 15 + largura 640 (mantém proporção) + Lanczos + paleta = bom equilíbrio nitidez/tamanho.
+    let vf = "fps=15,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5";
+    let mut c = Command::new(ffmpeg);
+    no_window(&mut c);
+    c.args(["-y", "-i"]);
+    c.arg(input);
+    c.args(["-vf", vf, "-loop", "0"]);
+    c.arg(&out);
+    c.stdout(Stdio::null());
+    c.stderr(Stdio::piped());
+    let res = c.output().map_err(|e| e.to_string())?;
+    if !res.status.success() || !out.exists() {
+        let err = String::from_utf8_lossy(&res.stderr);
+        let last = err.lines().filter(|l| !l.trim().is_empty()).last().unwrap_or("erro");
+        return Err(format!("conversão pra GIF falhou: {last}"));
+    }
+    Ok(out)
+}
+
 /// "[download]  45.2% of ..." → 45.2
 fn parse_percent(line: &str) -> Option<f32> {
     if !line.contains("[download]") {
