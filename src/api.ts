@@ -528,6 +528,9 @@ export const inpaintWatermark = (id: number, mask: number[]) =>
   invoke<string>("inpaint_watermark", { id, mask });
 // Video → GIF (nativo, ffmpeg com paleta). Retorna o caminho do GIF gerado.
 export const videoGif = (id: number) => invoke<string>("video_gif", { id });
+// Image Crop Master (nativo): salva o recorte (PNG) ao lado do original. Retorna o caminho.
+export const saveCropped = (nearPath: string, data: number[]) =>
+  invoke<string>("save_cropped", { nearPath, data });
 
 // ----- CLIP: busca semântica local (AI Search) -----
 export interface ClipStatus {
