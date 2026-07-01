@@ -1,11 +1,11 @@
 {
-  "version": "0.9.57",
-  "notes": "Troca de tela fluida: mudar aba/atalho ou filtro faz os cards entrarem em cascata animada (sem remontar a grade). Menu Adicionar sem '...'.",
-  "pub_date": "2026-07-01T01:56:18Z",
+  "version": "0.9.58",
+  "notes": "Tema: texto do filtro ativo e das tags nao ficam mais AZUIS no tema laranja/verde/etc. — agora seguem o acento (acento clareado via color-mix). Varredura cientifica do DOM confirmou zero azul de acento perdido.",
+  "pub_date": "2026-07-01T02:10:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWS9pa3hlVW54TDNuQXFsblRqU1UyMnN0aXlYN1ZxSmFUdFVLTmt5TlNLYmlWcE1XRzJnSGxLMUd4UzY0TkJKWSthUkdUNVg3MHk1TGxWMjNEb05KY0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODcwOTQyCWZpbGU6UFJJU01BXzAuOS41N194NjQtc2V0dXAuZXhlCml6cVg5KzM0MEtJVHZFYmxxNlh5VjBlYzBBZHBCNjMxRVJUcU5zVVNPSGhPaXJSVm1YWkhTWGlLQjJqNld6Z2s4Sm1pTE9LQkZ3cGdoK2s0TjFTTER3PT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.57/PRISMA_0.9.57_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXpCa3lwejAxaWV3N2JpcjFiVmNLNGh2OHRaaXIyM1J6cDV3UDlKMjlaT21UMGdVZVJZdlFvc2YrL1RZa0ZhelFKb3hjMGJVdEZJZFdRcHl4ZWtadEE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODcxNzY4CWZpbGU6UFJJU01BXzAuOS41OF94NjQtc2V0dXAuZXhlCnlJR2k2cURmVWFQSnRLMThMMlpJek50a2lTOUNNUjc4emRqNGNTZlNFS2FrUnB0dVN2bWhubkdINElBQkxUeklybnE4a3gzOXpicFdoUm4wYVNqVUNBPT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.58/PRISMA_0.9.58_x64-setup.exe"
     }
   }
 }

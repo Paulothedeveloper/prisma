@@ -475,14 +475,14 @@ body {
 .popup-btn.on {
   background: var(--accent-soft);
   border-color: rgba(var(--accent-rgb), 0.5);
-  color: #6fb4ff;
+  color: color-mix(in oklab, var(--accent) 58%, white);
 }
 .popup-chev {
   display: flex;
   color: var(--text-2);
 }
 .popup-btn.on .popup-chev {
-  color: #6fb4ff;
+  color: color-mix(in oklab, var(--accent) 58%, white);
 }
 .menu {
   position: fixed;
@@ -1968,7 +1968,7 @@ body {
   border-radius: 12px;
   padding: 3px 9px;
   font-size: 11px;
-  color: #74b6ff;
+  color: color-mix(in oklab, var(--accent) 58%, white);
 }
 .tag-x {
   background: transparent;
@@ -2373,7 +2373,7 @@ body {
   gap: 5px;
   background: rgba(var(--accent-rgb), 0.16);
   border: 1px solid rgba(var(--accent-rgb), 0.4);
-  color: #74b6ff;
+  color: color-mix(in oklab, var(--accent) 58%, white);
   border-radius: 7px;
   padding: 6px 9px;
   font-size: 11px;
