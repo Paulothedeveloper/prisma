@@ -1,6 +1,6 @@
 {
-  "version": "0.9.60",
-  "notes": "Plugin 1/N do Eagle nativo: OCR (Copy Image Text) — botao 'Extrair texto' no inspector le o texto visivel de qualquer imagem/print via visao (Claude/Gemini), com copiar. Comeco da paridade de plugins.",
-  "pub_date": "2026-07-01T03:03:10Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTBaUWlUNzRRRlBMRGNaN1VlOHFyMnFJT1JsZ2xmYzhMUEhUOUxkQWpyTjZEZ05peS9HWi9sT00wL3BqL2o1RHlIUlcxdHZ5ZHNkZGJsc2hJcGNKNGdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODc0OTYxCWZpbGU6UFJJU01BXzAuOS42MF94NjQtc2V0dXAuZXhlCm91aGlRWHVHTHJDaXR0YXVuQlB1NzJyVUpFNTc3emxPa2k2NTlKVGRxMHN6MnQ0cDRzWXYvRzNROHliUngwTjZzdGVBOEZLamQ2ZjZWNlJTVkJMaENRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.60/PRISMA_0.9.60_x64-setup.exe" } }
+  "version": "0.9.61",
+  "notes": "Plugin 2/N do Eagle nativo: HISTOGRAMA RGB no painel de Detalhes (imagem/video) — as 3 curvas de canal, leitura fotografica classica. Junto do OCR (0.9.60).",
+  "pub_date": "2026-07-01T03:17:35Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTVzUTVoYzEwUXlSSWZmdFV3VElkUVNFVzEzQTBGTVpjUVZoMWVuQTZocDBXS2hOOVh6SVBwSklZZFB0TThhNHdna280YiswYzF0aWZITkhBRXhjOGdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODc1ODMwCWZpbGU6UFJJU01BXzAuOS42MV94NjQtc2V0dXAuZXhlCmFRd1VlNjlOeW5kcHhGNEJVY2RqaURFU2JOdm83YU1KR0l5MHd3bVNXV3NtRFBINENyYXBrbjJqN21IWDJqcFFUVEJNWmg5OUt4YUVxZ1RKYVZ5YUNBPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.61/PRISMA_0.9.61_x64-setup.exe" } }
 }

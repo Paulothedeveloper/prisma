@@ -13,6 +13,7 @@ import { ColorPlanCard } from "./ColorPlanCard";
 import { useDismiss } from "./useDismiss";
 import { fireTip } from "./tips";
 import { extractPalette, type Swatch } from "./palette";
+import { Histogram } from "./Histogram";
 import { t } from "./i18n";
 import { getProxy, renameAsset, duplicateAsset, refreshThumb, setCustomThumb } from "./api";
 
@@ -564,6 +565,14 @@ function InspectorImpl({
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Histograma RGB (plugin "Histogram" do Eagle — nativo). Só faz sentido com pixels. */}
+      {previewUrl && (asset.type === "image" || asset.type === "video") && (
+        <div className="insp-block">
+          <div className="insp-section-title">{t("insp.histogram")}</div>
+          <Histogram url={previewUrl} />
         </div>
       )}
 
