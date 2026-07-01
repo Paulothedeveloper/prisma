@@ -1,6 +1,6 @@
 {
-  "version": "0.9.65",
-  "notes": "Plugin Video->GIF nativo (Eagle 'Video to GIF Converter'): botao direito num video > 'Converter para GIF'. Usa o ffmpeg do app com paleta (nitido, sem serrilhado). Provado gerando GIF valido.",
-  "pub_date": "2026-07-01T04:42:24Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTBVcHorazBOaEpkVWZzN2JRS1ZQTmtzaDFEaWFWMWtlYVdaQm5xN0lTMUxMaEtJSW5zdkRTaWdNWG1NSW5jRzBHUkNsWnNiRU1PRi9LQm01ekZHOWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODgwOTIxCWZpbGU6UFJJU01BXzAuOS42NV94NjQtc2V0dXAuZXhlCkY5d05wNm5qd3hSUW4xTUUrQXpMcG8vYnpaUXpXdGF1cVdBWFgrTzkvSXpGcFcyWS9Ld3ZxL2JWYnpleCtnRzFYSldCL1ZNb29QR2RUSTVaOE4zQ0JRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.65/PRISMA_0.9.65_x64-setup.exe" } }
+  "version": "0.9.66",
+  "notes": "Plugin Pin on screen nativo: botao direito num item > 'Fixar na tela' abre uma mini-janela SEMPRE NO TOPO com a midia, pra usar de referencia enquanto trabalha em outro app (Photoshop, DaVinci, navegador).",
+  "pub_date": "2026-07-01T04:59:09Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXdhTEEzbE9BMjV2OGZEeW40OTVuOGQ1d005TTR2NW9STUVRSk5pdmFYV3NPWmRwTlZSWUlnMVF1Slh5eFQ3czh4YTczS1ZHT2doWFR1a1BuRlozdnc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODgxOTE3CWZpbGU6UFJJU01BXzAuOS42Nl94NjQtc2V0dXAuZXhlCjF1V2FCcWFRV2U4OHRYRXVoTmxkWTBvSi9CNXJzK2Y0RFBxSEhnaFN0bnNDNDZaMXAwa2ZpT2xuR3ZHMWwzeGlTTVg5RUtQQXNONHJvT0d6NWYyakNRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.66/PRISMA_0.9.66_x64-setup.exe" } }
 }

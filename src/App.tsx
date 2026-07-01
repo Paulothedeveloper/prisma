@@ -1163,6 +1163,22 @@ export default function App() {
     new WebviewWindow(label, { url: q, title: a.name || a.filename, width: 920, height: 620 });
   };
 
+  // Pin on screen (plugin do Eagle): mini-janela ALWAYS-ON-TOP com o item, pra usar de
+  // referência enquanto trabalha em outro app. Mesma PreviewWindow, mas fixa e compacta.
+  const pinAsset = (a: Asset) => {
+    const label = `pin-${a.id}-${Date.now()}`;
+    const q = `index.html?win=preview&pin=1&type=${a.type}&path=${encodeURIComponent(a.path)}&name=${encodeURIComponent(a.name || a.filename)}`;
+    new WebviewWindow(label, {
+      url: q,
+      title: a.name || a.filename,
+      width: 380,
+      height: 320,
+      alwaysOnTop: true,
+      resizable: true,
+      skipTaskbar: true,
+    });
+  };
+
   // Menu de contexto da mídia (estilo Eagle — print 2).
   const ctxItems = (a: Asset): CtxItem[] => {
     const folder = a.path.replace(/\\[^\\]+$/, "");
@@ -1172,6 +1188,7 @@ export default function App() {
     return [
       { label: `${t("insp.view")}${n}`, icon: "play", onClick: () => setPreviewAsset(a) },
       { label: t("ctx.newWindow"), icon: "fullscreen", onClick: () => openInWindow(a) },
+      { label: t("ctx.pin"), icon: "star", onClick: () => pinAsset(a) },
       { label: t("ctx.details"), icon: "pencil", onClick: () => { setSelected(a); setInspectorOpen(true); } },
       { label: t("insp.explorer"), icon: "reveal", onClick: () => revealInExplorer(a.path) },
       { sep: true, label: "" },
