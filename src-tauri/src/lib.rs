@@ -433,36 +433,44 @@ fn video_download_info(app: tauri::AppHandle, url: String) -> Result<extras::Dow
 }
 
 /// Baixa o vídeo/áudio pro Inbox e JÁ cataloga no PRISMA. Retorna o caminho final.
+// ASYNC + spawn_blocking: o download pode levar MINUTOS. Se rodasse síncrono, bloquearia a
+// thread principal do Tauri → a UI congela e o WebView2 fica PRETO. Rodando fora da thread
+// principal, a interface segue fluida (barra de progresso via evento) durante todo o download.
 #[tauri::command]
-fn video_download(
+async fn video_download(
     app: tauri::AppHandle,
     url: String,
     audio_only: bool,
     quality: Option<String>,
 ) -> Result<String, String> {
-    let state = app.state::<AppState>();
-    let inbox = state.data_dir.join("Inbox");
+    // extrai o que precisa (owned) ANTES de sair da thread — o State não atravessa threads.
+    let (data_dir, db, thumbs_dir) = {
+        let state = app.state::<AppState>();
+        (state.data_dir.clone(), state.db.clone(), state.thumbs_dir.clone())
+    };
+    let inbox = data_dir.join("Inbox");
     let ffmpeg = thumbs::bin_path("ffmpeg");
     let q = quality.unwrap_or_else(|| "best".into());
-    // Progresso em tempo real → evento pra barra no modal.
     let app_ev = app.clone();
-    let on_progress = move |pct: f32| {
-        let _ = app_ev.emit("download:progress", pct);
-    };
-    let out = extras::download(
-        &state.data_dir,
-        &ffmpeg,
-        &inbox,
-        url.trim(),
-        audio_only,
-        &q,
-        &on_progress,
-    )?;
-    let db = state.db.clone();
-    let thumbs_dir = state.thumbs_dir.clone();
-    indexer::index_one(&db, &thumbs_dir, &out).ok_or("baixado mas falhou ao catalogar")?;
-    tracing::info!(url = %url, dest = %out.display(), "video_download: baixado e catalogado");
-    Ok(out.to_string_lossy().to_string())
+    tauri::async_runtime::spawn_blocking(move || {
+        let on_progress = move |pct: f32| {
+            let _ = app_ev.emit("download:progress", pct);
+        };
+        let out = extras::download(
+            &data_dir,
+            &ffmpeg,
+            &inbox,
+            url.trim(),
+            audio_only,
+            &q,
+            &on_progress,
+        )?;
+        indexer::index_one(&db, &thumbs_dir, &out).ok_or("baixado mas falhou ao catalogar")?;
+        tracing::info!(dest = %out.display(), "video_download: baixado e catalogado");
+        Ok::<String, String>(out.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Letras sincronizadas (LRC) pro Music Player.
@@ -543,36 +551,41 @@ fn inpaint_watermark(app: tauri::AppHandle, id: i64, mask: Vec<u8>) -> Result<St
     Ok(out.to_string_lossy().to_string())
 }
 
-/// Video → GIF (plugin "Video to GIF Converter" do Eagle — nativo, via ffmpeg com paleta).
+/// Video → GIF (plugin "Video to GIF Converter" do Eagle). ASYNC: vídeo grande demora e não pode
+/// bloquear a thread principal (senão a tela fica preta) — roda fora dela via spawn_blocking.
 #[tauri::command]
-fn video_gif(app: tauri::AppHandle, id: i64) -> Result<String, String> {
-    let state = app.state::<AppState>();
-    let path: String = state
-        .reads
-        .with(|conn| {
-            conn.query_row(
-                "SELECT path FROM assets WHERE id=?1",
-                rusqlite::params![id],
-                |r| r.get(0),
-            )
-        })
-        .map_err(|e| e.to_string())?;
-    let src = std::path::Path::new(&path);
-    let ffmpeg = thumbs::bin_path("ffmpeg");
-    // salva ao lado do vídeo numa pasta CONVERTIDO; se não der, cai no Inbox.
-    let dest = src
-        .parent()
-        .map(|p| p.join("CONVERTIDO"))
-        .unwrap_or_else(|| state.data_dir.join("Inbox"));
-    let out = match extras::video_to_gif(&ffmpeg, &dest, src) {
-        Ok(p) => p,
-        Err(_) => extras::video_to_gif(&ffmpeg, &state.data_dir.join("Inbox"), src)?,
+async fn video_gif(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+    let (path, data_dir, db, thumbs_dir) = {
+        let state = app.state::<AppState>();
+        let path: String = state
+            .reads
+            .with(|conn| {
+                conn.query_row(
+                    "SELECT path FROM assets WHERE id=?1",
+                    rusqlite::params![id],
+                    |r| r.get(0),
+                )
+            })
+            .map_err(|e| e.to_string())?;
+        (path, state.data_dir.clone(), state.db.clone(), state.thumbs_dir.clone())
     };
-    let db = state.db.clone();
-    let thumbs_dir = state.thumbs_dir.clone();
-    indexer::index_one(&db, &thumbs_dir, &out).ok_or("GIF gerado mas falhou ao catalogar")?;
-    tracing::info!(src = %path, dest = %out.display(), "video_gif: GIF gerado");
-    Ok(out.to_string_lossy().to_string())
+    tauri::async_runtime::spawn_blocking(move || {
+        let src = std::path::Path::new(&path);
+        let ffmpeg = thumbs::bin_path("ffmpeg");
+        let dest = src
+            .parent()
+            .map(|p| p.join("CONVERTIDO"))
+            .unwrap_or_else(|| data_dir.join("Inbox"));
+        let out = match extras::video_to_gif(&ffmpeg, &dest, src) {
+            Ok(p) => p,
+            Err(_) => extras::video_to_gif(&ffmpeg, &data_dir.join("Inbox"), src)?,
+        };
+        indexer::index_one(&db, &thumbs_dir, &out).ok_or("GIF gerado mas falhou ao catalogar")?;
+        tracing::info!(dest = %out.display(), "video_gif: GIF gerado");
+        Ok::<String, String>(out.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 // ---------- CLIP: busca semântica local (plugin "AI Search" do Eagle) ----------
