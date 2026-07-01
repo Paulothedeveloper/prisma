@@ -411,7 +411,7 @@ fn save_cropped(app: tauri::AppHandle, near_path: String, data: Vec<u8>) -> Resu
 #[tauri::command]
 fn paste_image(app: tauri::AppHandle, data: Vec<u8>) -> Result<String, String> {
     let state = app.state::<AppState>();
-    let inbox = state.data_dir.join("Inbox");
+    let inbox = app_inbox(&state.data_dir);
     std::fs::create_dir_all(&inbox).map_err(|e| e.to_string())?;
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -452,7 +452,7 @@ fn add_from_url(app: tauri::AppHandle, url: String) -> Result<String, String> {
         .to_string();
     let bytes = resp.bytes().map_err(|e| e.to_string())?;
 
-    let inbox = state.data_dir.join("Inbox");
+    let inbox = app_inbox(&state.data_dir);
     std::fs::create_dir_all(&inbox).map_err(|e| e.to_string())?;
     // nome: da própria URL (se tiver extensão) senão deriva do content-type
     let from_url = url
@@ -503,6 +503,20 @@ fn video_download_info(app: tauri::AppHandle, url: String) -> Result<extras::Dow
     extras::info(&state.data_dir, url.trim())
 }
 
+/// Pasta "Inbox" do PRISMA — onde caem downloads/colagens/upscale/etc. FICA EM LOCAL VISÍVEL
+/// E ESTÁVEL (`%USERPROFILE%\PRISMA\Inbox`), NUNCA no AppData: o AppData é tratado como cache
+/// e é apagado por limpadores de sistema (Storage Sense, "otimizadores"), sumindo com a mídia
+/// baixada — foi exatamente o que fez um vídeo baixado "não tocar" (o arquivo tinha sumido do
+/// disco embora catalogado). Aqui o usuário também ACHA os arquivos. `data_dir` é o fallback.
+fn app_inbox(data_dir: &std::path::Path) -> std::path::PathBuf {
+    let base = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(std::path::PathBuf::from)
+        .map(|h| h.join("PRISMA"))
+        .unwrap_or_else(|| data_dir.to_path_buf());
+    base.join("Inbox")
+}
+
 /// Baixa o vídeo/áudio pro Inbox e JÁ cataloga no PRISMA. Retorna o caminho final.
 // ASYNC + spawn_blocking: o download pode levar MINUTOS. Se rodasse síncrono, bloquearia a
 // thread principal do Tauri → a UI congela e o WebView2 fica PRETO. Rodando fora da thread
@@ -519,7 +533,7 @@ async fn video_download(
         let state = app.state::<AppState>();
         (state.data_dir.clone(), state.db.clone(), state.thumbs_dir.clone())
     };
-    let inbox = data_dir.join("Inbox");
+    let inbox = app_inbox(&data_dir);
     let ffmpeg = thumbs::bin_path("ffmpeg");
     let q = quality.unwrap_or_else(|| "best".into());
     let app_ev = app.clone();
@@ -542,6 +556,12 @@ async fn video_download(
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// O arquivo ainda existe no disco? (o preview usa pra avisar "sumiu" em vez de player quebrado).
+#[tauri::command]
+fn path_exists(path: String) -> bool {
+    std::path::Path::new(&path).exists()
 }
 
 /// Letras sincronizadas (LRC) pro Music Player.
@@ -581,7 +601,7 @@ fn asset_job_ctx(
 async fn ai_upscale(app: tauri::AppHandle, id: i64) -> Result<String, String> {
     let (path, data_dir, db, thumbs_dir) = asset_job_ctx(&app, id)?;
     tauri::async_runtime::spawn_blocking(move || {
-        let inbox = data_dir.join("Inbox");
+        let inbox = app_inbox(&data_dir);
         let out = extras::upscale(&data_dir, &inbox, std::path::Path::new(&path))?;
         indexer::index_one(&db, &thumbs_dir, &out).ok_or("ampliado mas falhou ao catalogar")?;
         tracing::info!(dest = %out.display(), "ai_upscale: imagem ampliada 4x");
@@ -597,7 +617,7 @@ async fn ai_upscale(app: tauri::AppHandle, id: i64) -> Result<String, String> {
 async fn ai_remove_bg(app: tauri::AppHandle, id: i64) -> Result<String, String> {
     let (path, data_dir, db, thumbs_dir) = asset_job_ctx(&app, id)?;
     tauri::async_runtime::spawn_blocking(move || {
-        let inbox = data_dir.join("Inbox");
+        let inbox = app_inbox(&data_dir);
         let out = bgremove::remove_bg(&data_dir, &inbox, std::path::Path::new(&path))?;
         indexer::index_one(&db, &thumbs_dir, &out).ok_or("fundo removido mas falhou ao catalogar")?;
         tracing::info!(dest = %out.display(), "ai_remove_bg: fundo removido");
@@ -613,7 +633,7 @@ async fn ai_remove_bg(app: tauri::AppHandle, id: i64) -> Result<String, String> 
 async fn inpaint_watermark(app: tauri::AppHandle, id: i64, mask: Vec<u8>) -> Result<String, String> {
     let (path, data_dir, db, thumbs_dir) = asset_job_ctx(&app, id)?;
     tauri::async_runtime::spawn_blocking(move || {
-        let inbox = data_dir.join("Inbox");
+        let inbox = app_inbox(&data_dir);
         let out = inpaint::inpaint(&inbox, std::path::Path::new(&path), &mask)?;
         indexer::index_one(&db, &thumbs_dir, &out).ok_or("marca removida mas falhou ao catalogar")?;
         tracing::info!(dest = %out.display(), "inpaint_watermark: marca removida");
@@ -647,10 +667,10 @@ async fn video_gif(app: tauri::AppHandle, id: i64) -> Result<String, String> {
         let dest = src
             .parent()
             .map(|p| p.join("CONVERTIDO"))
-            .unwrap_or_else(|| data_dir.join("Inbox"));
+            .unwrap_or_else(|| app_inbox(&data_dir));
         let out = match extras::video_to_gif(&ffmpeg, &dest, src) {
             Ok(p) => p,
-            Err(_) => extras::video_to_gif(&ffmpeg, &data_dir.join("Inbox"), src)?,
+            Err(_) => extras::video_to_gif(&ffmpeg, &app_inbox(&data_dir), src)?,
         };
         indexer::index_one(&db, &thumbs_dir, &out).ok_or("GIF gerado mas falhou ao catalogar")?;
         tracing::info!(dest = %out.display(), "video_gif: GIF gerado");
@@ -691,10 +711,10 @@ async fn video_watermark(
         let dest = src
             .parent()
             .map(|p| p.join("MARCA DAGUA"))
-            .unwrap_or_else(|| data_dir.join("Inbox"));
+            .unwrap_or_else(|| app_inbox(&data_dir));
         let out = match extras::video_watermark(&ffmpeg, &dest, src, &text, &pos, opacity, size, &color) {
             Ok(p) => p,
-            Err(_) => extras::video_watermark(&ffmpeg, &data_dir.join("Inbox"), src, &text, &pos, opacity, size, &color)?,
+            Err(_) => extras::video_watermark(&ffmpeg, &app_inbox(&data_dir), src, &text, &pos, opacity, size, &color)?,
         };
         indexer::index_one(&db, &thumbs_dir, &out).ok_or("vídeo marcado mas falhou ao catalogar")?;
         tracing::info!(dest = %out.display(), "video_watermark: vídeo marcado");
@@ -727,10 +747,10 @@ async fn image_optimize(app: tauri::AppHandle, id: i64) -> Result<String, String
         let dest = src
             .parent()
             .map(|p| p.join("REDUZIDO"))
-            .unwrap_or_else(|| data_dir.join("Inbox"));
+            .unwrap_or_else(|| app_inbox(&data_dir));
         let (out, before, after) = match extras::optimize_image(&dest, src, 1920, 82) {
             Ok(t) => t,
-            Err(_) => extras::optimize_image(&data_dir.join("Inbox"), src, 1920, 82)?,
+            Err(_) => extras::optimize_image(&app_inbox(&data_dir), src, 1920, 82)?,
         };
         indexer::index_one(&db, &thumbs_dir, &out).ok_or("otimizado mas falhou ao catalogar")?;
         let fmt = |b: u64| -> String {
@@ -2233,7 +2253,7 @@ fn export_contact_sheet(app: tauri::AppHandle, ids: Vec<i64>) -> Result<String, 
     }
     let cols = (thumbs.len() as f64).sqrt().ceil() as u32;
     let cols = cols.clamp(2, 10);
-    let inbox = state.data_dir.join("Inbox");
+    let inbox = app_inbox(&state.data_dir);
     std::fs::create_dir_all(&inbox).map_err(|e| e.to_string())?;
     let mut out = inbox.join("contact_sheet.png");
     let mut k = 1;
@@ -3227,6 +3247,7 @@ pub fn run() {
             video_download,
             video_download_info,
             fetch_lyrics,
+            path_exists,
             ai_ask_image,
             ai_ocr,
             inpaint_watermark,

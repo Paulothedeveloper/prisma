@@ -526,6 +526,8 @@ export const aiOcr = (id: number) => invoke<string>("ai_ocr", { id });
 // Remover marca d'água / AI Eraser (nativo): mask = PNG (claro = remover). Retorna o caminho limpo.
 export const inpaintWatermark = (id: number, mask: number[]) =>
   invoke<string>("inpaint_watermark", { id, mask });
+// O arquivo ainda existe no disco? (preview avisa "sumiu" em vez de player quebrado).
+export const pathExists = (path: string) => invoke<boolean>("path_exists", { path });
 // Video → GIF (nativo, ffmpeg com paleta). Retorna o caminho do GIF gerado.
 export const videoGif = (id: number) => invoke<string>("video_gif", { id });
 // Otimizar imagem p/ web (nativo): limita 1920px + JPEG q82. Retorna msg "2.4 MB → 310 KB (-87%)".

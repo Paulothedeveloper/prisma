@@ -2163,6 +2163,36 @@ body {
 .preview-close:hover {
   background: rgba(120, 120, 128, 0.5);
 }
+/* Arquivo sumiu do disco (movido/apagado por limpador) — estado claro, não player quebrado */
+.preview-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px;
+  text-align: center;
+  color: var(--text-2);
+  max-width: 560px;
+}
+.preview-missing-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+.preview-missing-sub {
+  font-size: 13px;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+.preview-missing-path {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+
 /* Abrir no player externo — canto superior direito, discreto (saiu do centro da mídia) */
 .preview-ext-corner {
   position: absolute;

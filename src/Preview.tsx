@@ -3,7 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { Icon } from "./Icons";
 import { VideoPlayer } from "./VideoPlayer";
 import { AudioPlayer } from "./AudioPlayer";
-import { probeMedia, revealInExplorer, openExternal, makeProxy, type Asset } from "./api";
+import { probeMedia, revealInExplorer, openExternal, makeProxy, pathExists, type Asset } from "./api";
 import { t } from "./i18n";
 import { sfx } from "./sfx";
 
@@ -30,12 +30,16 @@ export function Preview({ asset, onClose, onNav, onToggleFav }: Props) {
 
   // erro REAL de decodificação do original (só então caímos pro proxy/externo)
   const [origError, setOrigError] = useState(false);
+  // null = checando; false = arquivo sumiu do disco (movido/apagado por limpador etc.)
+  const [exists, setExists] = useState<boolean | null>(null);
 
   useEffect(() => {
     setMadeProxy(null);
     setGenning(false);
     setOrigError(false);
-  }, [asset.id]);
+    setExists(null);
+    pathExists(asset.path).then(setExists).catch(() => setExists(true));
+  }, [asset.id, asset.path]);
 
   // proxy H.264 (gerado pelo app pros codecs pro como ProRes): toca INLINE quando o original
   // não é web-compatível, em vez de obrigar o player externo. Usa o proxy já existente OU o
@@ -113,7 +117,20 @@ export function Preview({ asset, onClose, onNav, onToggleFav }: Props) {
         <Icon name="chevronLeft" size={26} />
       </button>
       <div key={asset.id} className="preview-stage" onClick={(e) => e.stopPropagation()}>
-        {isVideo ? (
+        {exists === false ? (
+          <div className="preview-missing">
+            <Icon name="eyeOff" size={30} />
+            <div className="preview-missing-title">{t("prev.missingTitle")}</div>
+            <div className="preview-missing-sub">{t("prev.missingSub")}</div>
+            <div className="preview-missing-path">{asset.path}</div>
+            <button
+              className="preview-openext"
+              onClick={() => revealInExplorer(asset.path).catch(() => {})}
+            >
+              <Icon name="reveal" size={15} /> {t("insp.explorer")}
+            </button>
+          </div>
+        ) : isVideo ? (
           !origError ? (
             // Tenta tocar o ORIGINAL direto (autoplay). A maioria (H.264/VP9/AV1 + AAC) toca na
             // hora. Só se o <video> falhar DE VERDADE é que caímos pro proxy/externo — sem depender
