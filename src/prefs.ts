@@ -55,11 +55,22 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+// hex → "r, g, b" (triplet) pra usar em rgba(var(--accent-rgb), α) no CSS.
+function hexToRgbTriplet(hex: string): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
 // Aplica as preferências no documento. Idempotente — chame no boot e a cada mudança.
 export function applyPrefs(p: Prefs) {
   const root = document.documentElement;
   root.style.setProperty("--accent", p.accent);
   root.style.setProperty("--accent-soft", hexToRgba(p.accent, 0.18));
+  // triplet do acento → brilhos/seleção/bordas seguem o tema (antes eram azul fixo)
+  root.style.setProperty("--accent-rgb", hexToRgbTriplet(p.accent));
   root.classList.toggle("reduce-glass", p.reduceGlass);
   root.dataset.hoverAutoplay = p.hoverAutoplay ? "1" : "0";
   root.dataset.quartzo = p.quartzo ? "1" : "0";

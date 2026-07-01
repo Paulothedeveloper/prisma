@@ -1,11 +1,11 @@
 {
-  "version": "0.9.55",
-  "notes": "Auditoria de fluidez: barra de selecao multipla desliza de baixo (era pop), consolidando o passo de abrir/fechar animado. Filtros, paleta de comandos e todos os menus verificados premium.",
-  "pub_date": "2026-07-01T00:50:47Z",
+  "version": "0.9.56",
+  "notes": "Temas corrigidos: a cor de acento (verde/amber/roxo/etc.) agora se aplica em TUDO — 41 pontos que ficavam azuis fixos (brilhos, aneis de selecao, bordas) agora seguem o tema via --accent-rgb. Espectro do prisma e cores de pasta mantidos.",
+  "pub_date": "2026-07-01T01:32:13Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXp2dFNSNWU2ZWswRHAzOGpFNU8yeEtFMnlpUUkvMld6ZWgwLy9QUHBaMGdKbUlleDhMK1RYMjJGbHhlbTYrRnRELzNhQUZoWTBNOXJpV1dNUHI4bWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODY3MDE1CWZpbGU6UFJJU01BXzAuOS41NV94NjQtc2V0dXAuZXhlCmtKMlhHZXc1QzUrYTFKUCt6Z0hUQlJNd3ZCSDlLYmNQeFhFSWFDUG9ybjZ6UHFzblg3ZDN5M1BkMFpHbWFIMEdwTHNQSW8wSFp0MWx0aVY4UUVyTkN3PT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.55/PRISMA_0.9.55_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXh4VndOdlZLZGprdnpJNGZSZXpvaUZIZUZmSzJvd0xnQ0lhRkRFQUV0dXdrbHRBemJ4Z2NITGhVQkZlbjQ5Zy9MUndlOHBoMjNCQWRpSnBGQjJHamdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODY5NTAzCWZpbGU6UFJJU01BXzAuOS41Nl94NjQtc2V0dXAuZXhlCmoybnhYS1MrV1JhREpXM3VsbGNJQWJuY3BXMmFXb21hVjkyWlEweFNheFd6ajZydG84UTF1YnlHTGRYWFhlNC9HWW1rY2U3cEs5d3djdTQ3OVN4UkJ3PT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.56/PRISMA_0.9.56_x64-setup.exe"
     }
   }
 }
