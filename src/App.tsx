@@ -63,6 +63,7 @@ import {
   clipIndex,
   clipAutotag,
   videoGif,
+  imageOptimize,
   aiUpscale,
   aiRemoveBg,
   exportContactSheet,
@@ -1190,17 +1191,17 @@ export default function App() {
   };
 
   // Roda uma ferramenta assíncrona (ampliar/remover fundo/GIF) com feedback na HUD.
-  const runTool = (fn: () => Promise<string>, working: string) => {
+  const runTool = (fn: () => Promise<string>, working: string, showResult = false) => {
     if (toolTimer.current) clearTimeout(toolTimer.current);
     setToolMsg(working);
     fn()
-      .then(() => {
-        setToolMsg(t("tool.done"));
+      .then((res) => {
+        setToolMsg(showResult && typeof res === "string" && res ? res : t("tool.done"));
         onMutate();
       })
       .catch((e) => setToolMsg(`${t("common.error")}: ${String(e).slice(0, 80)}`))
       .finally(() => {
-        toolTimer.current = window.setTimeout(() => setToolMsg(null), 2800);
+        toolTimer.current = window.setTimeout(() => setToolMsg(null), showResult ? 4200 : 2800);
       });
   };
 
@@ -2660,6 +2661,13 @@ export default function App() {
                 title={t("tool.up")}
               >
                 <Icon name="plus" size={15} /> {t("tool.up")}
+              </button>
+              <button
+                className="tool-btn"
+                onClick={() => runTool(() => imageOptimize(selected.id), t("tool.optBusy"), true)}
+                title={t("tool.optHint")}
+              >
+                <Icon name="stack" size={15} /> {t("tool.opt")}
               </button>
             </>
           )}

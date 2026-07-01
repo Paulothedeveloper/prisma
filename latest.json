@@ -1,6 +1,6 @@
 {
-  "version": "0.9.74",
-  "notes": "Marca d'agua em VIDEO (nativo, ffmpeg drawtext): queima texto no video com posicao, opacidade, tamanho e cor — 1 video ou em LOTE. Mesma UI da marca d'agua de imagem. HUD 'Marcar' no video + barra 'Marca no video'. Nao-destrutivo (gera copia, video reencodado crf18).",
-  "pub_date": "2026-07-01T15:00:14Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXdzaUpkZkNLZ1l6bUhSWk5xNGFEOFdIMDI0dEJlTWJBL0k3bDBBa3FudjcwMlJxdWFwTVdyRnFNRnpkRS9YNTdwUzBSLyt5QmlmWlcxc3NVVzdZS2dVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTE3OTg2CWZpbGU6UFJJU01BXzAuOS43NF94NjQtc2V0dXAuZXhlCnRjVnJCMk8xdTlOSkR4M3c2NGhVUHB6T0RyME5ST3dnZVdBT3dBaHlYOE5nU1psMHNEUVlBcXd6UGwyS2hWMlZvbDM2Q2oyUk95dktwRWlKT3lBZ0F3PT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.74/PRISMA_0.9.74_x64-setup.exe" } }
+  "version": "0.9.75",
+  "notes": "Novo: Reduzir p/ web (plugin Compress) — 1 clique otimiza a imagem (max 1920px, JPEG q82) e mostra a economia real (ex.: 2.4 MB → 310 KB, -87%). Botao 'Reduzir' no HUD de imagem. Nao-destrutivo (gera copia em REDUZIDO/). Junto: marca d'agua em VIDEO (drawtext).",
+  "pub_date": "2026-07-01T15:13:56Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTlUSDVLR3BXY2dVTGtKeFB0aFBsQ2ZkbDY3OGwwR0kwd0lxbUFjalJGV083ZUlyd1lFbmtwdVk1eEFCUmJodnJaSm4ydXdGbGJZcUtLRkxHSEFoR2dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTE4ODA3CWZpbGU6UFJJU01BXzAuOS43NV94NjQtc2V0dXAuZXhlCnZvSTJnY1laUkg2cHhWblJrTlpmbVdQTzlZR3M2cTBVWnlKRlg4SWtJSzFJNUl0WHVvWlhmZWsyem5vcHg0T2p2aHMwMStscHhXV1BhaVJnWU9LekRnPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.75/PRISMA_0.9.75_x64-setup.exe" } }
 }

@@ -681,6 +681,50 @@ async fn video_watermark(
     .map_err(|e| e.to_string())?
 }
 
+/// Otimiza imagem p/ web (plugin "Compress" do Eagle): limita a 1920px + JPEG q82.
+/// Retorna uma mensagem curta com a economia de peso (ex.: "2.4 MB → 310 KB (-87%)").
+#[tauri::command]
+async fn image_optimize(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+    let (path, data_dir, db, thumbs_dir) = {
+        let state = app.state::<AppState>();
+        let path: String = state
+            .reads
+            .with(|conn| {
+                conn.query_row(
+                    "SELECT path FROM assets WHERE id=?1",
+                    rusqlite::params![id],
+                    |r| r.get(0),
+                )
+            })
+            .map_err(|e| e.to_string())?;
+        (path, state.data_dir.clone(), state.db.clone(), state.thumbs_dir.clone())
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        let src = std::path::Path::new(&path);
+        let dest = src
+            .parent()
+            .map(|p| p.join("REDUZIDO"))
+            .unwrap_or_else(|| data_dir.join("Inbox"));
+        let (out, before, after) = match extras::optimize_image(&dest, src, 1920, 82) {
+            Ok(t) => t,
+            Err(_) => extras::optimize_image(&data_dir.join("Inbox"), src, 1920, 82)?,
+        };
+        indexer::index_one(&db, &thumbs_dir, &out).ok_or("otimizado mas falhou ao catalogar")?;
+        let fmt = |b: u64| -> String {
+            if b >= 1_048_576 {
+                format!("{:.1} MB", b as f64 / 1_048_576.0)
+            } else {
+                format!("{} KB", (b / 1024).max(1))
+            }
+        };
+        let pct = if before > 0 { 100 - (after * 100 / before).min(100) } else { 0 };
+        tracing::info!(dest = %out.display(), before, after, "image_optimize");
+        Ok::<String, String>(format!("{} → {} (-{}%)", fmt(before), fmt(after), pct))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 // ---------- CLIP: busca semântica local (plugin "AI Search" do Eagle) ----------
 
 #[derive(serde::Serialize)]
@@ -3165,6 +3209,7 @@ pub fn run() {
             inpaint_watermark,
             video_gif,
             video_watermark,
+            image_optimize,
             save_cropped,
             save_watermarked,
             ai_upscale,

@@ -528,6 +528,8 @@ export const inpaintWatermark = (id: number, mask: number[]) =>
   invoke<string>("inpaint_watermark", { id, mask });
 // Video → GIF (nativo, ffmpeg com paleta). Retorna o caminho do GIF gerado.
 export const videoGif = (id: number) => invoke<string>("video_gif", { id });
+// Otimizar imagem p/ web (nativo): limita 1920px + JPEG q82. Retorna msg "2.4 MB → 310 KB (-87%)".
+export const imageOptimize = (id: number) => invoke<string>("image_optimize", { id });
 // Image Crop Master (nativo): salva o recorte (PNG) ao lado do original. Retorna o caminho.
 export const saveCropped = (nearPath: string, data: number[]) =>
   invoke<string>("save_cropped", { nearPath, data });

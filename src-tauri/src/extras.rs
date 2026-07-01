@@ -214,6 +214,61 @@ pub fn video_watermark(
     Ok(out)
 }
 
+/// Otimiza uma imagem para web: limita o lado maior a `max_side` (Lanczos3) e recomprime
+/// como JPEG de qualidade `quality` (achata alpha sobre branco). Não-destrutivo: gera cópia
+/// em `REDUZIDO/`. Retorna (caminho, bytes_antes, bytes_depois). Plugin "Compress" do Eagle.
+pub fn optimize_image(
+    dest_dir: &Path,
+    input: &Path,
+    max_side: u32,
+    quality: u8,
+) -> Result<(PathBuf, u64, u64), String> {
+    std::fs::create_dir_all(dest_dir).map_err(|e| e.to_string())?;
+    let before = std::fs::metadata(input).map(|m| m.len()).unwrap_or(0);
+    let img = image::ImageReader::open(input)
+        .map_err(|e| format!("abrir: {e}"))?
+        .with_guessed_format()
+        .map_err(|e| format!("formato: {e}"))?
+        .decode()
+        .map_err(|e| format!("decodificar: {e}"))?;
+
+    let (w, h) = (img.width(), img.height());
+    let scaled = if max_side > 0 && w.max(h) > max_side {
+        img.resize(max_side, max_side, image::imageops::FilterType::Lanczos3)
+    } else {
+        img
+    };
+
+    // achata alpha sobre branco → RGB (JPEG não tem alpha)
+    let rgba = scaled.to_rgba8();
+    let (sw, sh) = rgba.dimensions();
+    let mut rgb = image::RgbImage::new(sw, sh);
+    for (x, y, p) in rgba.enumerate_pixels() {
+        let a = p[3] as f32 / 255.0;
+        let blend = |c: u8| (c as f32 * a + 255.0 * (1.0 - a)).round() as u8;
+        rgb.put_pixel(x, y, image::Rgb([blend(p[0]), blend(p[1]), blend(p[2])]));
+    }
+
+    let stem = input
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "imagem".into());
+    let mut out = dest_dir.join(format!("{stem}_web.jpg"));
+    let mut n = 1;
+    while out.exists() {
+        out = dest_dir.join(format!("{stem}_web_{n}.jpg"));
+        n += 1;
+    }
+
+    let mut buf = std::fs::File::create(&out).map_err(|e| e.to_string())?;
+    let mut enc = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buf, quality.clamp(40, 95));
+    enc.encode_image(&rgb).map_err(|e| format!("codificar JPEG: {e}"))?;
+    drop(buf);
+
+    let after = std::fs::metadata(&out).map(|m| m.len()).unwrap_or(0);
+    Ok((out, before, after))
+}
+
 /// "[download]  45.2% of ..." → 45.2
 fn parse_percent(line: &str) -> Option<f32> {
     if !line.contains("[download]") {
@@ -514,4 +569,38 @@ fn parse_stamp(s: &str) -> Option<f64> {
     let mins: f64 = m.trim().parse().ok()?;
     let secs: f64 = rest.trim().parse().ok()?;
     Some(mins * 60.0 + secs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn optimize_encolhe_e_gera_jpeg_valido() {
+        // imagem grande 3000x2000, fotográfica (ruído suave) salva como JPEG q100
+        let mut big = image::RgbImage::new(3000, 2000);
+        for (x, y, p) in big.enumerate_pixels_mut() {
+            let n = ((x * 7 + y * 13) % 97) as u8;
+            *p = image::Rgb([(x % 256) as u8 ^ n, (y % 256) as u8 ^ n, (128 + n) as u8]);
+        }
+        let dir = std::env::temp_dir().join("prisma_opt_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let input = dir.join("grande.jpg");
+        {
+            let mut f = std::fs::File::create(&input).unwrap();
+            image::codecs::jpeg::JpegEncoder::new_with_quality(&mut f, 100)
+                .encode_image(&big)
+                .unwrap();
+        }
+        let before = std::fs::metadata(&input).unwrap().len();
+
+        let (out, b, a) = optimize_image(&dir, &input, 1920, 82).unwrap();
+        assert_eq!(b, before);
+        assert!(a < b, "otimizado ({a}) deve ser menor que o original ({b})");
+        // reabre e confere: lado maior <= 1920 e decodifica
+        let re = image::open(&out).expect("JPEG de saída deve ser válido");
+        assert!(re.width().max(re.height()) <= 1920, "lado maior deve caber em 1920");
+        assert!(out.extension().unwrap() == "jpg");
+    }
 }
