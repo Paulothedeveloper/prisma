@@ -521,6 +521,8 @@ export const aiAskImage = (id: number, question: string) =>
 export const aiUpscale = (id: number) => invoke<string>("ai_upscale", { id });
 // AI Background Remover: remove o fundo (u2netp ONNX em Rust puro, baixado sob demanda)
 export const aiRemoveBg = (id: number) => invoke<string>("ai_remove_bg", { id });
+// OCR (Copy Image Text / OCR Text Extractor do Eagle): extrai o texto visível da imagem por visão.
+export const aiOcr = (id: number) => invoke<string>("ai_ocr", { id });
 
 // ----- CLIP: busca semântica local (AI Search) -----
 export interface ClipStatus {

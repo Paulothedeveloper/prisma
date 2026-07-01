@@ -6577,6 +6577,32 @@ body {
   transform-origin: top left;
 }
 
+/* Resultado do OCR (Copy Image Text nativo) no inspector */
+.ocr-result {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 2px;
+}
+.ocr-text {
+  width: 100%;
+  resize: vertical;
+  min-height: 54px;
+  max-height: 220px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 8px 9px;
+  font-family: var(--mono);
+}
+.ocr-text:focus {
+  outline: none;
+  border-color: rgba(var(--accent-rgb), 0.5);
+}
+
 /* GRID mais LIMPO (parede de imagens estilo Eagle): metadados "nice-to-know" (estrelas
    de nota, selos SEQ/LIVE/OFFLINE) aparecem só no HOVER; nome, duração e avisos de SAÚDE
    ficam SEMPRE (o editor precisa à vista — identidade PRISMA). */

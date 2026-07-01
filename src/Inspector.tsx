@@ -38,6 +38,7 @@ import {
   aiAskImage,
   aiUpscale,
   aiRemoveBg,
+  aiOcr,
   openExternal,
   quartzoNotes,
   quartzoAttach,
@@ -160,6 +161,9 @@ function InspectorImpl({
   // AI Background Remover (u2netp)
   const [bgBusy, setBgBusy] = useState(false);
   const [bgMsg, setBgMsg] = useState<string | null>(null);
+  // OCR (Copy Image Text): texto extraído da imagem
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrText, setOcrText] = useState<string | null>(null);
   // VELVET: aplicar CST no DaVinci (gera o request da arvore de nos).
   const [velvetMsg, setVelvetMsg] = useState<string | null>(null);
   const [velvetBusy, setVelvetBusy] = useState(false);
@@ -324,6 +328,19 @@ function InspectorImpl({
       setBgMsg(`${t("common.error")}: ${String(e)}`);
     } finally {
       setBgBusy(false);
+    }
+  };
+  // OCR: extrai o texto visível da imagem (Copy Image Text do Eagle, nativo).
+  const doOcr = async () => {
+    setOcrBusy(true);
+    setOcrText(null);
+    try {
+      const txt = (await aiOcr(asset.id)).trim();
+      setOcrText(txt === "NENHUM_TEXTO_ENCONTRADO" ? t("insp.ocrNone") : txt);
+    } catch (e) {
+      setOcrText(`${t("common.error")}: ${String(e)}`);
+    } finally {
+      setOcrBusy(false);
     }
   };
   const doVelvetApply = async () => {
@@ -752,6 +769,21 @@ function InspectorImpl({
               <Icon name="sparkles" size={12} /> {bgBusy ? t("insp.bgBusy") : t("insp.bg")}
             </button>
             {bgMsg && <div className="qz-msg">{bgMsg}</div>}
+            {/* OCR — Copy Image Text (nativo): extrai o texto da imagem */}
+            <button className="ai-btn" onClick={doOcr} disabled={ocrBusy}>
+              <Icon name="search" size={12} /> {ocrBusy ? t("insp.ocrBusy") : t("insp.ocr")}
+            </button>
+            {ocrText && (
+              <div className="ocr-result">
+                <textarea className="ocr-text" readOnly value={ocrText} rows={Math.min(10, ocrText.split("\n").length + 1)} />
+                <button
+                  className="ai-btn ocr-copy"
+                  onClick={() => navigator.clipboard.writeText(ocrText)}
+                >
+                  <Icon name="copy" size={12} /> {t("insp.ocrCopy")}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

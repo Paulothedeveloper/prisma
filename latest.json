@@ -1,6 +1,6 @@
 {
-  "version": "0.9.59",
-  "notes": "Bloco DESIGN finalizado: grid mais limpo (parede estilo Eagle) — estrelas de nota e selos SEQ/LIVE/OFFLINE aparecem so no hover; nome, duracao e avisos de saude ficam sempre. Fecha a paridade visual mantendo a identidade PRISMA.",
-  "pub_date": "2026-07-01T02:24:15Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTRFc1RtMWhTbTlZVGtDbEJTWFI2VnpEREU0U2FSTzhqVytNVTZOdERsaERXUmIrM3B0YTBJMjNzYXJqdnZoK1JBanNGajVkYW1zWUZaYzlLNFVTNmdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODcyNjM0CWZpbGU6UFJJU01BXzAuOS41OV94NjQtc2V0dXAuZXhlCkVjbGlRc0hObjB6N0xyVTRHaWMvR3QvblJsL1cvelVLZnJ4QnBBUnk3eUJ6d0JGYnVtSDFaL1QyKzZGZ2g2dlc4bFh5YnJ5NndqQlFmMzlYTEcxT0NRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.59/PRISMA_0.9.59_x64-setup.exe" } }
+  "version": "0.9.60",
+  "notes": "Plugin 1/N do Eagle nativo: OCR (Copy Image Text) — botao 'Extrair texto' no inspector le o texto visivel de qualquer imagem/print via visao (Claude/Gemini), com copiar. Comeco da paridade de plugins.",
+  "pub_date": "2026-07-01T03:03:10Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTBaUWlUNzRRRlBMRGNaN1VlOHFyMnFJT1JsZ2xmYzhMUEhUOUxkQWpyTjZEZ05peS9HWi9sT00wL3BqL2o1RHlIUlcxdHZ5ZHNkZGJsc2hJcGNKNGdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODc0OTYxCWZpbGU6UFJJU01BXzAuOS42MF94NjQtc2V0dXAuZXhlCm91aGlRWHVHTHJDaXR0YXVuQlB1NzJyVUpFNTc3emxPa2k2NTlKVGRxMHN6MnQ0cDRzWXYvRzNROHliUngwTjZzdGVBOEZLamQ2ZjZWNlJTVkJMaENRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.60/PRISMA_0.9.60_x64-setup.exe" } }
 }

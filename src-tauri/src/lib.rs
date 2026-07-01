@@ -1671,6 +1671,47 @@ fn ai_ask_image(app: tauri::AppHandle, id: i64, question: String) -> Result<Stri
     ai::ask_image(&settings, std::path::Path::new(&thumb), question.trim())
 }
 
+/// OCR nativo (equivalente ao plugin "OCR Text Extractor" do Eagle): extrai o texto de uma
+/// imagem via visão (Claude/Gemini). Usa a imagem em RESOLUÇÃO CHEIA quando é imagem/gif — texto
+/// miúdo precisa de resolução; senão cai no thumb.
+#[tauri::command]
+fn ai_ocr(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let settings = ai::load_settings(&state.data_dir);
+    settings
+        .active_key()
+        .ok_or("Configure sua chave da API nas configurações.")?;
+    let (ty, path, thumb): (String, String, Option<String>) = state
+        .reads
+        .with(|conn| {
+            conn.query_row(
+                "SELECT type, path, thumbnail_path FROM assets WHERE id=?1",
+                rusqlite::params![id],
+                |r| {
+                    Ok((
+                        r.get::<_, String>(0)?,
+                        r.get::<_, String>(1)?,
+                        r.get::<_, Option<String>>(2)?,
+                    ))
+                },
+            )
+        })
+        .map_err(|e| e.to_string())?;
+    // imagem/gif → usa o arquivo original (melhor pro OCR de texto miúdo); senão o thumb.
+    let src = if (ty == "image" || ty == "gif") && std::path::Path::new(&path).exists() {
+        path
+    } else {
+        thumb
+            .filter(|t| !t.is_empty())
+            .ok_or("Sem imagem para o OCR olhar.")?
+    };
+    const OCR_PROMPT: &str = "Extraia TODO o texto visível nesta imagem, exatamente como aparece \
+        (verbatim), preservando quebras de linha e a ordem de leitura. Responda APENAS com o texto \
+        extraído — sem comentários, sem markdown, sem aspas. Se não houver texto legível, responda \
+        exatamente: NENHUM_TEXTO_ENCONTRADO.";
+    ai::ask_image(&settings, std::path::Path::new(&src), OCR_PROMPT)
+}
+
 /// Quantos assets ainda não têm descrição de IA (pra mostrar no botão "Analisar todas").
 #[tauri::command]
 fn ai_pending_count(app: tauri::AppHandle) -> Result<i64, String> {
@@ -2921,6 +2962,7 @@ pub fn run() {
             video_download_info,
             fetch_lyrics,
             ai_ask_image,
+            ai_ocr,
             ai_upscale,
             ai_remove_bg,
             clip_status,
