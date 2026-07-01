@@ -1,11 +1,11 @@
 {
-  "version": "0.9.54",
-  "notes": "Fluidez total (passo 6): layout MASONRY por padrao (parede Eagle), pasta expande/colapsa animada, troca de aba com fade, menu Adicionar animado, e troca de cor com crossfade da UI inteira (View Transitions).",
-  "pub_date": "2026-06-30T18:56:41Z",
+  "version": "0.9.55",
+  "notes": "Auditoria de fluidez: barra de selecao multipla desliza de baixo (era pop), consolidando o passo de abrir/fechar animado. Filtros, paleta de comandos e todos os menus verificados premium.",
+  "pub_date": "2026-07-01T00:50:47Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWStFMEl2VEpWZXhBMHR0dVoxMXQ1UFpaRVBEcGwwR21pblk0aVg1M2VCRXlPR1JZeEwwNEdRNjZJMkVKZEEzL0VWdk1jZWlBKzR6dWFhNUZ1TFJkR0FjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODQ1NzczCWZpbGU6UFJJU01BXzAuOS41NF94NjQtc2V0dXAuZXhlCnRPSTdhTjlYVDVjcW5wVHhWOUZMaUlHeG4yZVVwVkphektsT3lXNlFESW8yTnQxaEdrSXB2NG5kaW5aR2Nkck8xN092a0ZKdGJKaDBINU5ZbGlUQkRnPT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.54/PRISMA_0.9.54_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXp2dFNSNWU2ZWswRHAzOGpFNU8yeEtFMnlpUUkvMld6ZWgwLy9QUHBaMGdKbUlleDhMK1RYMjJGbHhlbTYrRnRELzNhQUZoWTBNOXJpV1dNUHI4bWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODY3MDE1CWZpbGU6UFJJU01BXzAuOS41NV94NjQtc2V0dXAuZXhlCmtKMlhHZXc1QzUrYTFKUCt6Z0hUQlJNd3ZCSDlLYmNQeFhFSWFDUG9ybjZ6UHFzblg3ZDN5M1BkMFpHbWFIMEdwTHNQSW8wSFp0MWx0aVY4UUVyTkN3PT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.55/PRISMA_0.9.55_x64-setup.exe"
     }
   }
 }
