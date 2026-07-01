@@ -6707,6 +6707,119 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Image Comparator (comparar 2 imagens) — divisor arrastável + lado a lado */
+.cmp-modal {
+  width: min(1100px, 94vw);
+  max-height: 92vh;
+}
+.cmp-modes {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+  margin-right: 10px;
+}
+.cmp-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 10px 14px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: repeating-conic-gradient(#1b1b1d 0% 25%, #232325 0% 50%) 50% / 22px 22px;
+  touch-action: none;
+  user-select: none;
+}
+.cmp-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.cmp-top {
+  position: absolute;
+  inset: 0;
+}
+.cmp-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  transform: translateX(-1px);
+  cursor: ew-resize;
+  z-index: 3;
+}
+.cmp-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+.cmp-tag {
+  position: absolute;
+  bottom: 10px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 11px;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 2;
+}
+.cmp-tag-l {
+  left: 10px;
+}
+.cmp-tag-r {
+  right: 10px;
+}
+.cmp-sidebyside {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 14px;
+}
+.cmp-half {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: repeating-conic-gradient(#1b1b1d 0% 25%, #232325 0% 50%) 50% / 22px 22px;
+}
+.cmp-half img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.cmp-cap {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* HUD de FERRAMENTAS (botões evidentes ao selecionar 1 item, estilo Eagle) */
 .tool-hud {
   position: fixed;

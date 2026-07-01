@@ -93,6 +93,7 @@ import { BatchRename } from "./BatchRename";
 import { Markup } from "./Markup";
 import { WatermarkEraser } from "./WatermarkEraser";
 import { CropModal } from "./CropModal";
+import { CompareModal } from "./CompareModal";
 import { ContextMenu, type CtxItem } from "./ContextMenu";
 import { FolderTree } from "./FolderTree";
 import { Logo } from "./Logo";
@@ -322,6 +323,7 @@ export default function App() {
   const [markup, setMarkup] = useState<Asset | null>(null);
   const [wmErase, setWmErase] = useState<Asset | null>(null);
   const [cropping, setCropping] = useState<Asset | null>(null);
+  const [comparePair, setComparePair] = useState<[Asset, Asset] | null>(null);
   const [toolMsg, setToolMsg] = useState<string | null>(null); // feedback da HUD de ferramentas
   const toolTimer = useRef<number | null>(null);
   const [clearing, setClearing] = useState(false); // animação de SAÍDA (esvaziar lixeira / apagar dups)
@@ -2605,6 +2607,9 @@ export default function App() {
       {cropping && (
         <CropModal asset={cropping} onClose={() => setCropping(null)} onSaved={onMutate} />
       )}
+      {comparePair && (
+        <CompareModal a={comparePair[0]} b={comparePair[1]} onClose={() => setComparePair(null)} />
+      )}
 
       {batchRename && (
         <BatchRename
@@ -2639,14 +2644,14 @@ export default function App() {
                 onClick={() => runTool(() => aiRemoveBg(selected.id), t("insp.bgBusy"))}
                 title={t("tool.bg")}
               >
-                <Icon name="sparkles" size={15} /> {t("tool.bg")}
+                <Icon name="contrast" size={15} /> {t("tool.bg")}
               </button>
               <button
                 className="tool-btn"
                 onClick={() => runTool(() => aiUpscale(selected.id), t("insp.upscaleBusy"))}
                 title={t("tool.up")}
               >
-                <Icon name="sparkles" size={15} /> {t("tool.up")}
+                <Icon name="plus" size={15} /> {t("tool.up")}
               </button>
             </>
           )}
@@ -2670,6 +2675,20 @@ export default function App() {
         <div className="batch-bar">
           <span className="batch-count">{selectedIds.size} {t("batch.selected")}</span>
           <div className="batch-sep" />
+          {/* Comparar 2 imagens (Image Comparator do Eagle) */}
+          {(() => {
+            const sel = assets.filter((a) => selectedIds.has(a.id));
+            const imgs = sel.filter((a) => a.type === "image");
+            return selectedIds.size === 2 && imgs.length === 2 ? (
+              <button
+                className="batch-item"
+                onClick={() => setComparePair([imgs[0], imgs[1]])}
+                title={t("batch.compare")}
+              >
+                <Icon name="dup" size={13} /> {t("batch.compare")}
+              </button>
+            ) : null;
+          })()}
           <button className="batch-item" onClick={batchFavorite} title={t("batch.favorite")}>
             <Icon name="starFill" size={13} /> {t("batch.favorite")}
           </button>

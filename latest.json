@@ -1,6 +1,6 @@
 {
-  "version": "0.9.71",
-  "notes": "HUD de FERRAMENTAS (sua ideia, estilo Eagle): ao selecionar 1 item aparece uma barra flutuante com BOTOES EVIDENTES das ferramentas — Ver, Fixar, Recortar, Marca d'agua, Fundo, Ampliar (imagem) e ->GIF (video). Nada mais escondido so no botao direito.",
-  "pub_date": "2026-07-01T13:13:29Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWThIeEk5WGM1NmpTOVllZlA5SDdvbG9oWnFzVVFkT216TU5IUXNxbC9SUGlGdGZ0UkFIdld1bHhHenpYb3VKT3MzTFNpRXErbE5WSGNZVnY2cUdaaHdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTExNTc4CWZpbGU6UFJJU01BXzAuOS43MV94NjQtc2V0dXAuZXhlCmY2c2ZZZ1FMYU9DNzVOV0drRGs2bERldlhwbHJVVTdJNjJoaWUzTmJYTVRlaENjV2xYOVVnY2ZFREhtOHo2VDFqNDJwaytCWExhOHhvNlNUNVhQNkJBPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.71/PRISMA_0.9.71_x64-setup.exe" } }
+  "version": "0.9.72",
+  "notes": "Plugin Image Comparator nativo: selecione 2 imagens > 'Comparar' na barra -> divisor arrastavel (antes/depois) OU lado a lado. + icones da HUD diferenciados (Fundo/Ampliar).",
+  "pub_date": "2026-07-01T13:29:14Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWThSSW5KSGFvRE41bXBkbWRZMlZoS1dCWWdDazNWb29KYnlCcm1VWmF4UUdmVG9hUVRQd3pFdUZ5ZytpdC9FeUoyV2JQTnpGT1JRMXBMQlc5NkhjUHdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTEyNTI3CWZpbGU6UFJJU01BXzAuOS43Ml94NjQtc2V0dXAuZXhlClFMTFJEUWtjSFBmR09zUlh3TTRuTFNFR296N20vekg2KzJuc2psYUhNWXQ0dFhGbTFjaURMZGhwVy9hMXhKN3ZSZkt5NmcwRTNqU0NRUzJPWVRteEF3PT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.72/PRISMA_0.9.72_x64-setup.exe" } }
 }
