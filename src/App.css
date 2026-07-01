@@ -6707,6 +6707,72 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Batch Watermark (adicionar marca d'água) */
+.wma-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 14px 4px;
+}
+.wma-text {
+  flex: 1;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--text);
+  font-size: 13px;
+}
+.wma-poses {
+  display: flex;
+  gap: 3px;
+}
+.wma-pos {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 14px;
+}
+.wma-pos.on {
+  background: var(--accent-soft);
+  border-color: rgba(var(--accent-rgb), 0.5);
+  color: color-mix(in oklab, var(--accent) 60%, white);
+}
+.wma-color {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1.5px solid var(--glass-border);
+  cursor: pointer;
+}
+.wma-sliders {
+  display: flex;
+  gap: 16px;
+  padding: 2px 14px 4px;
+}
+.wma-sliders label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.wma-sliders input[type="range"] {
+  width: 120px;
+  accent-color: var(--accent);
+}
+.wma-prog {
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Image Comparator (comparar 2 imagens) — divisor arrastável + lado a lado */
 .cmp-modal {
   width: min(1100px, 94vw);

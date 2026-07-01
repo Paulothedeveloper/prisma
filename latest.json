@@ -1,6 +1,6 @@
 {
-  "version": "0.9.72",
-  "notes": "Plugin Image Comparator nativo: selecione 2 imagens > 'Comparar' na barra -> divisor arrastavel (antes/depois) OU lado a lado. + icones da HUD diferenciados (Fundo/Ampliar).",
-  "pub_date": "2026-07-01T13:29:14Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWThSSW5KSGFvRE41bXBkbWRZMlZoS1dCWWdDazNWb29KYnlCcm1VWmF4UUdmVG9hUVRQd3pFdUZ5ZytpdC9FeUoyV2JQTnpGT1JRMXBMQlc5NkhjUHdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTEyNTI3CWZpbGU6UFJJU01BXzAuOS43Ml94NjQtc2V0dXAuZXhlClFMTFJEUWtjSFBmR09zUlh3TTRuTFNFR296N20vekg2KzJuc2psYUhNWXQ0dFhGbTFjaURMZGhwVy9hMXhKN3ZSZkt5NmcwRTNqU0NRUzJPWVRteEF3PT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.72/PRISMA_0.9.72_x64-setup.exe" } }
+  "version": "0.9.73",
+  "notes": "Plugin Batch Watermark Pro nativo: adicionar marca d'agua de TEXTO (posicao, opacidade, tamanho, cor, ou lado-a-lado tiled) numa imagem OU em LOTE (varias selecionadas). HUD 'Marcar' + barra 'Marca d'agua'. Nao-destrutivo.",
+  "pub_date": "2026-07-01T13:43:51Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWThsYWxkaEl4SThOb2F5MWlVL1k3RTNSbGprQVVhbW13MDU3TGlSckJBaEUrRStnM1JlRUVKUEhXZWpLcVNDUXRvOTg1U0t2VFhlb1BEejBoNlg5OHdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTEzMzkwCWZpbGU6UFJJU01BXzAuOS43M194NjQtc2V0dXAuZXhlCmxDckJiV2JGbUduWjlsVy92cVJ1S0ttTE9pTm5jQ1JJeXdqdWxxUGhPOXB3YjVkRmk5RnA0cmYwQ3hzVUliYUJubU9IcHk3cUhXL2lkZXcrV3h0bER3PT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.73/PRISMA_0.9.73_x64-setup.exe" } }
 }

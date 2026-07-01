@@ -531,6 +531,9 @@ export const videoGif = (id: number) => invoke<string>("video_gif", { id });
 // Image Crop Master (nativo): salva o recorte (PNG) ao lado do original. Retorna o caminho.
 export const saveCropped = (nearPath: string, data: number[]) =>
   invoke<string>("save_cropped", { nearPath, data });
+// Batch Watermark (nativo): salva a imagem com marca d'água (PNG) ao lado do original.
+export const saveWatermarked = (nearPath: string, data: number[]) =>
+  invoke<string>("save_watermarked", { nearPath, data });
 
 // ----- CLIP: busca semântica local (AI Search) -----
 export interface ClipStatus {

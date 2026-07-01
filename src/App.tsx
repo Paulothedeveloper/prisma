@@ -94,6 +94,7 @@ import { Markup } from "./Markup";
 import { WatermarkEraser } from "./WatermarkEraser";
 import { CropModal } from "./CropModal";
 import { CompareModal } from "./CompareModal";
+import { WatermarkAddModal } from "./WatermarkAddModal";
 import { ContextMenu, type CtxItem } from "./ContextMenu";
 import { FolderTree } from "./FolderTree";
 import { Logo } from "./Logo";
@@ -324,6 +325,7 @@ export default function App() {
   const [wmErase, setWmErase] = useState<Asset | null>(null);
   const [cropping, setCropping] = useState<Asset | null>(null);
   const [comparePair, setComparePair] = useState<[Asset, Asset] | null>(null);
+  const [wmAdd, setWmAdd] = useState<Asset[] | null>(null);
   const [toolMsg, setToolMsg] = useState<string | null>(null); // feedback da HUD de ferramentas
   const toolTimer = useRef<number | null>(null);
   const [clearing, setClearing] = useState(false); // animação de SAÍDA (esvaziar lixeira / apagar dups)
@@ -2610,6 +2612,9 @@ export default function App() {
       {comparePair && (
         <CompareModal a={comparePair[0]} b={comparePair[1]} onClose={() => setComparePair(null)} />
       )}
+      {wmAdd && wmAdd.length > 0 && (
+        <WatermarkAddModal assets={wmAdd} onClose={() => setWmAdd(null)} onSaved={onMutate} />
+      )}
 
       {batchRename && (
         <BatchRename
@@ -2638,6 +2643,9 @@ export default function App() {
               </button>
               <button className="tool-btn" onClick={() => setWmErase(selected)} title={t("tool.wm")}>
                 <Icon name="sparkles" size={15} /> {t("tool.wm")}
+              </button>
+              <button className="tool-btn" onClick={() => setWmAdd([selected])} title={t("tool.wmAdd")}>
+                <Icon name="pencil" size={15} /> {t("tool.wmAdd")}
               </button>
               <button
                 className="tool-btn"
@@ -2679,15 +2687,24 @@ export default function App() {
           {(() => {
             const sel = assets.filter((a) => selectedIds.has(a.id));
             const imgs = sel.filter((a) => a.type === "image");
-            return selectedIds.size === 2 && imgs.length === 2 ? (
-              <button
-                className="batch-item"
-                onClick={() => setComparePair([imgs[0], imgs[1]])}
-                title={t("batch.compare")}
-              >
-                <Icon name="dup" size={13} /> {t("batch.compare")}
-              </button>
-            ) : null;
+            return (
+              <>
+                {selectedIds.size === 2 && imgs.length === 2 && (
+                  <button
+                    className="batch-item"
+                    onClick={() => setComparePair([imgs[0], imgs[1]])}
+                    title={t("batch.compare")}
+                  >
+                    <Icon name="dup" size={13} /> {t("batch.compare")}
+                  </button>
+                )}
+                {imgs.length > 0 && (
+                  <button className="batch-item" onClick={() => setWmAdd(imgs)} title={t("batch.watermark")}>
+                    <Icon name="pencil" size={13} /> {t("batch.watermark")}
+                  </button>
+                )}
+              </>
+            );
           })()}
           <button className="batch-item" onClick={batchFavorite} title={t("batch.favorite")}>
             <Icon name="starFill" size={13} /> {t("batch.favorite")}
