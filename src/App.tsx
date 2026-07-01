@@ -88,6 +88,7 @@ import { Settings } from "./Settings";
 import { SmartBuilder } from "./SmartBuilder";
 import { BatchRename } from "./BatchRename";
 import { Markup } from "./Markup";
+import { WatermarkEraser } from "./WatermarkEraser";
 import { ContextMenu, type CtxItem } from "./ContextMenu";
 import { FolderTree } from "./FolderTree";
 import { Logo } from "./Logo";
@@ -315,6 +316,7 @@ export default function App() {
   const [batchRename, setBatchRename] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; asset: Asset } | null>(null);
   const [markup, setMarkup] = useState<Asset | null>(null);
+  const [wmErase, setWmErase] = useState<Asset | null>(null);
   const [clearing, setClearing] = useState(false); // animação de SAÍDA (esvaziar lixeira / apagar dups)
   const [switching, setSwitching] = useState(true); // janela em que os cards entram em cascata
   const cascadeOnNextLoad = useRef(true); // pede cascata na PRÓXIMA carga (nav/layout); animação sem remount
@@ -1182,6 +1184,7 @@ export default function App() {
       },
       { sep: true, label: "" },
       ...(a.type === "image" || a.type === "gif" ? [{ label: t("ctx.markup"), icon: "pencil" as const, onClick: () => setMarkup(a) }] : []),
+      ...(a.type === "image" ? [{ label: t("ctx.wmErase"), icon: "sparkles" as const, onClick: () => setWmErase(a) }] : []),
       { label: t("ctx.findSimilar"), icon: "search", onClick: () => setView({ t: "similar", v: a.id, label: a.name || a.filename }) },
       ...(a.type === "image" || a.type === "gif" || a.type === "video"
         ? [{ label: t("ctx.findSimilarAI"), icon: "sparkles" as const, onClick: () => setView({ t: "clipimg", v: a.id, label: a.name || a.filename }) }]
@@ -2555,6 +2558,9 @@ export default function App() {
       )}
 
       {markup && <Markup asset={markup} onClose={() => setMarkup(null)} onSaved={onMutate} />}
+      {wmErase && (
+        <WatermarkEraser asset={wmErase} onClose={() => setWmErase(null)} onSaved={onMutate} />
+      )}
 
       {batchRename && (
         <BatchRename

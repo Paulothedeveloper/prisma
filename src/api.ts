@@ -523,6 +523,9 @@ export const aiUpscale = (id: number) => invoke<string>("ai_upscale", { id });
 export const aiRemoveBg = (id: number) => invoke<string>("ai_remove_bg", { id });
 // OCR (Copy Image Text / OCR Text Extractor do Eagle): extrai o texto visível da imagem por visão.
 export const aiOcr = (id: number) => invoke<string>("ai_ocr", { id });
+// Remover marca d'água / AI Eraser (nativo): mask = PNG (claro = remover). Retorna o caminho limpo.
+export const inpaintWatermark = (id: number, mask: number[]) =>
+  invoke<string>("inpaint_watermark", { id, mask });
 
 // ----- CLIP: busca semântica local (AI Search) -----
 export interface ClipStatus {

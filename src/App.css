@@ -6669,6 +6669,38 @@ body {
   transform-origin: top left;
 }
 
+/* Remover marca d'água (AI Eraser nativo) */
+.wm-hint {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.wm-reset {
+  margin-left: auto;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.wm-reset:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.wm-msg {
+  margin: 6px 18px 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.mk-canvas {
+  cursor: crosshair;
+}
+
 /* Histograma RGB (plugin Histogram nativo) no inspector */
 .insp-histogram {
   width: 100%;

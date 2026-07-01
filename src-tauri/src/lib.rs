@@ -8,6 +8,7 @@ mod extras;
 mod dbpool;
 mod features;
 mod indexer;
+mod inpaint;
 mod jobs;
 mod mediainfo;
 mod nle;
@@ -515,6 +516,30 @@ fn ai_remove_bg(app: tauri::AppHandle, id: i64) -> Result<String, String> {
     let thumbs_dir = state.thumbs_dir.clone();
     indexer::index_one(&db, &thumbs_dir, &out).ok_or("fundo removido mas falhou ao catalogar")?;
     tracing::info!(src = %path, dest = %out.display(), "ai_remove_bg: fundo removido");
+    Ok(out.to_string_lossy().to_string())
+}
+
+/// Remover marca d'água / AI Eraser (nativo): o usuário pinta a região; inpainting por difusão
+/// preenche com a vizinhança. `mask` = PNG da máscara (claro = remover). Escreve PNG novo.
+#[tauri::command]
+fn inpaint_watermark(app: tauri::AppHandle, id: i64, mask: Vec<u8>) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    let path: String = state
+        .reads
+        .with(|conn| {
+            conn.query_row(
+                "SELECT path FROM assets WHERE id=?1",
+                rusqlite::params![id],
+                |r| r.get(0),
+            )
+        })
+        .map_err(|e| e.to_string())?;
+    let inbox = state.data_dir.join("Inbox");
+    let out = inpaint::inpaint(&inbox, std::path::Path::new(&path), &mask)?;
+    let db = state.db.clone();
+    let thumbs_dir = state.thumbs_dir.clone();
+    indexer::index_one(&db, &thumbs_dir, &out).ok_or("marca removida mas falhou ao catalogar")?;
+    tracing::info!(src = %path, dest = %out.display(), "inpaint_watermark: marca removida");
     Ok(out.to_string_lossy().to_string())
 }
 
@@ -2982,6 +3007,7 @@ pub fn run() {
             fetch_lyrics,
             ai_ask_image,
             ai_ocr,
+            inpaint_watermark,
             ai_upscale,
             ai_remove_bg,
             clip_status,
