@@ -63,6 +63,8 @@ import {
   clipIndex,
   clipAutotag,
   videoGif,
+  aiUpscale,
+  aiRemoveBg,
   exportContactSheet,
   type Asset,
   type SubCard,
@@ -320,6 +322,8 @@ export default function App() {
   const [markup, setMarkup] = useState<Asset | null>(null);
   const [wmErase, setWmErase] = useState<Asset | null>(null);
   const [cropping, setCropping] = useState<Asset | null>(null);
+  const [toolMsg, setToolMsg] = useState<string | null>(null); // feedback da HUD de ferramentas
+  const toolTimer = useRef<number | null>(null);
   const [clearing, setClearing] = useState(false); // animação de SAÍDA (esvaziar lixeira / apagar dups)
   const [switching, setSwitching] = useState(true); // janela em que os cards entram em cascata
   const cascadeOnNextLoad = useRef(true); // pede cascata na PRÓXIMA carga (nav/layout); animação sem remount
@@ -1179,6 +1183,21 @@ export default function App() {
       resizable: true,
       skipTaskbar: true,
     });
+  };
+
+  // Roda uma ferramenta assíncrona (ampliar/remover fundo/GIF) com feedback na HUD.
+  const runTool = (fn: () => Promise<string>, working: string) => {
+    if (toolTimer.current) clearTimeout(toolTimer.current);
+    setToolMsg(working);
+    fn()
+      .then(() => {
+        setToolMsg(t("tool.done"));
+        onMutate();
+      })
+      .catch((e) => setToolMsg(`${t("common.error")}: ${String(e).slice(0, 80)}`))
+      .finally(() => {
+        toolTimer.current = window.setTimeout(() => setToolMsg(null), 2800);
+      });
   };
 
   // Menu de contexto da mídia (estilo Eagle — print 2).
@@ -2595,6 +2614,56 @@ export default function App() {
             onMutate();
           }}
         />
+      )}
+
+      {/* HUD de FERRAMENTAS (estilo Eagle): botões evidentes ao selecionar UM item. */}
+      {selected && selectedIds.size <= 1 && !previewAsset && !markup && !cropping && !wmErase && !showSettings && (
+        <div className="tool-hud">
+          <button className="tool-btn" onClick={() => setPreviewAsset(selected)} title={t("tool.view")}>
+            <Icon name="play" size={15} /> {t("tool.view")}
+          </button>
+          <button className="tool-btn" onClick={() => pinAsset(selected)} title={t("tool.pin")}>
+            <Icon name="fullscreen" size={15} /> {t("tool.pin")}
+          </button>
+          {selected.type === "image" && (
+            <>
+              <div className="tool-sep" />
+              <button className="tool-btn" onClick={() => setCropping(selected)} title={t("tool.crop")}>
+                <Icon name="image" size={15} /> {t("tool.crop")}
+              </button>
+              <button className="tool-btn" onClick={() => setWmErase(selected)} title={t("tool.wm")}>
+                <Icon name="sparkles" size={15} /> {t("tool.wm")}
+              </button>
+              <button
+                className="tool-btn"
+                onClick={() => runTool(() => aiRemoveBg(selected.id), t("insp.bgBusy"))}
+                title={t("tool.bg")}
+              >
+                <Icon name="sparkles" size={15} /> {t("tool.bg")}
+              </button>
+              <button
+                className="tool-btn"
+                onClick={() => runTool(() => aiUpscale(selected.id), t("insp.upscaleBusy"))}
+                title={t("tool.up")}
+              >
+                <Icon name="sparkles" size={15} /> {t("tool.up")}
+              </button>
+            </>
+          )}
+          {selected.type === "video" && (
+            <>
+              <div className="tool-sep" />
+              <button
+                className="tool-btn"
+                onClick={() => runTool(() => videoGif(selected.id), t("tool.gifWorking"))}
+                title={t("tool.gif")}
+              >
+                <Icon name="video" size={15} /> {t("tool.gif")}
+              </button>
+            </>
+          )}
+          {toolMsg && <span className="tool-hud-msg">{toolMsg}</span>}
+        </div>
       )}
 
       {selectedIds.size > 1 && (
