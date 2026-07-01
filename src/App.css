@@ -6577,6 +6577,23 @@ body {
   transform-origin: top left;
 }
 
+/* GRID mais LIMPO (parede de imagens estilo Eagle): metadados "nice-to-know" (estrelas
+   de nota, selos SEQ/LIVE/OFFLINE) aparecem só no HOVER; nome, duração e avisos de SAÚDE
+   ficam SEMPRE (o editor precisa à vista — identidade PRISMA). */
+.card .badge-rating,
+.card .badge-seq,
+.card .badge-live,
+.card .badge-offline {
+  opacity: 0;
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+.card:hover .badge-rating,
+.card:hover .badge-seq,
+.card:hover .badge-live,
+.card:hover .badge-offline {
+  opacity: 1;
+}
+
 /* ============================================================================
    POLISH PREMIUM — iteração 4: ABRIR/FECHAR animado em tudo (pedido do Paulo).
    ========================================================================== */

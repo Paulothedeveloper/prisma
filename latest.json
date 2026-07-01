@@ -1,11 +1,6 @@
 {
-  "version": "0.9.58",
-  "notes": "Tema: texto do filtro ativo e das tags nao ficam mais AZUIS no tema laranja/verde/etc. — agora seguem o acento (acento clareado via color-mix). Varredura cientifica do DOM confirmou zero azul de acento perdido.",
-  "pub_date": "2026-07-01T02:10:00Z",
-  "platforms": {
-    "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXpCa3lwejAxaWV3N2JpcjFiVmNLNGh2OHRaaXIyM1J6cDV3UDlKMjlaT21UMGdVZVJZdlFvc2YrL1RZa0ZhelFKb3hjMGJVdEZJZFdRcHl4ZWtadEE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODcxNzY4CWZpbGU6UFJJU01BXzAuOS41OF94NjQtc2V0dXAuZXhlCnlJR2k2cURmVWFQSnRLMThMMlpJek50a2lTOUNNUjc4emRqNGNTZlNFS2FrUnB0dVN2bWhubkdINElBQkxUeklybnE4a3gzOXpicFdoUm4wYVNqVUNBPT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.58/PRISMA_0.9.58_x64-setup.exe"
-    }
-  }
+  "version": "0.9.59",
+  "notes": "Bloco DESIGN finalizado: grid mais limpo (parede estilo Eagle) — estrelas de nota e selos SEQ/LIVE/OFFLINE aparecem so no hover; nome, duracao e avisos de saude ficam sempre. Fecha a paridade visual mantendo a identidade PRISMA.",
+  "pub_date": "2026-07-01T02:24:15Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTRFc1RtMWhTbTlZVGtDbEJTWFI2VnpEREU0U2FSTzhqVytNVTZOdERsaERXUmIrM3B0YTBJMjNzYXJqdnZoK1JBanNGajVkYW1zWUZaYzlLNFVTNmdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODcyNjM0CWZpbGU6UFJJU01BXzAuOS41OV94NjQtc2V0dXAuZXhlCkVjbGlRc0hObjB6N0xyVTRHaWMvR3QvblJsL1cvelVLZnJ4QnBBUnk3eUJ6d0JGYnVtSDFaL1QyKzZGZ2g2dlc4bFh5YnJ5NndqQlFmMzlYTEcxT0NRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.59/PRISMA_0.9.59_x64-setup.exe" } }
 }
