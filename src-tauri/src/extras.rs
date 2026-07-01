@@ -7,8 +7,9 @@
 //! acompanha o PRISMA (sidecar), então não dependemos de nada do sistema.
 
 use serde::Serialize;
+use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
@@ -86,6 +87,27 @@ pub fn info(data_dir: &Path, url: &str) -> Result<DownloadInfo, String> {
 
 /// Baixa o vídeo (ou só o áudio, em m4a) pro `dest_dir`. Usa o ffmpeg do PRISMA pro merge.
 /// Retorna o caminho do arquivo final.
+/// "[download]  45.2% of ..." → 45.2
+fn parse_percent(line: &str) -> Option<f32> {
+    if !line.contains("[download]") {
+        return None;
+    }
+    let idx = line.find('%')?;
+    let start = line[..idx].rfind(' ')? + 1;
+    line[start..idx].trim().parse::<f32>().ok()
+}
+
+/// Atualiza o yt-dlp in-place (`yt-dlp -U`). Best-effort — o YouTube muda a assinatura e
+/// quebra versões antigas; atualizar conserta a maioria dos erros de "formato/extração".
+pub fn update_ytdlp(data_dir: &Path) -> Result<(), String> {
+    let yt = ytdlp_path(data_dir)?;
+    let mut c = Command::new(&yt);
+    no_window(&mut c);
+    c.args(["-U", "--no-warnings"]);
+    c.output().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 pub fn download(
     data_dir: &Path,
     ffmpeg: &Path,
@@ -93,22 +115,51 @@ pub fn download(
     url: &str,
     audio_only: bool,
     quality: &str,
+    on_progress: &(dyn Fn(f32) + Sync),
+) -> Result<PathBuf, String> {
+    match download_once(data_dir, ffmpeg, dest_dir, url, audio_only, quality, on_progress) {
+        Ok(p) => Ok(p),
+        Err(e) => {
+            // Erro típico de yt-dlp desatualizado (YouTube): atualiza e refaz UMA vez.
+            let stale = ["format", "extract", "Unable", "nsig", "player", "403", "signature"]
+                .iter()
+                .any(|k| e.contains(k));
+            if stale {
+                tracing::info!("download falhou ({e}); atualizando yt-dlp e tentando de novo");
+                let _ = update_ytdlp(data_dir);
+                download_once(data_dir, ffmpeg, dest_dir, url, audio_only, quality, on_progress)
+            } else {
+                Err(e)
+            }
+        }
+    }
+}
+
+fn download_once(
+    data_dir: &Path,
+    ffmpeg: &Path,
+    dest_dir: &Path,
+    url: &str,
+    audio_only: bool,
+    quality: &str,
+    on_progress: &(dyn Fn(f32) + Sync),
 ) -> Result<PathBuf, String> {
     let yt = ytdlp_path(data_dir)?;
     std::fs::create_dir_all(dest_dir).map_err(|e| e.to_string())?;
     let template = dest_dir.join("%(title).80s [%(id)s].%(ext)s");
     let template = template.to_string_lossy().to_string();
-    // ffmpeg-location aponta pra PASTA do nosso ffmpeg.
     let ff_dir = ffmpeg.parent().unwrap_or(Path::new(".")).to_string_lossy().to_string();
 
     let mut c = Command::new(&yt);
     no_window(&mut c);
-    c.args(["--no-warnings", "--no-playlist", "--no-part", "--ffmpeg-location", &ff_dir]);
+    // --newline: progresso em linhas separadas (dá pra fazer a barra); --progress: força mostrar.
+    c.args([
+        "--no-warnings", "--no-playlist", "--no-part", "--newline", "--progress",
+        "--ffmpeg-location", &ff_dir,
+    ]);
     if audio_only {
         c.args(["-x", "--audio-format", "m4a", "-f", "bestaudio/best"]);
     } else {
-        // Qualidade: "best" = melhor absoluto; "1080/720/480" limitam a altura máxima.
-        // Vale pra YouTube, INSTAGRAM, TikTok, Vimeo e qualquer site suportado pelo yt-dlp.
         let fmt = match quality {
             "1080" => "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b",
             "720" => "bv*[height<=720]+ba/b[height<=720]/bv*+ba/b",
@@ -117,25 +168,49 @@ pub fn download(
         };
         c.args(["-f", fmt, "--merge-output-format", "mp4"]);
     }
-    // imprime o caminho final do arquivo na última linha
     c.args(["--print", "after_move:filepath", "-o", &template, url]);
+    c.stdout(Stdio::piped());
+    c.stderr(Stdio::piped());
 
-    let out = c.output().map_err(|e| e.to_string())?;
-    if !out.status.success() {
-        return Err(format!(
-            "download falhou: {}",
-            String::from_utf8_lossy(&out.stderr).lines().last().unwrap_or("erro")
-        ));
+    let mut child = c.spawn().map_err(|e| e.to_string())?;
+    let stdout = child.stdout.take().ok_or("sem stdout")?;
+    let stderr = child.stderr.take().ok_or("sem stderr")?;
+    // drena stderr numa thread (evita deadlock se o buffer encher)
+    let err_handle = std::thread::spawn(move || {
+        let mut s = String::new();
+        let _ = BufReader::new(stderr).read_to_string(&mut s);
+        s
+    });
+
+    let mut final_path: Option<PathBuf> = None;
+    for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+        if let Some(pct) = parse_percent(&line) {
+            on_progress(pct);
+        } else {
+            let t = line.trim();
+            if !t.is_empty() {
+                let p = PathBuf::from(t);
+                if p.exists() {
+                    final_path = Some(p);
+                }
+            }
+        }
     }
-    let stdout = String::from_utf8_lossy(&out.stdout);
-    let final_path = stdout
-        .lines()
-        .rev()
-        .find(|l| !l.trim().is_empty())
-        .map(|l| PathBuf::from(l.trim()))
-        .filter(|p| p.exists());
+    let status = child.wait().map_err(|e| e.to_string())?;
+    let errtxt = err_handle.join().unwrap_or_default();
+    if !status.success() {
+        let last = errtxt
+            .lines()
+            .filter(|l| !l.trim().is_empty())
+            .last()
+            .unwrap_or("erro");
+        return Err(format!("download falhou: {last}"));
+    }
     match final_path {
-        Some(p) => Ok(p),
+        Some(p) => {
+            on_progress(100.0);
+            Ok(p)
+        }
         None => Err("download concluído mas não localizei o arquivo final".into()),
     }
 }

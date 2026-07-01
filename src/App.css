@@ -6065,6 +6065,70 @@ body {
   border-color: rgba(var(--accent-rgb), 0.5);
   color: color-mix(in oklab, var(--accent) 58%, white);
 }
+/* Barra de progresso do download */
+.dl-progress {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 18px 2px;
+}
+.dl-progbar {
+  flex: 1;
+  height: 8px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.dl-progfill {
+  height: 100%;
+  border-radius: 5px;
+  background: var(--accent);
+  transition: width 0.25s var(--ease-out);
+}
+.dl-progpct {
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+  text-align: right;
+}
+/* Onde salvou + abrir pasta */
+.dl-saved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 18px 0;
+}
+.dl-savedpath {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dl-reveal {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dl-reveal:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
 .dl-status {
   margin: 8px 18px 0;
   padding: 8px 11px;

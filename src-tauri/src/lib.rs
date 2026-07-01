@@ -443,7 +443,20 @@ fn video_download(
     let inbox = state.data_dir.join("Inbox");
     let ffmpeg = thumbs::bin_path("ffmpeg");
     let q = quality.unwrap_or_else(|| "best".into());
-    let out = extras::download(&state.data_dir, &ffmpeg, &inbox, url.trim(), audio_only, &q)?;
+    // Progresso em tempo real → evento pra barra no modal.
+    let app_ev = app.clone();
+    let on_progress = move |pct: f32| {
+        let _ = app_ev.emit("download:progress", pct);
+    };
+    let out = extras::download(
+        &state.data_dir,
+        &ffmpeg,
+        &inbox,
+        url.trim(),
+        audio_only,
+        &q,
+        &on_progress,
+    )?;
     let db = state.db.clone();
     let thumbs_dir = state.thumbs_dir.clone();
     indexer::index_one(&db, &thumbs_dir, &out).ok_or("baixado mas falhou ao catalogar")?;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { videoDownloadInfo, videoDownload, type DownloadInfo } from "./api";
+import { listen } from "@tauri-apps/api/event";
+import { videoDownloadInfo, videoDownload, revealInExplorer, type DownloadInfo } from "./api";
 import { Icon } from "./Icons";
 import { t } from "./i18n";
 import { sfx } from "./sfx";
@@ -19,6 +20,16 @@ export function DownloadModal({
   const [quality, setQuality] = useState("best"); // best | 1080 | 720 | 480
   const [busy, setBusy] = useState<"" | "check" | "dl">("");
   const [status, setStatus] = useState<{ kind: "ok" | "err" | "first"; msg: string } | null>(null);
+  const [progress, setProgress] = useState<number | null>(null); // % do download em tempo real
+  const [savedPath, setSavedPath] = useState<string | null>(null);
+
+  // barra de progresso: escuta o evento do backend (yt-dlp streaming)
+  useEffect(() => {
+    const un = listen<number>("download:progress", (e) => setProgress(e.payload));
+    return () => {
+      un.then((f) => f());
+    };
+  }, []);
 
   // Não fecha enquanto o download está rodando (evita interromper o yt-dlp no meio). Esc fecha
   // só quando não está baixando.
@@ -61,13 +72,18 @@ export function DownloadModal({
     sfx.tap();
     setBusy("dl");
     setStatus(null);
+    setProgress(0);
+    setSavedPath(null);
     try {
-      await videoDownload(url.trim(), audioOnly, quality);
+      const path = await videoDownload(url.trim(), audioOnly, quality);
       sfx.notify?.();
+      setProgress(100);
+      setSavedPath(path);
       setStatus({ kind: "ok", msg: t("dl.done") });
       onDone();
-      setTimeout(onClose, 900);
+      // não fecha sozinho — o usuário vê onde salvou e pode abrir a pasta
     } catch (e) {
+      setProgress(null);
       setStatus({ kind: "err", msg: `${t("dl.error")}: ${e}` });
     } finally {
       setBusy("");
@@ -144,7 +160,29 @@ export function DownloadModal({
           </div>
         )}
 
+        {/* Barra de progresso do download (tempo real) */}
+        {busy === "dl" && progress !== null && (
+          <div className="dl-progress">
+            <div className="dl-progbar">
+              <div className="dl-progfill" style={{ width: `${Math.max(2, progress)}%` }} />
+            </div>
+            <span className="dl-progpct">{Math.round(progress)}%</span>
+          </div>
+        )}
+
         {status && <div className={`dl-status ${status.kind}`}>{status.msg}</div>}
+
+        {/* Onde salvou + abrir a pasta */}
+        {savedPath && (
+          <div className="dl-saved">
+            <div className="dl-savedpath" title={savedPath}>
+              <Icon name="folder" size={12} /> {savedPath}
+            </div>
+            <button className="dl-reveal" onClick={() => revealInExplorer(savedPath)}>
+              <Icon name="folder" size={12} /> {t("dl.openFolder")}
+            </button>
+          </div>
+        )}
 
         <div className="dl-actions">
           <button className="dl-cancel" onClick={guardClose} disabled={busy === "dl"}>
