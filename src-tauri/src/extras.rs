@@ -205,6 +205,8 @@ fn download_once(
     c.stdout(Stdio::piped());
     c.stderr(Stdio::piped());
 
+    // horário de início: usado pra achar o arquivo final pela DATA (robusto, não depende do print)
+    let start = std::time::SystemTime::now();
     let mut child = c.spawn().map_err(|e| e.to_string())?;
     let stdout = child.stdout.take().ok_or("sem stdout")?;
     let stderr = child.stderr.take().ok_or("sem stderr")?;
@@ -239,7 +241,36 @@ fn download_once(
             .unwrap_or("erro");
         return Err(format!("download falhou: {last}"));
     }
-    match final_path {
+    // 1ª escolha: o caminho impresso pelo yt-dlp (se pegamos). 2ª (robusta): o arquivo mais
+    // NOVO da pasta de destino criado durante este download — ignora temporários (.part/.ytdl/.fNNN).
+    let out = final_path.or_else(|| {
+        let is_temp = |p: &Path| {
+            let n = p
+                .file_name()
+                .map(|s| s.to_string_lossy().to_lowercase())
+                .unwrap_or_default();
+            n.ends_with(".part") || n.ends_with(".ytdl") || n.contains(".part-") || n.contains(".temp")
+        };
+        std::fs::read_dir(dest_dir)
+            .ok()?
+            .flatten()
+            .filter_map(|e| {
+                let p = e.path();
+                if !p.is_file() || is_temp(&p) {
+                    return None;
+                }
+                let mt = e.metadata().ok()?.modified().ok()?;
+                // >= start (com folga de 2s pra diferenças de relógio do sistema de arquivos)
+                if mt + std::time::Duration::from_secs(2) >= start {
+                    Some((mt, p))
+                } else {
+                    None
+                }
+            })
+            .max_by_key(|(mt, _)| *mt)
+            .map(|(_, p)| p)
+    });
+    match out {
         Some(p) => {
             on_progress(100.0);
             Ok(p)

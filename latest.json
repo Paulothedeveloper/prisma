@@ -1,6 +1,6 @@
 {
-  "version": "0.9.66",
-  "notes": "Plugin Pin on screen nativo: botao direito num item > 'Fixar na tela' abre uma mini-janela SEMPRE NO TOPO com a midia, pra usar de referencia enquanto trabalha em outro app (Photoshop, DaVinci, navegador).",
-  "pub_date": "2026-07-01T04:59:09Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXdhTEEzbE9BMjV2OGZEeW40OTVuOGQ1d005TTR2NW9STUVRSk5pdmFYV3NPWmRwTlZSWUlnMVF1Slh5eFQ3czh4YTczS1ZHT2doWFR1a1BuRlozdnc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODgxOTE3CWZpbGU6UFJJU01BXzAuOS42Nl94NjQtc2V0dXAuZXhlCjF1V2FCcWFRV2U4OHRYRXVoTmxkWTBvSi9CNXJzK2Y0RFBxSEhnaFN0bnNDNDZaMXAwa2ZpT2xuR3ZHMWwzeGlTTVg5RUtQQXNONHJvT0d6NWYyakNRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.66/PRISMA_0.9.66_x64-setup.exe" } }
+  "version": "0.9.67",
+  "notes": "Conserta o erro 'download concluido mas nao localizei o arquivo final': agora acha o arquivo pela DATA (mais novo da pasta apos o download), sem depender da linha impressa pelo yt-dlp. Robusto pra YouTube/Instagram.",
+  "pub_date": "2026-07-01T05:11:35Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXkzdGl3cUszWU9CNlJkQXNZelFDdVNwbytrTll0NHovT2tZL0o0cUhKLzJGN0gyRkcrRHB0SGZEZ3BpVFQrNmdjZm1sSTRYd3h3bGd6empmNEpTN1FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODgyNjY4CWZpbGU6UFJJU01BXzAuOS42N194NjQtc2V0dXAuZXhlCmgrU1B0VEMrZFp0SEMwYkdjdzhacWNyc1FQYzBubHZQVThzZjhuSFF3elVUNlM0QkNvL3NWcGlBU1NjblNkcWwzbHhnWnN5K2cwSFFjU2xxU0R4Q0JRPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.67/PRISMA_0.9.67_x64-setup.exe" } }
 }
