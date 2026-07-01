@@ -1,6 +1,6 @@
 {
-  "version": "0.9.75",
-  "notes": "Novo: Reduzir p/ web (plugin Compress) — 1 clique otimiza a imagem (max 1920px, JPEG q82) e mostra a economia real (ex.: 2.4 MB → 310 KB, -87%). Botao 'Reduzir' no HUD de imagem. Nao-destrutivo (gera copia em REDUZIDO/). Junto: marca d'agua em VIDEO (drawtext).",
-  "pub_date": "2026-07-01T15:13:56Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTlUSDVLR3BXY2dVTGtKeFB0aFBsQ2ZkbDY3OGwwR0kwd0lxbUFjalJGV083ZUlyd1lFbmtwdVk1eEFCUmJodnJaSm4ydXdGbGJZcUtLRkxHSEFoR2dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTE4ODA3CWZpbGU6UFJJU01BXzAuOS43NV94NjQtc2V0dXAuZXhlCnZvSTJnY1laUkg2cHhWblJrTlpmbVdQTzlZR3M2cTBVWnlKRlg4SWtJSzFJNUl0WHVvWlhmZWsyem5vcHg0T2p2aHMwMStscHhXV1BhaVJnWU9LekRnPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.75/PRISMA_0.9.75_x64-setup.exe" } }
+  "version": "0.9.76",
+  "notes": "Novo: modo Apresentacao / Slideshow no visualizador — roda os assets em ciclo automatico (2s/4s/7s), barra de progresso por slide, transicao fluida (fade+zoom), tecla P pra iniciar/pausar, ESC sai. Setas/estrela somem no modo apresentacao pra imagem respirar. Otimo pra revisar selects com cliente. Navegacao com setas agora da a volta (loop).",
+  "pub_date": "2026-07-01T15:31:10Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTV1WVI2aHlDVk9OamJDTUNpNS9uYzZZS1RQZmZIUkVtNTlWNGJDeDN0RTZ2VEdWUllOMWVESTcrR3Z0L0pJYjB0TTBnakt3dGYwbUsyQ21ZZjQyUFFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTE5ODQ5CWZpbGU6UFJJU01BXzAuOS43Nl94NjQtc2V0dXAuZXhlCnFJd2g0ajAvK1ZueTZsOEpUWWdrNzhFVnFmZXpiVjA3UUt6WlRPTmpGQytuaHNTS2ZITHFtMFo5Nk1mOTk4MHVhbTB0NEJvNGNrY3A5ZHF2dks5bEFBPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.76/PRISMA_0.9.76_x64-setup.exe" } }
 }

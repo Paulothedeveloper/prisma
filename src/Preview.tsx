@@ -78,28 +78,42 @@ export function Preview({ asset, onClose, onNav, onToggleFav }: Props) {
     setTimeout(onClose, 200);
   };
 
+  // ---- Slideshow / apresentação: avança sozinho em ciclo (ótimo pra revisar selects) ----
+  const [playing, setPlaying] = useState(false);
+  const [secs, setSecs] = useState(4); // intervalo por slide
+
+  useEffect(() => {
+    if (!playing) return;
+    // onNav muda de identidade a cada avanço → o intervalo reinicia cheio a cada slide.
+    const id = window.setInterval(() => onNav(1), secs * 1000);
+    return () => window.clearInterval(id);
+  }, [playing, secs, onNav]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // Setas navegam entre assets; o player cuida de espaço/J/K/L/frame.
-      if (e.key === "Escape") close();
-      else if (e.key === "ArrowRight") onNav(1);
+      if (e.key === "Escape") {
+        if (playing) setPlaying(false);
+        else close();
+      } else if (e.key === "ArrowRight") onNav(1);
       else if (e.key === "ArrowLeft") onNav(-1);
+      else if (e.key.toLowerCase() === "p") setPlaying((p) => !p);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onNav]);
+  }, [onNav, playing]);
 
   const isVideo = asset.type === "video";
   const isAudio = asset.type === "audio";
   const isImageLike = asset.type === "image" || asset.type === "gif";
 
   return (
-    <div className={`preview-overlay ${closing ? "closing" : ""}`} onClick={close}>
+    <div className={`preview-overlay ${closing ? "closing" : ""} ${playing ? "presenting" : ""}`} onClick={close}>
       <button className="prev-nav prev-left" onClick={(e) => { e.stopPropagation(); onNav(-1); }}>
         <Icon name="chevronLeft" size={26} />
       </button>
-      <div className="preview-stage" onClick={(e) => e.stopPropagation()}>
+      <div key={asset.id} className="preview-stage" onClick={(e) => e.stopPropagation()}>
         {isVideo ? (
           playable === true ? (
             <VideoPlayer src={url} fps={fps} />
@@ -189,6 +203,31 @@ export function Preview({ asset, onClose, onNav, onToggleFav }: Props) {
           <Icon name={asset.favorite ? "starFill" : "star"} size={18} />
         </button>
       )}
+      {/* Barra de slideshow / apresentação */}
+      <div className="slideshow-bar" onClick={(e) => e.stopPropagation()}>
+        <button
+          className={`ss-btn ${playing ? "on" : ""}`}
+          title={playing ? t("ss.pause") : t("ss.play")}
+          onClick={() => setPlaying((p) => !p)}
+        >
+          <Icon name={playing ? "pause" : "play"} size={16} />
+          <span>{playing ? t("ss.presenting") : t("ss.slideshow")}</span>
+        </button>
+        <div className="ss-speeds">
+          {[2, 4, 7].map((s) => (
+            <button
+              key={s}
+              className={`ss-speed ${secs === s ? "on" : ""}`}
+              onClick={() => setSecs(s)}
+              title={`${s}s`}
+            >
+              {s}s
+            </button>
+          ))}
+        </div>
+        {/* barra de progresso do slide atual (reinicia a cada avanço via key) */}
+        {playing && <div key={asset.id} className="ss-progress" style={{ animationDuration: `${secs}s` }} />}
+      </div>
       <button className="preview-close" onClick={close}>
         <Icon name="close" size={16} />
       </button>

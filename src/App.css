@@ -2188,6 +2188,135 @@ body {
   right: 18px;
 }
 
+/* ---- Slideshow / apresentação ---- */
+/* cada slide entra com um fade+zoom sutil (crossfade contínuo) */
+.preview-stage {
+  animation: ssSlideIn var(--dur-3, 0.32s) var(--ease-out);
+}
+@keyframes ssSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* em apresentação, some com os controles de canto pra imagem respirar */
+.preview-overlay.presenting .prev-nav,
+.preview-overlay.presenting .preview-fav {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+.slideshow-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: 14px;
+  background: rgba(24, 25, 30, 0.62);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  z-index: 3;
+  opacity: 0.5;
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+.preview-overlay:hover .slideshow-bar,
+.preview-overlay.presenting .slideshow-bar {
+  opacity: 1;
+}
+.ss-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px;
+  border-radius: 9px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: rgba(var(--accent-rgb), 0.9);
+  transition:
+    background-color var(--dur-2) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
+}
+.ss-btn:hover {
+  background: rgba(var(--accent-rgb), 1);
+  transform: translateY(-1px);
+}
+.ss-btn.on {
+  background: rgba(var(--accent-rgb), 0.28);
+}
+.ss-speeds {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.ss-speed {
+  width: 32px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-2) var(--ease-out),
+    color var(--dur-2) var(--ease-out);
+}
+.ss-speed:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.ss-speed.on {
+  color: #fff;
+  background: rgba(var(--accent-rgb), 0.85);
+}
+/* barrinha que enche durante o slide (reinicia via key a cada avanço) */
+.ss-progress {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 2px;
+  transform-origin: left center;
+  background: rgba(var(--accent-rgb), 0.95);
+  animation: ssFill linear forwards;
+}
+@keyframes ssFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .preview-stage {
+    animation: none;
+  }
+  .ss-progress {
+    animation: none;
+    transform: scaleX(1);
+    opacity: 0.4;
+  }
+}
+
 /* ---------- OFICINA ---------- */
 .oficina {
   border-top: 1px solid var(--hair);

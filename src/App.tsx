@@ -1114,9 +1114,11 @@ export default function App() {
 
   const navPreview = useCallback(
     (dir: -1 | 1) => {
-      if (!previewAsset) return;
+      if (!previewAsset || assets.length === 0) return;
       const idx = assets.findIndex((a) => a.id === previewAsset.id);
-      const next = assets[idx + dir];
+      if (idx < 0) return;
+      // dá a volta (loop) — essencial pro slideshow rodar em ciclo contínuo.
+      const next = assets[(idx + dir + assets.length) % assets.length];
       if (next) {
         setPreviewAsset(next);
         setSelected(next);
