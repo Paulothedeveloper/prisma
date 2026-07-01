@@ -120,6 +120,100 @@ pub fn video_to_gif(ffmpeg: &Path, dest_dir: &Path, input: &Path) -> Result<Path
     Ok(out)
 }
 
+/// Converte um caminho do Windows para o formato que o filtro do ffmpeg entende
+/// (barras normais + dois-pontos escapado). Sem isso, `C:\...` quebra o parser de filtros.
+fn ff_filter_path(p: &Path) -> String {
+    p.to_string_lossy().replace('\\', "/").replace(':', "\\:")
+}
+
+/// Marca d'água de TEXTO queimada num vídeo (drawtext do ffmpeg). Não-destrutivo: gera cópia.
+/// pos: tl|tr|bl|br|center (tiled cai em center). opacity 0..1, size 20..100 (relativo à altura).
+pub fn video_watermark(
+    ffmpeg: &Path,
+    dest_dir: &Path,
+    input: &Path,
+    text: &str,
+    pos: &str,
+    opacity: f32,
+    size: u32,
+    color: &str,
+) -> Result<PathBuf, String> {
+    std::fs::create_dir_all(dest_dir).map_err(|e| e.to_string())?;
+    let stem = input
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "video".into());
+    let ext = input
+        .extension()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "mp4".into());
+    let mut out = dest_dir.join(format!("{stem}_marcadagua.{ext}"));
+    let mut n = 1;
+    while out.exists() {
+        out = dest_dir.join(format!("{stem}_marcadagua_{n}.{ext}"));
+        n += 1;
+    }
+
+    // Texto vai por arquivo (textfile) pra não precisar escapar : \ ' % no filtro.
+    let txt_file = dest_dir.join(".prisma_wm.txt");
+    std::fs::write(&txt_file, text).map_err(|e| e.to_string())?;
+
+    // fonte do sistema (negrito quando existir)
+    let font = ["C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/segoeui.ttf"]
+        .iter()
+        .map(Path::new)
+        .find(|p| p.exists())
+        .map(|p| p.to_path_buf());
+
+    let op = opacity.clamp(0.05, 1.0);
+    let f = (size.clamp(20, 100) as f32 / 100.0) * 0.08; // fração da altura
+    let hexcolor = if color.starts_with('#') {
+        format!("0x{}", &color[1..])
+    } else {
+        color.to_string()
+    };
+    let pad = "(h*0.03)";
+    let (x, y) = match pos {
+        "tl" => (format!("{pad}"), format!("{pad}")),
+        "tr" => (format!("w-tw-{pad}"), format!("{pad}")),
+        "bl" => (format!("{pad}"), format!("h-th-{pad}")),
+        "br" => (format!("w-tw-{pad}"), format!("h-th-{pad}")),
+        _ => ("(w-tw)/2".to_string(), "(h-th)/2".to_string()), // center / tiled
+    };
+
+    let mut drawtext = format!(
+        "drawtext=textfile='{}':fontcolor={}@{:.2}:fontsize=h*{:.4}:x={}:y={}:shadowcolor=black@0.5:shadowx=2:shadowy=2",
+        ff_filter_path(&txt_file),
+        hexcolor,
+        op,
+        f,
+        x,
+        y
+    );
+    if let Some(ft) = &font {
+        drawtext.push_str(&format!(":fontfile='{}'", ff_filter_path(ft)));
+    }
+
+    let mut c = Command::new(ffmpeg);
+    no_window(&mut c);
+    c.args(["-y", "-i"]);
+    c.arg(input);
+    c.args(["-vf", &drawtext]);
+    // reencoda vídeo, copia áudio; qualidade alta (crf 18) e compatível.
+    c.args(["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "copy"]);
+    c.arg(&out);
+    c.stdout(Stdio::null());
+    c.stderr(Stdio::piped());
+    let res = c.output().map_err(|e| e.to_string())?;
+    let _ = std::fs::remove_file(&txt_file);
+    if !res.status.success() || !out.exists() {
+        let err = String::from_utf8_lossy(&res.stderr);
+        let last = err.lines().filter(|l| !l.trim().is_empty()).last().unwrap_or("erro");
+        return Err(format!("marca d'água no vídeo falhou: {last}"));
+    }
+    Ok(out)
+}
+
 /// "[download]  45.2% of ..." → 45.2
 fn parse_percent(line: &str) -> Option<f32> {
     if !line.contains("[download]") {

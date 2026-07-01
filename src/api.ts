@@ -534,6 +534,15 @@ export const saveCropped = (nearPath: string, data: number[]) =>
 // Batch Watermark (nativo): salva a imagem com marca d'água (PNG) ao lado do original.
 export const saveWatermarked = (nearPath: string, data: number[]) =>
   invoke<string>("save_watermarked", { nearPath, data });
+// Batch Watermark em VÍDEO (nativo, ffmpeg drawtext): queima o texto no vídeo. Retorna o caminho.
+export const videoWatermark = (
+  id: number,
+  text: string,
+  pos: string,
+  opacity: number,
+  size: number,
+  color: string,
+) => invoke<string>("video_watermark", { id, text, pos, opacity, size, color });
 
 // ----- CLIP: busca semântica local (AI Search) -----
 export interface ClipStatus {

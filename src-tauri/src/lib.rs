@@ -637,6 +637,50 @@ async fn video_gif(app: tauri::AppHandle, id: i64) -> Result<String, String> {
     .map_err(|e| e.to_string())?
 }
 
+/// Queima marca d'água de texto num VÍDEO (plugin "Batch Watermark" do Eagle, versão vídeo).
+#[tauri::command]
+async fn video_watermark(
+    app: tauri::AppHandle,
+    id: i64,
+    text: String,
+    pos: String,
+    opacity: f32,
+    size: u32,
+    color: String,
+) -> Result<String, String> {
+    let (path, data_dir, db, thumbs_dir) = {
+        let state = app.state::<AppState>();
+        let path: String = state
+            .reads
+            .with(|conn| {
+                conn.query_row(
+                    "SELECT path FROM assets WHERE id=?1",
+                    rusqlite::params![id],
+                    |r| r.get(0),
+                )
+            })
+            .map_err(|e| e.to_string())?;
+        (path, state.data_dir.clone(), state.db.clone(), state.thumbs_dir.clone())
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        let src = std::path::Path::new(&path);
+        let ffmpeg = thumbs::bin_path("ffmpeg");
+        let dest = src
+            .parent()
+            .map(|p| p.join("MARCA DAGUA"))
+            .unwrap_or_else(|| data_dir.join("Inbox"));
+        let out = match extras::video_watermark(&ffmpeg, &dest, src, &text, &pos, opacity, size, &color) {
+            Ok(p) => p,
+            Err(_) => extras::video_watermark(&ffmpeg, &data_dir.join("Inbox"), src, &text, &pos, opacity, size, &color)?,
+        };
+        indexer::index_one(&db, &thumbs_dir, &out).ok_or("vídeo marcado mas falhou ao catalogar")?;
+        tracing::info!(dest = %out.display(), "video_watermark: vídeo marcado");
+        Ok::<String, String>(out.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 // ---------- CLIP: busca semântica local (plugin "AI Search" do Eagle) ----------
 
 #[derive(serde::Serialize)]
@@ -3120,6 +3164,7 @@ pub fn run() {
             ai_ocr,
             inpaint_watermark,
             video_gif,
+            video_watermark,
             save_cropped,
             save_watermarked,
             ai_upscale,

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Icon } from "./Icons";
-import { saveWatermarked, type Asset } from "./api";
+import { saveWatermarked, videoWatermark, type Asset } from "./api";
 import { useDismiss } from "./useDismiss";
 import { t } from "./i18n";
 
@@ -82,9 +82,17 @@ export function WatermarkAddModal({
   const [busy, setBusy] = useState(false);
   const [prog, setProg] = useState<{ done: number; total: number } | null>(null);
 
+  const isVideo = first?.type === "video";
   const settings = { text, pos, opacity, size, color };
 
   useEffect(() => {
+    // Vídeo: previsualiza sobre o thumbnail (não temos frame full-res barato).
+    const src = isVideo
+      ? first.thumbnail_path
+        ? convertFileSrc(first.thumbnail_path)
+        : ""
+      : convertFileSrc(first.path);
+    if (!src) return;
     const img = new Image();
     img.onload = () => {
       imgRef.current = img;
@@ -95,7 +103,7 @@ export function WatermarkAddModal({
       c.height = Math.round(img.height * scale);
       draw(c.getContext("2d")!, img, c.width, c.height, settings);
     };
-    img.src = convertFileSrc(first.path);
+    img.src = src;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [first.path]);
 
@@ -117,6 +125,20 @@ export function WatermarkAddModal({
   const apply = async () => {
     setBusy(true);
     setProg({ done: 0, total: assets.length });
+    // Vídeo: queima o texto via ffmpeg no backend (drawtext). Não usa canvas.
+    if (isVideo) {
+      try {
+        for (let k = 0; k < assets.length; k++) {
+          await videoWatermark(assets[k].id, text, pos, opacity, size, color);
+          setProg({ done: k + 1, total: assets.length });
+        }
+        onSaved();
+        onClose();
+      } catch {
+        setBusy(false);
+      }
+      return;
+    }
     try {
       for (let k = 0; k < assets.length; k++) {
         const a = assets[k];

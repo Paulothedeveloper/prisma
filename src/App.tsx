@@ -2673,6 +2673,9 @@ export default function App() {
               >
                 <Icon name="video" size={15} /> {t("tool.gif")}
               </button>
+              <button className="tool-btn" onClick={() => setWmAdd([selected])} title={t("tool.wmAdd")}>
+                <Icon name="pencil" size={15} /> {t("tool.wmAdd")}
+              </button>
             </>
           )}
           {toolMsg && <span className="tool-hud-msg">{toolMsg}</span>}
@@ -2703,6 +2706,14 @@ export default function App() {
                     <Icon name="pencil" size={13} /> {t("batch.watermark")}
                   </button>
                 )}
+                {(() => {
+                  const vids = sel.filter((a) => a.type === "video");
+                  return vids.length > 0 ? (
+                    <button className="batch-item" onClick={() => setWmAdd(vids)} title={t("batch.watermarkVid")}>
+                      <Icon name="video" size={13} /> {t("batch.watermarkVid")}
+                    </button>
+                  ) : null;
+                })()}
               </>
             );
           })()}
