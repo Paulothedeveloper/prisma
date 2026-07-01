@@ -479,10 +479,12 @@ fn fetch_lyrics(artist: String, title: String) -> Result<Vec<extras::LyricLine>,
     extras::lyrics(artist.trim(), title.trim())
 }
 
-/// AI Image Enlarger (plugin do Eagle): amplia a imagem 4x via Real-ESRGAN (baixado sob
-/// demanda) e cataloga o resultado no Inbox. Não-destrutivo. Retorna o caminho do PNG novo.
-#[tauri::command]
-fn ai_upscale(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+/// Extrai (path do asset, data_dir, db, thumbs_dir) do State — pros comandos PESADOS que rodam em
+/// `spawn_blocking` (o State<'_> não atravessa threads; pegamos os owned ANTES). Evita tela preta.
+fn asset_job_ctx(
+    app: &tauri::AppHandle,
+    id: i64,
+) -> Result<(String, PathBuf, Arc<Mutex<Connection>>, PathBuf), String> {
     let state = app.state::<AppState>();
     let path: String = state
         .reads
@@ -494,61 +496,60 @@ fn ai_upscale(app: tauri::AppHandle, id: i64) -> Result<String, String> {
             )
         })
         .map_err(|e| e.to_string())?;
-    let inbox = state.data_dir.join("Inbox");
-    let out = extras::upscale(&state.data_dir, &inbox, std::path::Path::new(&path))?;
-    let db = state.db.clone();
-    let thumbs_dir = state.thumbs_dir.clone();
-    indexer::index_one(&db, &thumbs_dir, &out).ok_or("ampliado mas falhou ao catalogar")?;
-    tracing::info!(src = %path, dest = %out.display(), "ai_upscale: imagem ampliada 4x");
-    Ok(out.to_string_lossy().to_string())
+    Ok((
+        path,
+        state.data_dir.clone(),
+        state.db.clone(),
+        state.thumbs_dir.clone(),
+    ))
+}
+
+/// AI Image Enlarger (plugin do Eagle): amplia a imagem 4x via Real-ESRGAN (baixado sob
+/// demanda) e cataloga o resultado no Inbox. Não-destrutivo. Retorna o caminho do PNG novo.
+#[tauri::command]
+async fn ai_upscale(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+    let (path, data_dir, db, thumbs_dir) = asset_job_ctx(&app, id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let inbox = data_dir.join("Inbox");
+        let out = extras::upscale(&data_dir, &inbox, std::path::Path::new(&path))?;
+        indexer::index_one(&db, &thumbs_dir, &out).ok_or("ampliado mas falhou ao catalogar")?;
+        tracing::info!(dest = %out.display(), "ai_upscale: imagem ampliada 4x");
+        Ok::<String, String>(out.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// AI Background Remover (plugin do Eagle): remove o fundo da imagem (u2netp, Rust puro,
 /// modelo baixado sob demanda) e cataloga o PNG transparente no Inbox. Não-destrutivo.
 #[tauri::command]
-fn ai_remove_bg(app: tauri::AppHandle, id: i64) -> Result<String, String> {
-    let state = app.state::<AppState>();
-    let path: String = state
-        .reads
-        .with(|conn| {
-            conn.query_row(
-                "SELECT path FROM assets WHERE id=?1",
-                rusqlite::params![id],
-                |r| r.get(0),
-            )
-        })
-        .map_err(|e| e.to_string())?;
-    let inbox = state.data_dir.join("Inbox");
-    let out = bgremove::remove_bg(&state.data_dir, &inbox, std::path::Path::new(&path))?;
-    let db = state.db.clone();
-    let thumbs_dir = state.thumbs_dir.clone();
-    indexer::index_one(&db, &thumbs_dir, &out).ok_or("fundo removido mas falhou ao catalogar")?;
-    tracing::info!(src = %path, dest = %out.display(), "ai_remove_bg: fundo removido");
-    Ok(out.to_string_lossy().to_string())
+async fn ai_remove_bg(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+    let (path, data_dir, db, thumbs_dir) = asset_job_ctx(&app, id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let inbox = data_dir.join("Inbox");
+        let out = bgremove::remove_bg(&data_dir, &inbox, std::path::Path::new(&path))?;
+        indexer::index_one(&db, &thumbs_dir, &out).ok_or("fundo removido mas falhou ao catalogar")?;
+        tracing::info!(dest = %out.display(), "ai_remove_bg: fundo removido");
+        Ok::<String, String>(out.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Remover marca d'água / AI Eraser (nativo): o usuário pinta a região; inpainting por difusão
 /// preenche com a vizinhança. `mask` = PNG da máscara (claro = remover). Escreve PNG novo.
 #[tauri::command]
-fn inpaint_watermark(app: tauri::AppHandle, id: i64, mask: Vec<u8>) -> Result<String, String> {
-    let state = app.state::<AppState>();
-    let path: String = state
-        .reads
-        .with(|conn| {
-            conn.query_row(
-                "SELECT path FROM assets WHERE id=?1",
-                rusqlite::params![id],
-                |r| r.get(0),
-            )
-        })
-        .map_err(|e| e.to_string())?;
-    let inbox = state.data_dir.join("Inbox");
-    let out = inpaint::inpaint(&inbox, std::path::Path::new(&path), &mask)?;
-    let db = state.db.clone();
-    let thumbs_dir = state.thumbs_dir.clone();
-    indexer::index_one(&db, &thumbs_dir, &out).ok_or("marca removida mas falhou ao catalogar")?;
-    tracing::info!(src = %path, dest = %out.display(), "inpaint_watermark: marca removida");
-    Ok(out.to_string_lossy().to_string())
+async fn inpaint_watermark(app: tauri::AppHandle, id: i64, mask: Vec<u8>) -> Result<String, String> {
+    let (path, data_dir, db, thumbs_dir) = asset_job_ctx(&app, id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let inbox = data_dir.join("Inbox");
+        let out = inpaint::inpaint(&inbox, std::path::Path::new(&path), &mask)?;
+        indexer::index_one(&db, &thumbs_dir, &out).ok_or("marca removida mas falhou ao catalogar")?;
+        tracing::info!(dest = %out.display(), "inpaint_watermark: marca removida");
+        Ok::<String, String>(out.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Video → GIF (plugin "Video to GIF Converter" do Eagle). ASYNC: vídeo grande demora e não pode
@@ -1740,65 +1741,82 @@ fn run_sfx_batch(
 /// AI Action (plugin do Eagle): pergunta livre sobre UMA imagem (descreva, que texto há,
 /// sugira um nome, etc.). Usa a thumb em cache e a chave/modelo já configurados.
 #[tauri::command]
-fn ai_ask_image(app: tauri::AppHandle, id: i64, question: String) -> Result<String, String> {
-    let state = app.state::<AppState>();
-    let settings = ai::load_settings(&state.data_dir);
-    settings
-        .active_key()
-        .ok_or("Configure sua chave da API nas configurações.")?;
-    let thumb: Option<String> = state
-        .reads
-        .with(|conn| {
-            conn.query_row(
-                "SELECT thumbnail_path FROM assets WHERE id=?1",
-                rusqlite::params![id],
-                |r| r.get(0),
-            )
-        })
-        .map_err(|e| e.to_string())?;
-    let thumb = thumb.filter(|t| !t.is_empty()).ok_or("Este item não tem miniatura para a IA olhar.")?;
-    ai::ask_image(&settings, std::path::Path::new(&thumb), question.trim())
+async fn ai_ask_image(app: tauri::AppHandle, id: i64, question: String) -> Result<String, String> {
+    let (settings, thumb) = {
+        let state = app.state::<AppState>();
+        let settings = ai::load_settings(&state.data_dir);
+        settings
+            .active_key()
+            .ok_or("Configure sua chave da API nas configurações.")?;
+        let thumb: Option<String> = state
+            .reads
+            .with(|conn| {
+                conn.query_row(
+                    "SELECT thumbnail_path FROM assets WHERE id=?1",
+                    rusqlite::params![id],
+                    |r| r.get(0),
+                )
+            })
+            .map_err(|e| e.to_string())?;
+        let thumb = thumb
+            .filter(|t| !t.is_empty())
+            .ok_or("Este item não tem miniatura para a IA olhar.")?;
+        (settings, thumb)
+    };
+    // rede pode levar segundos → fora da main thread (senão a UI congela/preta).
+    tauri::async_runtime::spawn_blocking(move || {
+        ai::ask_image(&settings, std::path::Path::new(&thumb), question.trim())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// OCR nativo (equivalente ao plugin "OCR Text Extractor" do Eagle): extrai o texto de uma
 /// imagem via visão (Claude/Gemini). Usa a imagem em RESOLUÇÃO CHEIA quando é imagem/gif — texto
 /// miúdo precisa de resolução; senão cai no thumb.
 #[tauri::command]
-fn ai_ocr(app: tauri::AppHandle, id: i64) -> Result<String, String> {
-    let state = app.state::<AppState>();
-    let settings = ai::load_settings(&state.data_dir);
-    settings
-        .active_key()
-        .ok_or("Configure sua chave da API nas configurações.")?;
-    let (ty, path, thumb): (String, String, Option<String>) = state
-        .reads
-        .with(|conn| {
-            conn.query_row(
-                "SELECT type, path, thumbnail_path FROM assets WHERE id=?1",
-                rusqlite::params![id],
-                |r| {
-                    Ok((
-                        r.get::<_, String>(0)?,
-                        r.get::<_, String>(1)?,
-                        r.get::<_, Option<String>>(2)?,
-                    ))
-                },
-            )
-        })
-        .map_err(|e| e.to_string())?;
-    // imagem/gif → usa o arquivo original (melhor pro OCR de texto miúdo); senão o thumb.
-    let src = if (ty == "image" || ty == "gif") && std::path::Path::new(&path).exists() {
-        path
-    } else {
-        thumb
-            .filter(|t| !t.is_empty())
-            .ok_or("Sem imagem para o OCR olhar.")?
+async fn ai_ocr(app: tauri::AppHandle, id: i64) -> Result<String, String> {
+    let (settings, src) = {
+        let state = app.state::<AppState>();
+        let settings = ai::load_settings(&state.data_dir);
+        settings
+            .active_key()
+            .ok_or("Configure sua chave da API nas configurações.")?;
+        let (ty, path, thumb): (String, String, Option<String>) = state
+            .reads
+            .with(|conn| {
+                conn.query_row(
+                    "SELECT type, path, thumbnail_path FROM assets WHERE id=?1",
+                    rusqlite::params![id],
+                    |r| {
+                        Ok((
+                            r.get::<_, String>(0)?,
+                            r.get::<_, String>(1)?,
+                            r.get::<_, Option<String>>(2)?,
+                        ))
+                    },
+                )
+            })
+            .map_err(|e| e.to_string())?;
+        // imagem/gif → usa o arquivo original (melhor pro OCR de texto miúdo); senão o thumb.
+        let src = if (ty == "image" || ty == "gif") && std::path::Path::new(&path).exists() {
+            path
+        } else {
+            thumb
+                .filter(|t| !t.is_empty())
+                .ok_or("Sem imagem para o OCR olhar.")?
+        };
+        (settings, src)
     };
     const OCR_PROMPT: &str = "Extraia TODO o texto visível nesta imagem, exatamente como aparece \
         (verbatim), preservando quebras de linha e a ordem de leitura. Responda APENAS com o texto \
         extraído — sem comentários, sem markdown, sem aspas. Se não houver texto legível, responda \
         exatamente: NENHUM_TEXTO_ENCONTRADO.";
-    ai::ask_image(&settings, std::path::Path::new(&src), OCR_PROMPT)
+    tauri::async_runtime::spawn_blocking(move || {
+        ai::ask_image(&settings, std::path::Path::new(&src), OCR_PROMPT)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Quantos assets ainda não têm descrição de IA (pra mostrar no botão "Analisar todas").

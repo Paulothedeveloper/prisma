@@ -1,6 +1,6 @@
 {
-  "version": "0.9.68",
-  "notes": "TELA PRETA no download RESOLVIDA na causa-raiz: o download (e o Video->GIF) eram comandos SINCRONOS longos que bloqueavam a thread principal do Tauri -> UI congelava e ficava preta. Agora rodam FORA da thread principal (async), a interface segue fluida com a barra de progresso. Download tambem acha o arquivo pela data.",
-  "pub_date": "2026-07-01T05:26:45Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTRZL2JhQmcwTktaWU0xU2xBczZUY0FIWHNLRHRvZEdyc1FZQS9tejhRY1k0MmppOTdSTkJ6WS9iMDNubVh6UXIwMHFZNHVFVnBNRVNCMDFHVE9VUWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODgzNTcyCWZpbGU6UFJJU01BXzAuOS42OF94NjQtc2V0dXAuZXhlCkF4SmkrMjJoaWZlRDJFWWxMUHJRZHBmRG5XWUVma1EyblhiSHA0b1NWL2FaMG0xbkVMTHpzbCtMTGJJbTFMSy8vc25mSUVlQ3A4TlhKQm9zUXk4dUNnPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.68/PRISMA_0.9.68_x64-setup.exe" } }
+  "version": "0.9.69",
+  "notes": "Auditoria anti-tela-preta: TODAS as operacoes pesadas (baixar video, Video->GIF, ampliar IA, remover fundo, remover marca d'agua, OCR, perguntar a imagem) agora rodam FORA da thread principal (async). Nenhuma congela mais a interface -> zero tela preta ao usar.",
+  "pub_date": "2026-07-01T12:43:41Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTd6VHh4Q280V2lrNEZ4NWJ5bWFiZkg0U0NmK0pZS2RyejNybGNRRVoxNnh2U09KalFPbHFiWHBjVVAweUkxdWpENDNGQmR5VUltQWdUa20xelQvN0E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTA5NzkxCWZpbGU6UFJJU01BXzAuOS42OV94NjQtc2V0dXAuZXhlCmI2YlZqZWtENjRFU1o1eVZHWXlrZ25SaE9rOUphNmY5UFZBKzhmNzZWQ1FKNXNJS2tqN0NJdGFwT3JYREc3Z1ovR3ZHSms4T0FoQ2hrZjNYTjRwZUFBPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.69/PRISMA_0.9.69_x64-setup.exe" } }
 }
