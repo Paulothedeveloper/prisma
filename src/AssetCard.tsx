@@ -33,6 +33,15 @@ function fmtDuration(d: number | null): string | null {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+// Relógio da linha do tempo do card (estilo Eagle: 0:01.2)
+function fmtClock(t: number): string {
+  if (!isFinite(t) || t < 0) t = 0;
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  const d = Math.floor((t % 1) * 10);
+  return `${m}:${s.toString().padStart(2, "0")}.${d}`;
+}
+
 interface Props {
   asset: Asset;
   selected: boolean;
@@ -59,9 +68,17 @@ function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, onToggl
   const [hover, setHover] = useState(false);
   const [vidReady, setVidReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  // Linha do tempo do card (áudio E vídeo) — igual ao Eagle: playhead + preenchimento + tempo,
+  // enquanto toca no hover. tempo/duração da própria mídia do card.
+  const [mediaT, setMediaT] = useState(0);
+  const [mediaD, setMediaD] = useState(0);
 
   useEffect(() => {
-    if (!hover) setVidReady(false);
+    if (!hover) {
+      setVidReady(false);
+      setMediaT(0);
+    }
   }, [hover]);
 
   const displayName = asset.name || asset.filename;
@@ -70,6 +87,21 @@ function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, onToggl
   // hover toca o original; se houver proxy (ProRes), toca o proxy
   const hoverSrc = asset.proxy_path ? convertFileSrc(asset.proxy_path) : origUrl;
   const dur = fmtDuration(asset.duration);
+  // Linha do tempo do card
+  const tlPct = mediaD > 0 ? Math.min(100, (mediaT / mediaD) * 100) : 0;
+  const playing = mediaD > 0 && mediaT > 0;
+  const onTime = (e: React.SyntheticEvent<HTMLMediaElement>) => {
+    const el = e.currentTarget;
+    setMediaT(el.currentTime);
+    if (el.duration && el.duration !== mediaD) setMediaD(el.duration);
+  };
+  const seekAudio = (e: React.MouseEvent) => {
+    const el = audioRef.current;
+    if (!el || !el.duration) return;
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    el.currentTime = ((e.clientX - rect.left) / rect.width) * el.duration;
+  };
 
   const onDragStart = (e: React.DragEvent) => {
     // Se o arrasto começou no grip de reordenar, deixa o HTML5 DnD cuidar (não exporta pro SO).
@@ -153,7 +185,19 @@ function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, onToggl
         )}
 
         {/* base: miniatura ou ícone (sempre presente — sem flash cinza) */}
-        {thumbUrl ? (
+        {isAudio && thumbUrl ? (
+          // Forma de onda TINGIDA pelo tema (via CSS mask no canal alpha da onda) + linha do
+          // tempo em cima (playhead/preenchimento/tempo) enquanto toca no hover — igual ao Eagle.
+          <div
+            className="wave-card"
+            onClick={hover ? seekAudio : undefined}
+            style={{ ["--wave" as string]: `url("${thumbUrl}")` }}
+          >
+            <div className="wave wave-base" />
+            <div className="wave wave-hot" style={{ clipPath: `inset(0 ${100 - tlPct}% 0 0)` }} />
+            {playing && <div className="wave-head" style={{ left: `${tlPct}%` }} />}
+          </div>
+        ) : thumbUrl ? (
           <img src={thumbUrl} className="media" alt="" loading="lazy" />
         ) : (
           <div className="icon-fallback">
@@ -177,8 +221,15 @@ function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, onToggl
               setVidReady(true);
               videoRef.current?.play().catch(() => {});
             }}
+            onTimeUpdate={onTime}
             onError={() => setVidReady(false)}
           />
+        )}
+        {/* Linha do tempo em cima do card de VÍDEO enquanto toca no hover (igual ao Eagle) */}
+        {isVideo && playHover && vidReady && mediaD > 0 && (
+          <div className="ctl">
+            <div className="ctl-fill" style={{ width: `${tlPct}%` }} />
+          </div>
         )}
         {isLive && playHover && liveSrc && (
           <video
@@ -204,14 +255,20 @@ function AssetCardImpl({ asset, selected, onClick, onPreview, onContext, onToggl
             autoPlay
             className="hidden-audio"
             ref={(el) => {
+              audioRef.current = el;
               if (el) {
                 el.volume = previewVolume();
                 el.play().catch(() => {});
               }
             }}
+            onTimeUpdate={onTime}
+            onLoadedMetadata={onTime}
           />
         )}
-        {isAudio && playHover && <span className="audio-hover-ind"><Icon name="audio" size={20} /></span>}
+        {/* rótulo do formato (WAV/MP3…) no canto — igual ao Eagle */}
+        {isAudio && <span className="wave-label">{(asset.ext || "").toUpperCase()}</span>}
+        {/* tempo corrente no canto enquanto toca */}
+        {isAudio && playing && <span className="wave-time">{fmtClock(mediaT)}</span>}
 
         {/* Badges de canto (superior-esquerdo): um dot por condição (sem áudio, VFR, mono, 8-bit…).
             Cada cor identifica o caso; tooltip explica. Computado no import, então vale pra pasta. */}

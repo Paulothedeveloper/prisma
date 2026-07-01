@@ -517,6 +517,73 @@ fn app_inbox(data_dir: &std::path::Path) -> std::path::PathBuf {
     base.join("Inbox")
 }
 
+/// Migração (uma vez): regenera as formas de onda de ÁUDIO no novo formato — BRANCA sobre
+/// transparente (PNG), pra a UI tingir com a cor do tema. As antigas eram douradas em JPG
+/// (sem alpha → não dá pra tingir) e finas (sem normalização). Roda em background no boot.
+fn migrate_waveforms_png(app: tauri::AppHandle, db: Arc<Mutex<Connection>>, thumbs_dir: PathBuf) {
+    // flag pra rodar só uma vez
+    {
+        let conn = match db.lock() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let _ = conn.execute("CREATE TABLE IF NOT EXISTS app_meta (k TEXT PRIMARY KEY, v TEXT)", []);
+        let done = conn
+            .query_row("SELECT 1 FROM app_meta WHERE k='wave_v2'", [], |_| Ok(true))
+            .unwrap_or(false);
+        if done {
+            return;
+        }
+    }
+    // coleta os áudios
+    let rows: Vec<(i64, String, Option<String>)> = {
+        let conn = match db.lock() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let mut stmt = match conn.prepare("SELECT id, path, thumbnail_path FROM assets WHERE type='audio'") {
+            Ok(s) => s,
+            Err(_) => return,
+        };
+        let mapped = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)));
+        match mapped {
+            Ok(it) => it.filter_map(|x| x.ok()).collect(),
+            Err(_) => return,
+        }
+    };
+    let mut changed = 0u32;
+    for (id, path, old_thumb) in rows {
+        let src = std::path::Path::new(&path);
+        if !src.exists() {
+            continue;
+        }
+        let out = thumbs_dir.join(format!("{id}.png"));
+        if thumbs::regen_waveform(src, &out) {
+            let new_path = out.to_string_lossy().to_string();
+            if let Ok(conn) = db.lock() {
+                let _ = conn.execute(
+                    "UPDATE assets SET thumbnail_path=?1 WHERE id=?2",
+                    rusqlite::params![new_path, id],
+                );
+            }
+            // apaga a onda antiga (.jpg) se era um arquivo diferente
+            if let Some(ot) = &old_thumb {
+                if ot != &new_path {
+                    let _ = std::fs::remove_file(ot);
+                }
+            }
+            changed += 1;
+        }
+    }
+    if let Ok(conn) = db.lock() {
+        let _ = conn.execute("INSERT OR REPLACE INTO app_meta (k, v) VALUES ('wave_v2','1')", []);
+    }
+    tracing::info!(changed, "migrate_waveforms_png: ondas regeneradas");
+    if changed > 0 {
+        let _ = app.emit("thumbs:updated", changed);
+    }
+}
+
 /// Baixa o vídeo/áudio pro Inbox e JÁ cataloga no PRISMA. Retorna o caminho final.
 // ASYNC + spawn_blocking: o download pode levar MINUTOS. Se rodasse síncrono, bloquearia a
 // thread principal do Tauri → a UI congela e o WebView2 fica PRETO. Rodando fora da thread
@@ -3020,6 +3087,15 @@ pub fn run() {
                 vault_watcher: vault_watcher_arc.clone(),
             });
 
+            // Migração (uma vez): regenera as ondas de áudio no formato tingível pelo tema.
+            {
+                let handle = app.handle().clone();
+                let db_wave = db_arc.clone();
+                let thumbs_wave = thumbs_dir.clone();
+                std::thread::spawn(move || {
+                    migrate_waveforms_png(handle, db_wave, thumbs_wave);
+                });
+            }
             // Retomada: gera no boot os thumbs que faltaram (ex.: app fechado no meio do indice).
             {
                 let handle = app.handle().clone();

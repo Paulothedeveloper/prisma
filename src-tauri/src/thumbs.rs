@@ -130,9 +130,13 @@ pub fn generate(src: &Path, ext: &str, out_dir: &Path, id: i64) -> (Option<Strin
         duration: None,
     };
     // imagens/gif salvam como PNG (preserva ALPHA — overlays não viram preto);
-    // vídeo/áudio como JPG (menor, sem alpha).
+    // ÁUDIO também PNG: a forma de onda é branca sobre TRANSPARENTE, e a UI a tinge com a cor
+    // do tema via CSS mask (precisa do canal alpha). Vídeo continua JPG (menor, sem alpha).
     let is_img = classify::is_image(ext) || classify::is_gif(ext);
-    let out = out_dir.join(format!("{id}.{}", if is_img { "png" } else { "jpg" }));
+    let out = out_dir.join(format!(
+        "{id}.{}",
+        if is_img || classify::is_audio(ext) { "png" } else { "jpg" }
+    ));
 
     if is_img {
         // 0) SVG (vetor, designer) → renderiza com resvg (Rust puro, sem binário externo)
@@ -431,6 +435,12 @@ fn video_thumb(src: &Path, out: &Path, _duration: Option<f64>) -> Result<(), Str
     }
 }
 
+/// Regenera a forma de onda (usado pela migração que troca as ondas douradas/JPG antigas pelas
+/// novas brancas/PNG tingíveis pelo tema). Retorna true se gerou.
+pub fn regen_waveform(src: &Path, out: &Path) -> bool {
+    waveform(src, out).is_ok()
+}
+
 fn waveform(src: &Path, out: &Path) -> Result<(), String> {
     let mut c = cmd(ffmpeg());
     c.args([
@@ -438,7 +448,13 @@ fn waveform(src: &Path, out: &Path) -> Result<(), String> {
         "-i",
         &src.to_string_lossy(),
         "-filter_complex",
-        &format!("showwavespic=s={THUMB_MAX}x{}:colors=#E8B44A", THUMB_MAX / 3),
+        // BRANCA sobre TRANSPARENTE → a UI tinge com a cor do tema (CSS mask no canal alpha).
+        // dynaudnorm nivela (faixa quieta vs alta ficam consistentes) + volume enche a altura,
+        // pra a onda ocupar o card como no Eagle (showwavespic sozinho fica fininho em faixas quietas).
+        &format!(
+            "dynaudnorm=p=0.95:g=5,volume=4,showwavespic=s={THUMB_MAX}x{}:colors=white",
+            THUMB_MAX / 3
+        ),
         "-frames:v",
         "1",
         &out.to_string_lossy(),

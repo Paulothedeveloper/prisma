@@ -803,6 +803,8 @@ export default function App() {
     }).then((u) => unl.push(u));
     // Backfill das características visuais terminou → atualiza a busca atual.
     listen("index:traits-done", () => runSearch(true)).then((u) => unl.push(u));
+    // Migração das ondas de áudio (novo formato tingível) terminou → recarrega as miniaturas.
+    listen("thumbs:updated", () => runSearch(true)).then((u) => unl.push(u));
     // Watch Folder: arquivos novos/removidos detectados → atualiza grade + contagens.
     listen("watch:changed", () => {
       runSearch(true);

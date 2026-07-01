@@ -1,6 +1,6 @@
 {
-  "version": "0.9.80",
-  "notes": "Novo plugin: Gerador de QR Code (menu Adicionar + Ctrl+K) — cola um link/texto, gera o PNG nitido e ja cataloga. + CORRECAO: o HUD de ferramentas (Ver/Fixar) e a barra de lote nao colidem mais com o mini-player de audio no rodape — sobem automatico quando ha musica tocando.",
-  "pub_date": "2026-07-01T17:32:29Z",
-  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTBMTkRVVUZ4Y2h6Qms1aFZFNTJPQmxwKzZRa0ZYR01aTytaNWUraEpHL20rR25MSCtjSnh3b2RpTHROTTV5SUVyNlhvRldiVjNiY3BBOHdlaXRUSFFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTI3MTIwCWZpbGU6UFJJU01BXzAuOS44MF94NjQtc2V0dXAuZXhlCkFSRnU1WTZ2dVA1YVI3L09GYlVydmpoeFYvbFlGdldHdkdJOTVyeU1DZnRUdXE5OHgvRjNNUU5rdVJUbGZYWWdRT1BabldTRFVoMU1BaDh2UkpJWUJnPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.80/PRISMA_0.9.80_x64-setup.exe" } }
+  "version": "0.9.81",
+  "notes": "ÁUDIO estilo Eagle: a forma de onda agora MUDA DE COR com o tema (branca sobre transparente, tingida com o accent) e ganhou LINHA DO TEMPO em cima do card — playhead + preenchimento + tempo enquanto toca, clique pra buscar, rótulo do formato. As ondas antigas sao regeneradas automaticamente no primeiro boot (cheias, sem ficar finas). VIDEO tambem ganhou linha do tempo no rodape do card ao passar o mouse. (Parte 1+2 do redesign estilo Eagle; sidebar/fonte vem a seguir.)",
+  "pub_date": "2026-07-01T18:15:40Z",
+  "platforms": { "windows-x86_64": { "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWTUwSWQ2ZUxxcHV5RjlQZXVLNk5pMUF1V052ZXVqVEM5VjF5aVpka1pGaVNmenZzcHNCeitHcXhDTzVjRExjWXpZdERTL3Y4enVTRStCN1Z5TCtzNGdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyOTI5NzEwCWZpbGU6UFJJU01BXzAuOS44MV94NjQtc2V0dXAuZXhlCjYvbVU0SUh1U0Q1Yk1lYWpaKzYzSVlybm16aFlrNm5rckVvYTJKc3dSTEFVdW12VjM5OTVEZEYycnNKWTVsck05aVRoTnpSYjQrRnYxTjZnUStVekNnPT0K", "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.81/PRISMA_0.9.81_x64-setup.exe" } }
 }
