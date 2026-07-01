@@ -1,11 +1,11 @@
 {
-  "version": "0.9.56",
-  "notes": "Temas corrigidos: a cor de acento (verde/amber/roxo/etc.) agora se aplica em TUDO — 41 pontos que ficavam azuis fixos (brilhos, aneis de selecao, bordas) agora seguem o tema via --accent-rgb. Espectro do prisma e cores de pasta mantidos.",
-  "pub_date": "2026-07-01T01:32:13Z",
+  "version": "0.9.57",
+  "notes": "Troca de tela fluida: mudar aba/atalho ou filtro faz os cards entrarem em cascata animada (sem remontar a grade). Menu Adicionar sem '...'.",
+  "pub_date": "2026-07-01T01:56:18Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWXh4VndOdlZLZGprdnpJNGZSZXpvaUZIZUZmSzJvd0xnQ0lhRkRFQUV0dXdrbHRBemJ4Z2NITGhVQkZlbjQ5Zy9MUndlOHBoMjNCQWRpSnBGQjJHamdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODY5NTAzCWZpbGU6UFJJU01BXzAuOS41Nl94NjQtc2V0dXAuZXhlCmoybnhYS1MrV1JhREpXM3VsbGNJQWJuY3BXMmFXb21hVjkyWlEweFNheFd6ajZydG84UTF1YnlHTGRYWFhlNC9HWW1rY2U3cEs5d3djdTQ3OVN4UkJ3PT0K",
-      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.56/PRISMA_0.9.56_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUTzUyU3ppZjRhWS9pa3hlVW54TDNuQXFsblRqU1UyMnN0aXlYN1ZxSmFUdFVLTmt5TlNLYmlWcE1XRzJnSGxLMUd4UzY0TkJKWSthUkdUNVg3MHk1TGxWMjNEb05KY0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyODcwOTQyCWZpbGU6UFJJU01BXzAuOS41N194NjQtc2V0dXAuZXhlCml6cVg5KzM0MEtJVHZFYmxxNlh5VjBlYzBBZHBCNjMxRVJUcU5zVVNPSGhPaXJSVm1YWkhTWGlLQjJqNld6Z2s4Sm1pTE9LQkZ3cGdoK2s0TjFTTER3PT0K",
+      "url": "https://github.com/Paulothedeveloper/prisma/releases/download/v0.9.57/PRISMA_0.9.57_x64-setup.exe"
     }
   }
 }

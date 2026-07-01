@@ -482,6 +482,13 @@ export default function App() {
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort, folderScope, clipMode]);
+  // Trocar um FILTRO (dropdown: resolução/duração/tom/ordenação/etc.) → pede a cascata na
+  // próxima carga, pra a tela transicionar animada (pedido do Paulo). O texto digitado (query)
+  // fica de fora de propósito: não re-anima a cada tecla.
+  useEffect(() => {
+    cascadeOnNextLoad.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minRating, fExt, fRes, fDur, fBright, fWarm, fSat, fOrient, sort]);
 
   // Ao ligar a busca semântica, confere quantas imagens já têm embedding CLIP.
   useEffect(() => {
@@ -585,6 +592,9 @@ export default function App() {
           setSubCards([]);
         });
     else setSubCards([]);
+    // TODA troca de view (sidebar, pasta, atalho) cascateia os cards novos (transição fluida,
+    // sem remontar a grade). Antes só voltar/avançar pediam a cascata.
+    cascadeOnNextLoad.current = true;
     runSearch(true);
     // Histórico voltar/avançar: empilha a nova view (a menos que tenha vindo de um botão).
     if (navJump.current) {

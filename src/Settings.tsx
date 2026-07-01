@@ -48,10 +48,11 @@ const TABS: { id: Tab; key: string; icon: IconName }[] = [
   { id: "sobre", key: "tab.about", icon: "stack" },
 ];
 
-const APP_VERSION = "0.9.56";
+const APP_VERSION = "0.9.57";
 
 // Novidades da versão atual — mostradas na aba "Sobre" (documentação in-app de cada release).
 const WHATS_NEW: string[] = [
+  "TROCA DE TELA agora é FLUIDA: mudar de aba/atalho na barra lateral OU trocar um filtro (resolução, duração, tom, ordenação, etc.) faz os cards entrarem em CASCATA animada — antes a grade só 'aparecia' de repente. Feito sem remontar a grade (nada de piscada), pela mesma cascata suave do resto. O texto digitado na busca fica de fora de propósito (não re-anima a cada tecla). E o menu 'Adicionar' teve os '...' removidos dos itens (Pastas, Da web, Arquivos, Baixar vídeo/áudio) — nada mais parecendo texto cortado.",
   "TEMAS corrigidos de vez: ao escolher uma cor de acento (verde, amber, roxo, etc.), a cor agora se aplica em TUDO — antes muitos brilhos, anéis de seleção, bordas e realces ficavam AZUIS fixos no meio do seu tema. Reajustei 41 pontos pra seguirem o acento via uma variável única (--accent-rgb). Provado trocando pra verde: item ativo, botão, anel de seleção do card, toggles — tudo verde, zero azul perdido. O espectro do prisma (ícone/gradientes multicoloridos) e as cores próprias das pastas continuam como são (de propósito).",
   "FLUIDEZ TOTAL (redesign passo 6 — abrir/fechar de TUDO + layout Eagle): (1) o layout agora é MASONRY por padrão — parede de miniaturas com alturas variadas, igual ao Eagle (era grade quadrada uniforme); (2) PASTA na barra lateral agora EXPANDE/COLAPSA animada (desdobra com slide+fade, o chevron gira suave) em vez de aparecer seca; (3) trocar de ABA nas Configurações faz um fade-up; (4) o menu 'Adicionar' abre animado; (5) TROCAR A COR de acento agora faz um CROSSFADE suave da interface inteira (View Transitions) em vez de piscar a cor nova. Tudo na mesma linguagem de movimento, mantendo a identidade liquid-glass.",
   "VISUAL PREMIUM (redesign passo 5 — agora dá pra VER): a base inteira mudou pra ficar à altura do Eagle. Fundo passou de cinza-quente (#1a1a1c) pra QUASE-PRETO levemente frio — os painéis de vidro flutuam e as miniaturas saltam (o grid vira o herói). Grid mais DENSO (miniatura menor + menos espaço = parede de imagens, não cards soltos). E as PASTAS na barra lateral agora têm ÍCONES COLORIDOS por padrão (assinatura do Eagle — cada pasta ganha uma cor estável, e você pode trocar). Não é mais o 'padrão' cinza: é escuro, denso e premium.",
